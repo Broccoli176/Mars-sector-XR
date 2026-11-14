@@ -7,6 +7,7 @@ import { Food } from './Food.js';
 import { Crew } from './Crew.js';
 import { IncidentRunner } from './IncidentRunner.js';
 import { GameState } from './GameState.js';
+import { Telecom } from './Telecom.js';
 
 const TICKS_PER_HOUR = 60;
 
@@ -32,6 +33,7 @@ export class Simulation {
     this.food = new Food(b, this.resources, bus);
     this.crew = new Crew(b.health, TICKS_PER_HOUR, this.resources, bus);
     this.incidents = new IncidentRunner(data.events, b.time, { bus, power: this.power });
+    this.telecom = new Telecom(b.telecom, bus, this.resources);
     this.game = new GameState(b.gameRules, TICKS_PER_HOUR, {
       bus,
       time: this.time,
@@ -80,6 +82,7 @@ export class Simulation {
     this.lifeSupport.update(this.power.served, dt);
     this.food.update(this.power.served, dt);
     this.crew.update(dt);
+    this.telecom.update(this.power.served.telecom, this.power.stormActive, dt);
     this.resources.commit(dt);
 
     this.time.advanceTick();

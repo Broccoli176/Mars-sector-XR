@@ -4,6 +4,7 @@ import { gameData } from '../data/index.js';
 import { createTranslator } from '../utils/strings.js';
 import { Game } from './Game.js';
 import { buildBasement } from '../world/Basement.js';
+import { buildPorthole } from '../world/Porthole.js';
 import { buildStations, renderBio } from '../ui/Stations.js';
 import { Panel } from '../ui/Panel.js';
 import { Interaction } from '../vr/Interaction.js';
@@ -66,6 +67,7 @@ if (viewParam) {
 // World + stations
 const basement = buildBasement(layout, t);
 scene.add(basement.group);
+const porthole = buildPorthole(scene, game.sim);
 /** @type {THREE.Object3D[]} */
 const interactive = [];
 const stations = buildStations({ layout, rooms: basement.rooms, game, t, scene, interactive });
@@ -150,6 +152,7 @@ renderer.setAnimationLoop((timestamp) => {
   desktop.update();
   xr.update();
   stations.animate(dt);
+  porthole.update(dt);
 
   refreshTimer += dt;
   if (refreshTimer >= PANEL_REFRESH_SECONDS) {

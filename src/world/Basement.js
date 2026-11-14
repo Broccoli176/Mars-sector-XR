@@ -71,6 +71,7 @@ export function buildBasement(layout, t) {
     const end = alongX ? Math.max(ax, bx) : Math.max(az, bz);
     const fixed = alongX ? az : ax;
     const gaps = [...(wall.gaps ?? [])].sort((a, b) => a[0] - b[0]);
+    const windows = [...(wall.windows ?? [])].sort((a, b) => a[0] - b[0]);
 
     /** @param {number} s @param {number} e @param {number} y0 @param {number} y1 */
     const box = (s, e, y0, y1) => {
@@ -86,6 +87,18 @@ export function buildBasement(layout, t) {
       group.add(mesh);
       walls.push(mesh);
     };
+
+    if (windows.length > 0) {
+      let cursor = start;
+      for (const [w0, w1, wy0, wy1] of windows) {
+        if (w0 > cursor) box(cursor, w0, 0, H);
+        box(w0, w1, 0, wy0);
+        box(w0, w1, wy1, H);
+        cursor = w1;
+      }
+      if (cursor < end) box(cursor, end, 0, H);
+      return;
+    }
 
     let cursor = start;
     for (const [g0, g1, gh] of gaps) {

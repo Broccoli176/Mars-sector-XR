@@ -85,9 +85,15 @@
   "ui.food.title": "RACIONES",
   "ui.food.days": "≈ {days} días de comida",
 
-  "ui.telecom.title": "TELECOM",
-  "ui.telecom.pending": "Consola de radio: sistema pendiente",
+  "ui.telecom.title": "TELECOMUNICACIONES",
+  "ui.telecom.pending": "Enlace orbital con la Tierra",
   "ui.telecom.power": "Alimentación: {state}",
+  "ui.telecom.signal": "Señal: {val}% ({status})",
+  "ui.telecom.alignment": "Alineación antena: {pct}%",
+  "ui.telecom.align": "ALINEAR ANTENA",
+  "ui.telecom.motor": "Motor antena: {state}",
+  "hint.aligned": "Antena reorientada ({pct}%)",
+  "hint.motorBroken": "Avería: motor de antena bloqueado",
 
   "ui.training.title": "BANCO DE ENTRENAMIENTO",
   "ui.training.pending": "Misiones T1–T5: próximamente",

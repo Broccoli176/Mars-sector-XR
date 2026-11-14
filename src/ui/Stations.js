@@ -294,25 +294,58 @@ export function buildStations({ layout, rooms, game, t, scene, interactive }) {
     },
 
     telecom_console(g, station) {
-      addBox(g, 1.4, station.y - 0.55, 0.6, 0, -0.55 - (station.y - 0.55) / 2, 0.32, '#3a4048');
-      const panel = addPanel(g, 0.8, 0.4, 0, 0.1);
+      // Sturdy metallic operator desk centered below the porthole window
+      addBox(g, 1.6, 0.65, 0.65, 0, -0.55, 0.35, '#353a42');
+      addBox(g, 1.64, 0.04, 0.68, 0, -0.22, 0.35, '#25292f');
+
+      // Operator monitor panel
+      const panel = addPanel(g, 0.95, 0.45, 0, 0.12);
+
+      // 3D Push button on desk to align antenna
+      addButton(g, {
+        width: 0.36,
+        height: 0.09,
+        label: t('ui.telecom.align'),
+        color: BUTTON.info,
+        onSelect: () => game.intent('antenna:align'),
+      }, 0, -0.32);
+
+      // Antenna motor unit on wall
+      addBox(g, 0.28, 0.28, 0.18, -1.05, 0.05, 0.1, '#4f5b66');
+      addBox(g, 0.04, 0.8, 0.04, -1.05, 0.5, 0.08, '#85909c');
+
       refreshers.push(() => {
         const s = sim();
         const powered = s.power.served.telecom;
+        const sig = s.resources.get('signal');
+        const alignmentPct = Math.round((s.telecom ? s.telecom.alignment : sig.value / 100) * 100);
+        const motorBroken = Boolean(s.telecom?.motorBroken);
+
         panel.renderLines(t('ui.telecom.title'), [
           { text: t('ui.telecom.power', { state: t(powered ? 'ui.state.ok' : 'ui.state.unpowered') }), color: powered ? COLORS.nominal : COLORS.critical },
-          { text: t('ui.telecom.pending'), color: COLORS.dim },
+          { text: t('ui.telecom.signal', { val: Math.round(sig.value), status: t(`ui.status.${sig.status}`) }), color: statusColor(sig.status) },
+          { text: t('ui.telecom.alignment', { pct: alignmentPct }), color: alignmentPct < 40 ? COLORS.critical : alignmentPct < 70 ? COLORS.warning : COLORS.nominal },
+          { text: t('ui.telecom.motor', { state: motorBroken ? t('ui.state.broken') || 'AVERIADO' : t('ui.state.ok') }), color: motorBroken ? COLORS.critical : COLORS.dim, size: 0.85 },
         ]);
       });
     },
 
     airlock(g) {
-      addBox(g, 1.1, 2.0, 0.12, 0, 0, 0.0, '#3c4147');
-      const porthole = new THREE.Mesh(new THREE.CircleGeometry(0.2, 32), new THREE.MeshBasicMaterial({ color: '#c8653a' }));
-      porthole.position.set(0, 0.45, 0.07);
-      g.add(porthole);
+      addBox(g, 1.15, 2.1, 0.12, 0, 0, 0.0, '#3c4147');
+      addBox(g, 1.25, 2.2, 0.06, 0, 0, -0.03, '#2a2e33');
+      const lockHub = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.06, 16), new THREE.MeshLambertMaterial({ color: '#555555' }));
+      lockHub.rotation.x = Math.PI / 2;
+      lockHub.position.set(0, 0.05, 0.08);
+      const lockWheel = new THREE.Mesh(new THREE.TorusGeometry(0.18, 0.025, 8, 20), new THREE.MeshLambertMaterial({ color: '#d4883b' }));
+      lockWheel.position.set(0, 0.05, 0.1);
+      g.add(lockHub, lockWheel);
+
+      const statusLed = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.05, 0.04), new THREE.MeshBasicMaterial({ color: '#3ddc84' }));
+      statusLed.position.set(0, 0.95, 0.08);
+      g.add(statusLed);
+
       refreshers.push(() => {
-        /** @type {THREE.MeshBasicMaterial} */ (porthole.material).color.set(sim().power.stormActive ? '#5a3a2a' : '#c8653a');
+        /** @type {THREE.MeshBasicMaterial} */ (statusLed.material).color.set(sim().power.stormActive ? '#ffb020' : '#3ddc84');
       });
     },
 
