@@ -54,14 +54,16 @@ Parámetros de desarrollo (combinables con `&`):
 
 ### Datos reales (NASA / CSA)
 
-El juego usa datos reales **embebidos como registros con fecha, no en vivo**. Se listan dentro del juego en el panel «Fuentes científicas» de la Sala central.
+El juego usa datos reales **embebidos como registros con fecha**; solo el clima espacial (DONKI) se consulta **en vivo** si hay conexión. Detalle para el jurado: `docs/DATA_SOURCES.md`. Se listan dentro del juego en el panel «Fuentes científicas» de la Sala central.
 
 | Datos | Fuente | Dónde se ven | Cómo actualizar |
 | :-- | :-- | :-- | :-- |
 | Radiación en la superficie de Marte (MSL RAD, Curiosity) e ISS, 24 h del 01/01/2023 | [NASA OSDR RadLab](https://visualization.osdr.nasa.gov/radlab/gui/data-api/) | Dosímetro (Personal) | `npm run data:radlab -- AAAA-MM-DD` |
+| Clima espacial: CME, tormentas geomagnéticas y de partículas, últimos 7 días | [NASA DONKI (api.nasa.gov)](https://api.nasa.gov/) | «El Sol ahora» (Personal): **EN VIVO** si hay red; si no, el registro con fecha | `npm run data:donki` (registro de respaldo) |
+| Estudios reales de salud en el espacio (OSD-924, OSD-343, OSD-812) | [NASA OSDR](https://osdr.nasa.gov/bio/repo/) | «Salud del astronauta» (Personal) | `npm run data:osdr` |
 | Ciclos de cultivo, dieta de la tripulación, hábitats de plantas | [CSA – Food production](https://www.asc-csa.gc.ca/eng/youth-educators/toolkits/food-production/) | Guía de cultivos y bastidor (Hidroponía) | Editar `src/data/real/csa_food.json` |
 
-**Por qué no se consultan en vivo:** la API de RadLab no envía la cabecera CORS, así que el navegador del Quest no puede llamarla. Un script de Node descarga los datos en tu PC y el JSON se versiona.
+**Por qué no se consultan en vivo:** la API de RadLab no envía la cabecera CORS, así que el navegador del Quest no puede llamarla. Un script de Node descarga los datos en tu PC y el JSON se versiona (igual con OSDR). DONKI sí permite CORS: el navegador lo llama con `DEMO_KEY`, o con tu clave gratuita de https://api.nasa.gov/ en `.env` (`VITE_NASA_API_KEY=...`, ya ignorado por git).
 
 ### Testing en Quest 3
 

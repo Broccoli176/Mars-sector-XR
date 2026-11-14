@@ -15,7 +15,9 @@
 Datos reales embebidos (sin «en vivo»), ver `docs/SIMULATION_SPEC.md` §6.5:
 - `src/data/real/radlab.json` (NASA OSDR RadLab, MSL RAD) → `systems/Radiation.js` (informativo, sin daño) y dosímetro de Personal.
 - `src/data/real/csa_food.json` (CSA) → Hidroponía.
-- Ambos se atribuyen en el panel «Fuentes científicas» del hub.
+- `src/data/real/osdr_health.json` (NASA OSDR, estudios OSD-924/343/812) → panel «Salud del astronauta» de Personal.
+- NASA DONKI **en vivo** (`src/rooms/personal/spaceWeatherLive.js`, solo presentación, nunca alimenta la simulación) → «El Sol ahora» de Personal; sin red usa el registro `src/data/real/donki_recent.json` y lo dice.
+- Todos se atribuyen en el panel «Fuentes científicas» del hub. Resumen: `docs/DATA_SOURCES.md`.
 
 Telecom básico implementado (`src/systems/Telecom.js`: señal = 95 × alineación, deriva en tormenta, botón «Alinear antena», motor averiado limita a 40). Pendiente: cola de mensajes/enlace <20 % y clima espacial, electrónica/reparaciones, fugas, herramientas/fundas, banco de entrenamiento (T1–T5), alarmas sonoras, guardado, CI y assets. **Desviaciones del prototipo:**
 - Los controles se pulsan con rayo + gatillo; el agarre directo llegará después.
@@ -328,6 +330,8 @@ npm test               # vitest run (simulación headless)
 npm run test:watch     # vitest
 npm run sim            # informe headless de balance: políticas idle/greedy/competent (`npm run sim -- competent`)
 npm run data:radlab    # descarga un día real de NASA OSDR RadLab (MSL RAD + ISS) → src/data/real/radlab.json
+npm run data:osdr      # metadatos de estudios OSDR → src/data/real/osdr_health.json
+npm run data:donki     # registro de respaldo DONKI (7 días) → src/data/real/donki_recent.json
 ```
 
 Parámetros de URL solo de desarrollo:
@@ -399,6 +403,7 @@ Requisitos recomendados:
 | `docs/DEVELOPMENT_WORKFLOW.md` | Flujo de desarrollo, pruebas y profiling |
 | `docs/ASSET_CREATION_WORKFLOW.md` | Pipeline de assets y validación |
 | `docs/ASSET_REGISTRY.md` | Registro de assets/licencias y fuentes de datos |
+| `docs/DATA_SOURCES.md` | Datos reales NASA/CSA: acceso (en vivo / registro / curado), dónde se ven y por qué (para el jurado) |
 | `docs/CONTENT_SCRIPT.md` | Guion de comms, tutorial y convención de claves de strings |
 | `docs/FLOOR_PLAN.md` | Plano acotado: salas, puertas, paneles por muro, anclas de teleport, alarmas |
 | `docs/COLLABORATION.md` | Reparto de archivos por sala entre 2 personas, archivos compartidos y flujo de ramas/PR en GitHub |

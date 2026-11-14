@@ -23,9 +23,9 @@ Plano y coordenadas de las salas: `docs/FLOOR_PLAN.md`.
 | Textos (español) | `src/data/strings/es/{personal,hydro,hub}.json` | `src/data/strings/es/{telecom,control,energy}.json` |
 | Números de balance | `src/data/balance/hydro.json` (comida, agua) | `src/data/balance/{energy,telecom}.json` (energía, circuitos, soporte vital, térmica, telecom) |
 | Sistemas de simulación | `src/systems/Food.js` (+ futuros de Personal / entrenamiento) | `src/systems/{PowerGrid,LifeSupport,Telecom}.js` |
-| Datos reales (NASA/CSA) | `src/data/real/{radlab,csa_food}.json`, `scripts/fetch-radlab.js`, `src/systems/Radiation.js` | (futuro) `src/data/real/space_weather.json` si se materializa DONKI |
+| Datos reales (NASA/CSA) | `src/data/real/{radlab,csa_food,osdr_health,donki_recent}.json`, `scripts/fetch-{radlab,osdr,donki}.js`, `src/systems/Radiation.js`, `src/rooms/personal/spaceWeatherLive.js` | (futuro) `src/data/spaceWeather.json` (DONKI para incidentes). **Aviso:** DONKI ya se muestra en vivo en Personal («El Sol ahora»); se puede reutilizar `spaceWeatherLive.js` pidiéndolo. Sugerencia: Mars Trek para la ventana de Telecom |
 | Herramientas (Sala central) | `src/rooms/hub/{tools,toolRules}.js`, `src/data/balance/hub.json` (herramientas + tabla de componentes §6.1) | Fase 2 (reparar componentes de sus salas): coordinar. Se acerca la herramienta a un componente y se mantiene; necesita el sistema Electronics y `repair:*` |
-| Tests | `tests/hydro.test.js`, `tests/radiation.test.js`, `tests/tools.test.js` | `tests/power.test.js`, `tests/telecom.test.js` |
+| Tests | `tests/hydro.test.js`, `tests/radiation.test.js`, `tests/tools.test.js`, `tests/spaceweather.test.js` | `tests/power.test.js`, `tests/telecom.test.js` |
 
 > **Trabaja solo en tus archivos.** Si necesitas algo en un archivo del otro, pídeselo por chat o abre un PR pequeño y espera su revisión.
 

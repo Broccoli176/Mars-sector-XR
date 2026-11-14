@@ -346,7 +346,7 @@ Events: `spaceWeather:alert { kind: 'cme' | 'flare', speedKms?, etaHours? }`, `s
 
 ### 6.5 Real-data grounding (Person A rooms)
 
-Real data are embedded as **static, dated snapshots** and labelled in-world as "no en vivo" (`src/data/real/*.json`, listed on the hub "Fuentes científicas" board).
+Real data are embedded as **static, dated snapshots** and labelled in-world as "no en vivo" (exception: DONKI in Personal is live when reachable and says so) (`src/data/real/*.json`, listed on the hub "Fuentes científicas" board).
 
 | Data | Source | Game use | Rule |
 | :-- | :-- | :-- | :-- |
@@ -355,8 +355,10 @@ Real data are embedded as **static, dated snapshots** and labelled in-world as "
 | Crop growth times (lettuce 21–28 d, tomato 50–90 d, …) | CSA food-production toolkit | Hidroponía guide; the game crop **is lettuce** and its growth is **time-compressed** (48 game hours), labelled so in-world | Do not present the compressed time as real |
 | Crew diet 1900–3200 kcal/day | CSA | Validates `food.consumptionPerHour` (≈ 2500 kcal/day) | Keep the value inside the range |
 | Plants produce O₂ and recycle CO₂; APH LEDs white/red/blue/green | CSA | Facts on the Hidroponía guide | Not yet a gas-exchange mechanic |
+| DONKI CME / GST / SEP, last 7 days | NASA CCMC DONKI via api.nasa.gov | Personal «El Sol ahora» (`rooms/personal/spaceWeatherLive.js`, presentation only). **Live** when reachable, otherwise the dated snapshot `real/donki_recent.json` | **Never feeds the simulation.** «EN VIVO» only after a successful request |
+| Spaceflight health studies OSD-924, OSD-343, OSD-812 (metadata) | NASA OSDR study search | Personal «Salud del astronauta», with accession and link | Kid-level summaries must not claim more than the study description |
 
-Refresh: `npm run data:radlab -- YYYY-MM-DD` (Node, no CORS), and edit `csa_food.json` by hand. The ISS DosTel data has no coverage in 2024, so 2023-01-01 is used for both series.
+Refresh: `npm run data:radlab -- YYYY-MM-DD` (Node, no CORS), `npm run data:osdr`, `npm run data:donki` (offline fallback), and edit `csa_food.json` by hand. Judge-facing summary: `docs/DATA_SOURCES.md`. The ISS DosTel data has no coverage in 2024, so 2023-01-01 is used for both series.
 
 ### 6.4 RNG
 - `mulberry32` seeded PRNG.

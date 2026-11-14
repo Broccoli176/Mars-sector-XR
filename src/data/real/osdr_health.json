@@ -1,0 +1,49 @@
+{
+  "_about": "Embedded REAL study metadata (not live). Regenerate with `npm run data:osdr`. Kid-friendly summaries: strings/es/personal.json.",
+  "source": {
+    "institution": "NASA Open Science Data Repository (OSDR)",
+    "product": "OSDR study search (space biology & astronaut health)",
+    "url": "https://osdr.nasa.gov/bio/repo/",
+    "apiDocs": "https://visualization.osdr.nasa.gov/biodata/api/",
+    "terms": "https://www.nasa.gov/reference/osdr-help-terms-and-conditions/",
+    "retrievedAt": "2026-11-14"
+  },
+  "studies": [
+    {
+      "accession": "OSD-924",
+      "title": "Spaceflight induces systemic effects on extracellular matrix and immune system in different age-stages - limb muscle data",
+      "flightProgram": "International Space Station (ISS)",
+      "mission": "SpaceX-16",
+      "organism": "Mus musculus",
+      "descriptionExcerpt": "Spaceflights significantly impacts astronaut health, causing muscle atrophy, bone loss, cardiovascular deconditioning and immune system dysregulation, especially during long missions. To explore molecular changes, we generated a single-cell RNA sequencing dataset, of 216 samples from 28 mouse organs and tissues under spaceflight and control conditions. Since spaceflight effects closely resemble as",
+      "url": "https://osdr.nasa.gov/bio/repo/data/studies/OSD-924",
+      "query": "https://osdr.nasa.gov/osdr/data/search?term=OSD-924&from=0&size=5&type=cgene",
+      "topic": "muscle_bone",
+      "summaryKey": "personal.health.osd924"
+    },
+    {
+      "accession": "OSD-343",
+      "title": "Comprehensive multi-omics analysis reveals mitochondrial stress as a central biological hub for spaceflight impact",
+      "flightProgram": "International Space Station (ISS)",
+      "mission": "SpaceX-12",
+      "organism": "Mus musculus",
+      "descriptionExcerpt": "Given the limited knowledge of the biological impact of spaceflight, a multi-omics, systems biology approach was used to investigate NASA’s GeneLab data and astronaut biomedical profiles. These data consist of hundreds of samples flown in space, human metrics from 59 astronauts, and confirmatory data from NASA’s Twin Study, analyzed together for consistent transcriptomic, proteomic, metabolomic, a",
+      "url": "https://osdr.nasa.gov/bio/repo/data/studies/OSD-343",
+      "query": "https://osdr.nasa.gov/osdr/data/search?term=OSD-343&from=0&size=5&type=cgene",
+      "topic": "astronauts",
+      "summaryKey": "personal.health.osd343"
+    },
+    {
+      "accession": "OSD-812",
+      "title": "Simulated microgravity impairs human NK cell cytotoxic activity against space radiation-relevant leukemic cells.",
+      "flightProgram": null,
+      "mission": null,
+      "organism": "Homo sapiens",
+      "descriptionExcerpt": "Natural killer (NK) cells are an important first-line of defense against malignant cells. Because of the potential for increased cancer risk from astronaut exposure to space radiation, we determined whether microgravity present during spaceflight affects the body's defenses against leukemogenesis. Human NK cells were cultured for 48 h under normal gravity and simulated microgravity (sμG), and cyto",
+      "url": "https://osdr.nasa.gov/bio/repo/data/studies/OSD-812",
+      "query": "https://osdr.nasa.gov/osdr/data/search?term=OSD-812&from=0&size=5&type=cgene",
+      "topic": "radiation_immunity",
+      "summaryKey": "personal.health.osd812"
+    }
+  ]
+}

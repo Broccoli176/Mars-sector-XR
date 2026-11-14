@@ -115,6 +115,8 @@ Each mission has `stepN` keys for multi-step hints (e.g. `tutorial.t3.step2` = "
 | Keys | File | Content |
 | :-- | :-- | :-- |
 | `personal.dosimeter.*` | `strings/es/personal.json` | Dosimeter: rate, shift dose, ISS comparison, chart label, context, **source + "no en vivo"** |
+| `personal.sun.*` | `strings/es/personal.json` | «El Sol ahora» (DONKI): `live` / `snapshot` / `unavailable` status line, CME count, fastest CME, storms, kid explanation, source |
+| `personal.health.*` | `strings/es/personal.json` | «Salud del astronauta» (OSDR): title, `where.<topic>`, one kid summary per study (`osd924`, `osd343`, `osd812`), source, `no_data` |
 | `hydro.guide.*`, `hydro.led.*`, `real.crop.*`, `ui.hydro.real_cycle` | `strings/es/hydro.json` | CSA crop guide, LEDs, crop names, real cycle on the rack panel |
 | `hub.sources.*` (incl. `hub.sources.use.<datasetId>`) | `strings/es/hub.json` | "Fuentes científicas" board; one `use` line per dataset in `src/data/real/` |
 
