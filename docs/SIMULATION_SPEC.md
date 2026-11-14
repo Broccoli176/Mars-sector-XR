@@ -463,7 +463,8 @@ Every threshold in §3.0 must be readable on at least one of these panels. Wall-
 > **Implemented, phase 1 (2026-11-14):**
 > - **Where:** the tools hang on the hub tool wall (`src/rooms/hub/tools.js`).
 > - **Grab:** **grip button** in XR, **G** on desktop (`src/vr/Grab.js`). Prototype ray grab up to 3 m; direct grab is still the target.
-> - **Holster:** release within 0.25 m of a hip ring to holster (`src/vr/Holsters.js`).
+> - **Holster (belt):** two ways. (1) **Belt button**: B/Y on Quest (H on desktop) stows the held tool in that side's holster (the other one if it is full), and with an empty hand draws the tool from that side (or the other). A haptic tick confirms it. (2) Release within 0.3 m of a hip ring. The rings are faint when idle, bright while holding a tool and turn **green and bigger** when the tool is in snap range (`src/vr/Holsters.js`).
+> - **Belt follow:** the belt turns with the body, not the head: it ignores head turns within ±35° (`followDeadzoneDeg`) and is dragged along beyond that, so looking down at it does not move it.
 > - **Back to the wall:** release within 0.35 m of its hook.
 > - **Drop:** anywhere else it falls (kinematic) and returns to the wall after 10 real s.
 > - **Config:** `src/data/balance/hub.json` (`tools`, `components` = §6.1 table, `holster`, `toolWall`).

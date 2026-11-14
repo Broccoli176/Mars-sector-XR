@@ -106,6 +106,9 @@ const xr = new XRControls(renderer, dolly, interaction, locomotion);
 const desktop = new DesktopControls(renderer.domElement, renderer, dolly, camera, interaction, locomotion);
 xr.grab = grab; // grip button
 desktop.grab = grab; // G key (dev)
+xr.holsters = holsters; // B/Y belt button
+desktop.holsters = holsters; // H key (dev)
+holsters.grab = grab; // rings light up while holding a tool
 const keyboard = new KeyboardLocomotion(renderer, camera, dolly, locomotion, collider);
 if (devParams.has('iwer') || devParams.has('debug')) {
   // Do not expose the THREE namespace here: referencing it as a value defeats tree-shaking.

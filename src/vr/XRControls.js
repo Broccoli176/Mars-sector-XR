@@ -8,10 +8,12 @@ const SNAP_ANGLE = THREE.MathUtils.degToRad(30);
 const STICK_THRESHOLD = 0.7;
 const STICK_RESET = 0.3;
 const GRAB_RANGE = 3; // m — prototype ray grab (direct grab is the spec target)
+const BELT_BUTTON = 5; // xr-standard: B (right) / Y (left) — stow/draw a tool on the belt
 
 /**
  * Quest controllers: ray + trigger to press buttons or teleport onto floors, grip button to grab/release
  * tools (src/vr/Grab.js), thumbstick snap turn. While holding an object with `onUse`, the trigger uses it.
+ * B/Y: stow the held tool in the belt holster on that side, or draw one with an empty hand (src/vr/Holsters.js).
  * Prototype note: physical controls are pressed with the ray; direct grab comes later (AGENTS.md §2).
  */
 export class XRControls {
@@ -33,6 +35,8 @@ export class XRControls {
     this.onLeftGrip = () => {};
     /** @type {import('./Grab.js').Grab | null} set by main.js */
     this.grab = null;
+    /** @type {import('./Holsters.js').Holsters | null} set by main.js */
+    this.holsters = null;
 
     this.reticle = new THREE.Mesh(
       new THREE.RingGeometry(0.12, 0.16, 32).rotateX(-Math.PI / 2),
@@ -67,6 +71,7 @@ export class XRControls {
       controller.add(dot);
       controller.userData.dot = dot;
       controller.userData.stickArmed = true;
+      controller.userData.beltDown = false;
       controller.addEventListener('connected', (e) => {
         controller.userData.inputSource = e.data;
         if (e.data.handedness === 'left') {
@@ -87,6 +92,7 @@ export class XRControls {
       dolly.add(controller);
 
       const grip = renderer.xr.getControllerGrip(i);
+      controller.userData.grip = grip;
       const model = modelFactory.createControllerModel(grip);
       const fallback = new THREE.Mesh(fallbackGeometry, fallbackMaterial);
       grip.add(model, fallback);
@@ -130,8 +136,21 @@ export class XRControls {
         reticleShown = true;
       }
       this.#snapTurn(controller);
+      this.#beltButton(controller, this.controllers.indexOf(controller));
     }
     this.reticle.visible = reticleShown;
+  }
+
+  /** B/Y pressed (edge): stow or draw on the belt, with a haptic tick. @param {THREE.Object3D} controller @param {number} i */
+  #beltButton(controller, i) {
+    const source = controller.userData.inputSource;
+    const pressed = Boolean(source?.gamepad?.buttons[BELT_BUTTON]?.pressed);
+    if (pressed && !controller.userData.beltDown && this.holsters) {
+      const side = source.handedness === 'left' ? -1 : 1;
+      const ok = this.holsters.toggle('xr' + i, side, controller.userData.grip);
+      pulse(source, ok ? 0.6 : 0.15, ok ? 60 : 25);
+    }
+    controller.userData.beltDown = pressed;
   }
 
   /** @param {THREE.Object3D} controller */
@@ -145,5 +164,14 @@ export class XRControls {
     } else if (Math.abs(x) < STICK_RESET) {
       controller.userData.stickArmed = true;
     }
+  }
+}
+
+/** Short vibration on the controller, if supported. @param {any} source XRInputSource @param {number} intensity @param {number} ms */
+function pulse(source, intensity, ms) {
+  try {
+    source?.gamepad?.hapticActuators?.[0]?.pulse?.(intensity, ms);
+  } catch {
+    // haptics are optional
   }
 }

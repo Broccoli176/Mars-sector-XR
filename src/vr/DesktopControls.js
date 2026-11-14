@@ -7,7 +7,7 @@ const GRAB_RANGE = 3; // m
 /**
  * Development-only desktop controls (not a gameplay fallback): drag to look,
  * click to press buttons or teleport onto the floor under the cursor, G to grab/release the tool under the cursor,
- * hold F to use the held object (e.g. spray with the hydro hose), R to flip the held object.
+ * hold F to use the held object (e.g. spray with the hydro hose), R to flip the held object, H = belt (stow/draw).
  * Keyboard movement lives in KeyboardLocomotion (works on desktop and in XR emulators).
  */
 export class DesktopControls {
@@ -32,6 +32,8 @@ export class DesktopControls {
     this.drag = null;
     /** @type {import('./Grab.js').Grab | null} set by main.js */
     this.grab = null;
+    /** @type {import('./Holsters.js').Holsters | null} set by main.js */
+    this.holsters = null;
     // Desktop "hand": an anchor in front of the camera, bottom-right of the view.
     this.hand = new THREE.Group();
     this.hand.position.set(0.22, -0.2, -0.45);
@@ -47,6 +49,8 @@ export class DesktopControls {
       if (e.code === 'KeyF' && !e.repeat && !this.renderer.xr.isPresenting) this.grab?.use('desktop', true);
       // R flips the held object (e.g. a diode's orientation at the electronics bench; in XR you turn your wrist).
       if (e.code === 'KeyR' && !e.repeat && !this.renderer.xr.isPresenting) this.grab?.held.get('desktop')?.rotateY(Math.PI);
+      // H = belt button (B/Y in XR): stow the held tool, or draw one with an empty hand (right side first).
+      if (e.code === 'KeyH' && !e.repeat && !this.renderer.xr.isPresenting) this.holsters?.toggle('desktop', 1, this.hand);
     });
     window.addEventListener('keyup', (e) => {
       if (e.code === 'KeyF') this.grab?.use('desktop', false);

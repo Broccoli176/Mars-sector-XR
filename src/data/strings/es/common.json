@@ -69,5 +69,5 @@
   "comms.storm.forecast": "Previsión: tormenta de polvo en {hours} h. Duración estimada {duration} h.",
   "comms.storm.start": "Tormenta activa: solar al 20 %.",
   "comms.storm.end": "Tormenta finalizada.",
-  "dev.help": "Teclado (escritorio y emulador): W/S avanzar/retroceder · A/D lateral · Q/E o ←/→ girar · G coger/soltar · F (mantén) usar lo que sostienes · R girar lo que sostienes. Ratón: arrastra para mirar · clic para usar o teletransportarte. En el visor: botón «ENTER VR»."
+  "dev.help": "Teclado (escritorio y emulador): W/S avanzar/retroceder · A/D lateral · Q/E o ←/→ girar · G coger/soltar · F (mantén) usar lo que sostienes · R girar lo que sostienes · H cinturón (guardar/sacar). Ratón: arrastra para mirar · clic para usar o teletransportarte. En el visor: botón «ENTER VR»."
 }
