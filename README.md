@@ -37,7 +37,8 @@ npm run build && npm run preview
 | :-- | :-- |
 | Quest 3 | Botón «ENTER VR». Apunta con el rayo y aprieta el gatillo para pulsar botones o teletransportarte al suelo (aparece un aro azul). Stick: giro de 30°. Biomonitor en la muñeca izquierda |
 | Teclado (escritorio **y** dentro de VR en el emulador) | **W/S** (o ↑/↓) avanzar/retroceder hacia donde miras · **A/D** lateral · **Q/E** (o ←/→) girar: continuo en escritorio, saltos de 30° en VR. No atraviesa paredes: solo cruza por las puertas |
-| Ratón (solo escritorio, desarrollo) | Arrastra para mirar, clic para pulsar o teletransportarte |
+| Ratón (solo escritorio, desarrollo) | Arrastra para mirar, clic para pulsar o teletransportarte. **G**: coger o soltar la herramienta bajo el cursor (mira hacia abajo y pulsa G para enfundarla en la cadera) |
+| Agarre en VR | **Botón de agarre (grip)** del mando: coger o soltar herramientas. Suéltala junto al anillo de la cadera para enfundarla, o junto a su silueta en la pared para colgarla |
 
 **Immersive Web Emulator:** haz clic una vez en la página para darle el foco al teclado; si no, las teclas van al panel del emulador. Los mandos se ven con el modelo real del Quest (se descarga de la CDN de WebXR input profiles; sin conexión aparece una caja gris).
 

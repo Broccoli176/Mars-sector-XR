@@ -210,6 +210,11 @@ Los tanques de O₂ de emergencia usan `valve:turn` (`valve_o2_tank_1/2`). Pendi
 - **Soporte vital y comida:** `thermostat:set`, `valve:turn` (tanques O₂), `filter:swap`/`swapped`, `food:harvest`/`harvested`/`ready`/`spoiled`, `crew:damage`.
 - **Incidentes y avisos:** `incident:warning`/`triggered`, `weather:changed`, `comms:message`, `hint`.
 - **Telecom:** `antenna:align` (intent); escucha `component:damaged`/`system:repaired` para `antenna_motor`.
+- **Herramientas (presentación, fase 1):**
+  - `item:grab { itemId, hand }`
+  - `item:release { itemId }` (cae al suelo)
+  - `item:socket { itemId, slot: 'SKT_Holster_L' | 'SKT_Holster_R' | 'toolwall' }`
+  - Los emite `src/rooms/hub/tools.js`; la simulación aún no los consume (fase 2: reparaciones).
 
 El resto sigue **propuesto**.
 
@@ -330,6 +335,8 @@ Parámetros de URL solo de desarrollo:
 - `?ff=ticks`: adelanta la simulación al iniciar turno.
 - `?iwer`: emulación de Quest 3 con el runtime IWER de Meta, carga diferida y sin extensión.
 - `?debug`: expone `window.__marte`.
+
+Agarre: botón de agarre (grip) del mando en XR, tecla **G** en escritorio (`src/vr/Grab.js`). Hay fundas en la cadera (`src/vr/Holsters.js`).
 
 Locomoción de desarrollo por teclado (`src/vr/KeyboardLocomotion.js`): WASD + Q/E. Funciona también dentro de sesiones XR emuladas. Colisión en `src/vr/Collision.js`:
 - El cuerpo es un círculo de 0,22 m que choca con paredes y marcos (derivados de `layout.json`) y con los muebles sólidos de las estaciones, y se desliza a lo largo de ellos.

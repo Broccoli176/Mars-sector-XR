@@ -2,7 +2,8 @@ import * as THREE from 'three';
 
 /**
  * Ray picking shared by XR controllers and the desktop dev mode.
- * The first hit decides: interactive → activate, teleport floor → move, anything else blocks.
+ * The first hit decides: interactive → activate, teleport floor → move, grabbable (userData.grab) → can be
+ * grabbed with the grip button / G key, anything else blocks.
  */
 export class Interaction {
   /**
@@ -20,14 +21,16 @@ export class Interaction {
 
   /**
    * @param {THREE.Raycaster} raycaster
-   * @returns {null | { kind: 'interactive' | 'floor' | 'blocked', object: THREE.Object3D, point: THREE.Vector3, distance: number }}
+   * @returns {null | { kind: 'interactive' | 'grabbable' | 'floor' | 'blocked', object: THREE.Object3D, point: THREE.Vector3, distance: number }}
    */
   pick(raycaster = this.raycaster) {
     const hits = raycaster.intersectObjects([...this.interactive, ...this.floors, ...this.blockers], false);
     const hit = hits[0];
     if (!hit) return null;
     const { object } = hit;
-    const kind = object.userData.interactive ? 'interactive' : object.userData.teleport ? 'floor' : 'blocked';
+    const kind = object.userData.grab
+      ? 'grabbable'
+      : object.userData.interactive ? 'interactive' : object.userData.teleport ? 'floor' : 'blocked';
     return { kind, object, point: hit.point, distance: hit.distance };
   }
 

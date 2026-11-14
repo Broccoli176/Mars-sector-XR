@@ -2,10 +2,11 @@ import * as THREE from 'three';
 
 const LOOK_SPEED = 0.0035;
 const DRAG_THRESHOLD = 5; // px
+const GRAB_RANGE = 3; // m
 
 /**
  * Development-only desktop controls (not a gameplay fallback): drag to look,
- * click to press buttons or teleport onto the floor under the cursor.
+ * click to press buttons or teleport onto the floor under the cursor, G to grab/release the tool under the cursor.
  * Keyboard movement lives in KeyboardLocomotion (works on desktop and in XR emulators).
  */
 export class DesktopControls {
@@ -28,6 +29,29 @@ export class DesktopControls {
     this.pointer = new THREE.Vector2();
     /** @type {null | { x: number, y: number, moved: boolean }} */
     this.drag = null;
+    /** @type {import('./Grab.js').Grab | null} set by main.js */
+    this.grab = null;
+    // Desktop "hand": an anchor in front of the camera, bottom-right of the view.
+    this.hand = new THREE.Group();
+    this.hand.position.set(0.22, -0.2, -0.45);
+    camera.add(this.hand);
+    /** Last pointer position in normalized device coordinates (for G). */
+    this.lastPointer = new THREE.Vector2(0, 0);
+
+    dom.addEventListener('pointermove', (e) => {
+      const rect = dom.getBoundingClientRect();
+      this.lastPointer.set(((e.clientX - rect.left) / rect.width) * 2 - 1, -((e.clientY - rect.top) / rect.height) * 2 + 1);
+    });
+    window.addEventListener('keydown', (e) => {
+      if (e.code !== 'KeyG' || e.repeat || this.renderer.xr.isPresenting || !this.grab) return;
+      if (this.grab.isHolding('desktop')) {
+        this.grab.release('desktop');
+        return;
+      }
+      this.raycaster.setFromCamera(this.lastPointer, this.camera);
+      const hit = this.interaction.pick(this.raycaster);
+      if (hit?.kind === 'grabbable' && hit.distance <= GRAB_RANGE) this.grab.grab(hit.object, this.hand, 'desktop');
+    });
 
     dom.addEventListener('pointerdown', (e) => {
       this.drag = { x: e.clientX, y: e.clientY, moved: false };

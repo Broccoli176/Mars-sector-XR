@@ -43,13 +43,15 @@ export function renderBio(panel, s, t) {
 /**
  * Creates the per-scene kit passed to every room builder as `kit`.
  * Room builders must only READ simulation state (`kit.sim()`) and emit intents (`kit.game.intent()`).
- * @param {{ game: import('../core/Game.js').Game, t: Function, interactive: THREE.Object3D[] }} ctx
+ * @param {{ game: import('../core/Game.js').Game, t: Function, interactive: THREE.Object3D[], services?: Record<string, any> }} ctx
  */
-export function createStationKit({ game, t, interactive }) {
+export function createStationKit({ game, t, interactive, services = {} }) {
   /** @type {Button[]} */
   const buttons = [];
   /** @type {(() => void)[]} */
   const refreshers = [];
+  /** @type {((dt: number) => void)[]} */
+  const frameFns = [];
   /** @type {THREE.Mesh[]} solid furniture: collision + teleport ray blockers */
   const solids = [];
 
@@ -81,6 +83,19 @@ export function createStationKit({ game, t, interactive }) {
     lambert,
     solids,
     registerButton,
+    /** Scene-level helpers from main.js: { scene, grab, holsters, floors }. */
+    services,
+
+    /** Makes an object pickable by the ray (buttons, grabbable tools). @param {THREE.Object3D} obj */
+    registerInteractive(obj) {
+      interactive.push(obj);
+      return obj;
+    },
+
+    /** Called every frame with real seconds (animations). @param {(dt: number) => void} fn */
+    onFrame(fn) {
+      frameFns.push(fn);
+    },
 
     /** Called at 4 Hz to redraw panels from simulation state. @param {() => void} fn */
     onRefresh(fn) {
@@ -130,6 +145,7 @@ export function createStationKit({ game, t, interactive }) {
     /** @internal used by Stations.js @param {number} dt */
     _animate(dt) {
       for (const b of buttons) b.update(dt);
+      for (const fn of frameFns) fn(dt);
     },
   };
 }

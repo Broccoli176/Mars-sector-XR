@@ -67,7 +67,7 @@ Panel centres at 1.2–1.5 m height.
 | Energía y oxígeno | **N:** breaker wall (6 breakers + relay reset + demand meter). **E:** O₂/CO₂/pressure/temperature gauges. **S:** CO₂ scrubber with filter socket; 2 emergency O₂ tanks + electrolyzer. **W** (by the door): thermostat |
 | Hidroponía · Agricultura | **W:** grow racks with plants + "Cosechar" (panel shows the real lettuce cycle, CSA). **N:** water tank + recycler status; **crop guide** with real CSA data (`hydro_cropguide`). **S:** ration locker + kcal |
 | Telecom / Esclusa | **N:** panoramic window (opening x −8.4…−6.6, y 1.1…2.1; 3D Mars diorama `src/world/Porthole.js`) with the operator console under it (status panel, "Alinear antena" button on the desk) and the antenna motor unit. **W:** airlock hatch (wheel + status LED) |
-| Sala central · Herramientas | **E:** training bench + mission board (`PANEL_TrainingBoard`, also has "Iniciar turno"). **N:** "Fuentes científicas" board (`hub_sources`, real-data attribution). Tool wall / spares locker pending |
+| Sala central · Herramientas | **E:** training bench + mission board (`PANEL_TrainingBoard`, "Iniciar turno", live checklist for mission T1). **N:** "Fuentes científicas" board (`hub_sources`, real-data attribution). **S:** tool wall with 4 grabbable tools (`hub_toolwall`, x ≈ 1.95) and spares locker with live counters (`hub_spares`, x ≈ −1.95). **W:** component status board (`hub_status`, z ≈ −1.6) |
 | Personal | **W:** dosimeter with real Mars-surface radiation (`personal_dosimeter`, NASA OSDR RadLab / MSL RAD). **S:** bunk. **N:** locker |
 
 ## 5) Teleport, spawn and flow

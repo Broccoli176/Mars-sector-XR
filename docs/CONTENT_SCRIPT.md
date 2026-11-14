@@ -117,3 +117,12 @@ Each mission has `stepN` keys for multi-step hints (e.g. `tutorial.t3.step2` = "
 | `personal.dosimeter.*` | `strings/es/personal.json` | Dosimeter: rate, shift dose, ISS comparison, chart label, context, **source + "no en vivo"** |
 | `hydro.guide.*`, `hydro.led.*`, `real.crop.*`, `ui.hydro.real_cycle` | `strings/es/hydro.json` | CSA crop guide, LEDs, crop names, real cycle on the rack panel |
 | `hub.sources.*` (incl. `hub.sources.use.<datasetId>`) | `strings/es/hub.json` | "Fuentes científicas" board; one `use` line per dataset in `src/data/real/` |
+
+## 8) Hub tools (Person A)
+
+| Keys | Content |
+| :-- | :-- |
+| `hub.tool.*` | Tool names (wrench, screwdriver, soldering iron, sealant gun) |
+| `hub.comp.*` | Repairable components (spec §6.1) |
+| `hub.toolwall.*`, `hub.spares.*`, `hub.status.*` | Tool wall, spares locker, component status board |
+| `hub.t1.*` | Training mission T1 checklist |
