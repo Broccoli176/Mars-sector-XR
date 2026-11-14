@@ -14,7 +14,9 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "sim": "node scripts/simulate.js",
-    "data:radlab": "node scripts/fetch-radlab.js"
+    "data:radlab": "node scripts/fetch-radlab.js",
+    "data:osdr": "node scripts/fetch-osdr.js",
+    "data:donki": "node scripts/fetch-donki.js"
   },
   "dependencies": {
     "mitt": "3.0.1",

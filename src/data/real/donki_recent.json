@@ -1,0 +1,25 @@
+{
+  "_about": "Embedded REAL snapshot (offline fallback, not live). Regenerate with `npm run data:donki`.",
+  "source": {
+    "institution": "NASA Community Coordinated Modeling Center (CCMC)",
+    "product": "DONKI — Space Weather Database Of Notifications, Knowledge, Information (via api.nasa.gov)",
+    "url": "https://api.nasa.gov/",
+    "endpoints": [
+      "https://api.nasa.gov/DONKI/CME",
+      "https://api.nasa.gov/DONKI/GST",
+      "https://api.nasa.gov/DONKI/SEP"
+    ],
+    "retrievedAt": "2026-11-14"
+  },
+  "range": {
+    "start": "2026-11-07",
+    "end": "2026-11-14"
+  },
+  "summary": {
+    "cmeCount": 23,
+    "fastestCmeKms": 974,
+    "gstCount": 0,
+    "maxKp": null,
+    "sepCount": 0
+  }
+}

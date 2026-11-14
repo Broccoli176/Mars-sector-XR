@@ -5,6 +5,7 @@
 // To add a station: add an entry to stations/personal.json and a builder with the same id below
 // (see src/rooms/hub/stations.js for a small panel + button example).
 import { COLORS } from '../../ui/StationKit.js';
+import { createSpaceWeatherFeed } from './spaceWeatherLive.js';
 
 /** @type {Record<string, (g: import('three').Group, station: any, kit: import('../../ui/StationKit.js').StationKit) => void>} */
 export const builders = {
@@ -35,6 +36,59 @@ export const builders = {
 
   personal_locker(g, station, kit) {
     kit.addBox(g, 0.8, 1.9, 0.5, 0, 0.95 - station.y, 0.25, '#56606b');
+  },
+
+  /**
+   * "El Sol ahora": NASA DONKI space weather, LIVE when the browser can reach api.nasa.gov,
+   * otherwise the embedded snapshot — and the panel always says which one it is.
+   */
+  personal_spaceweather(g, _station, kit) {
+    const { t } = kit;
+    const fallback = kit.game.data.real?.donki_recent ?? null;
+    const apiKey = import.meta.env?.VITE_NASA_API_KEY || 'DEMO_KEY';
+    const feed = createSpaceWeatherFeed({ apiKey, fallback });
+    feed.start();
+    const panel = kit.addPanel(g, 0.95, 0.72);
+    kit.onRefresh(() => {
+      const st = feed.state;
+      const s = st.summary;
+      /** @type {{ text: string, color?: string, size?: number }[]} */
+      const lines = [];
+      if (st.status === 'live') {
+        const time = st.fetchedAt ? `${String(st.fetchedAt.getHours()).padStart(2, '0')}:${String(st.fetchedAt.getMinutes()).padStart(2, '0')}` : '';
+        lines.push({ text: t('personal.sun.live', { time }), color: COLORS.nominal, size: 0.9 });
+      } else if (st.status === 'snapshot') {
+        lines.push({ text: t('personal.sun.snapshot', { date: formatDay(st.retrievedAt ?? '') }), color: COLORS.warning, size: 0.9 });
+      } else {
+        lines.push({ text: t('personal.sun.unavailable'), color: COLORS.warning });
+      }
+      if (s) {
+        lines.push({ text: t('personal.sun.cme', { n: s.cmeCount }), size: 1.05 });
+        if (s.fastestCmeKms) lines.push({ text: t('personal.sun.fastest', { kms: s.fastestCmeKms }) });
+        lines.push({ text: t('personal.sun.storms', { n: s.gstCount, sep: s.sepCount }) });
+        lines.push({ text: t('personal.sun.explain'), color: COLORS.dim, size: 0.8 });
+      }
+      lines.push({ text: t('personal.sun.source'), color: COLORS.dim, size: 0.7 });
+      panel.renderLines(t('personal.sun.title'), lines, { border: st.status === 'live' ? COLORS.nominal : COLORS.border });
+    });
+  },
+
+  /** "Salud del astronauta": real NASA OSDR studies with kid-friendly summaries (static, dated). */
+  personal_health(g, _station, kit) {
+    const { t } = kit;
+    const osdr = kit.game.data.real?.osdr_health;
+    const panel = kit.addPanel(g, 1.05, 0.8);
+    if (!osdr) {
+      panel.renderLines(t('personal.health.title'), [{ text: t('personal.health.no_data'), color: COLORS.warning }]);
+      return;
+    }
+    panel.renderLines(t('personal.health.title'), [
+      ...osdr.studies.flatMap((/** @type {any} */ s) => [
+        { text: `${s.accession} · ${t(`personal.health.where.${s.topic}`)}`, color: COLORS.info, size: 0.75 },
+        { text: t(s.summaryKey), size: 0.8 },
+      ]),
+      { text: t('personal.health.source', { date: formatDay(osdr.source.retrievedAt) }), color: COLORS.dim, size: 0.7 },
+    ]);
   },
 };
 

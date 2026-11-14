@@ -46,6 +46,11 @@
 /scripts/fetch-radlab.js            @Broccoli176
 /src/systems/Radiation.js           @Broccoli176
 /tests/radiation.test.js            @Broccoli176
+/src/data/real/osdr_health.json     @Broccoli176
+/src/data/real/donki_recent.json    @Broccoli176
+/scripts/fetch-osdr.js              @Broccoli176
+/scripts/fetch-donki.js             @Broccoli176
+/tests/spaceweather.test.js         @Broccoli176
 
 # --- Persona A: hub tools ---
 /src/data/balance/hub.json          @Broccoli176
