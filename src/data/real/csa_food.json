@@ -1,0 +1,38 @@
+{
+  "_about": "Curated REAL facts (static, not live) from the Canadian Space Agency 'Food production' toolkit. Only cited facts/figures; no copied images. Edit by hand if the pages change.",
+  "source": {
+    "institution": "Canadian Space Agency (CSA) — Government of Canada",
+    "product": "Toolkit for educators and youth — Food production",
+    "url": "https://www.asc-csa.gc.ca/eng/youth-educators/toolkits/food-production/",
+    "terms": "https://www.asc-csa.gc.ca/eng/terms.asp",
+    "retrievedAt": "2026-11-14"
+  },
+  "crops": {
+    "url": "https://www.asc-csa.gc.ca/eng/youth-educators/activities/fitness-and-nutrition/interplanetary-farming.asp",
+    "note": "Approximate growth time in days (CSA activity 'Interplanetary Farming')",
+    "items": [
+      { "id": "lettuce", "nameKey": "real.crop.lettuce", "daysMin": 21, "daysMax": 28 },
+      { "id": "soybean", "nameKey": "real.crop.soybean", "daysMin": 45, "daysMax": 65 },
+      { "id": "tomato", "nameKey": "real.crop.tomato", "daysMin": 50, "daysMax": 90 },
+      { "id": "carrot", "nameKey": "real.crop.carrot", "daysMin": 70, "daysMax": 80 },
+      { "id": "sweet_potato", "nameKey": "real.crop.sweet_potato", "daysMin": 90, "daysMax": 170 },
+      { "id": "wheat", "nameKey": "real.crop.wheat", "daysMin": 213, "daysMax": 244 }
+    ]
+  },
+  "gameCropId": "lettuce",
+  "crewDiet": {
+    "url": "https://www.asc-csa.gc.ca/eng/sciences/food-production/growing-healthy-food-in-space-and-remote-areas.asp",
+    "kcalPerDayMin": 1900,
+    "kcalPerDayMax": 3200,
+    "note": "ISS menus contain between 1900 and 3200 calories per day, depending on each crewmember"
+  },
+  "plantHabitat": {
+    "url": "https://www.asc-csa.gc.ca/eng/youth-educators/activities/fitness-and-nutrition/interplanetary-farming.asp",
+    "aphLeds": ["white", "red", "blue", "green"],
+    "note": "Advanced Plant Habitat (ISS) regulates temperature, oxygen and CO2; Veggie uses 'plant pillows' with clay, fertilizer and seeds"
+  },
+  "plantsLifeSupport": {
+    "url": "https://www.asc-csa.gc.ca/eng/youth-educators/tomatosphere.asp",
+    "note": "Plants can provide food, produce oxygen, and recycle carbon dioxide and some organic waste (Tomatosphere)"
+  }
+}

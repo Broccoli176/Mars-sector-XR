@@ -15,4 +15,9 @@ const stations = mergeStationLists(entries(import.meta.glob('./stations/*.json',
 
 const layout = { ...layoutGeometry, stations };
 
-export const gameData = { resources, balance, events, layout, strings };
+// Real-world datasets (embedded snapshots, NOT live): real/<name>.json → gameData.real.<name>
+const real = Object.fromEntries(
+  entries(import.meta.glob('./real/*.json', { eager: true })).map(([file, data]) => [file.replace(/\.json$/, ''), data]),
+);
+
+export const gameData = { resources, balance, events, layout, strings, real };

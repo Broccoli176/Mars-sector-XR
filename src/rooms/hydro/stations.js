@@ -1,5 +1,6 @@
 // OWNER: user (Personal · Hydro · Hub) — see docs/COLLABORATION.md
-// Hidroponía · Agricultura: grow racks + plants + harvest, water tank, rations.
+// Hidroponía · Agricultura: grow racks + plants + harvest, water tank, rations, CSA crop guide.
+// Real facts (crop cycles, crew diet, plant habitats) come from src/data/real/csa_food.json (CSA, static).
 // Placement: src/data/stations/hydro.json
 import * as THREE from 'three';
 import { COLORS, BUTTON, statusColor } from '../../ui/StationKit.js';
@@ -39,7 +40,10 @@ export const builders = {
       foliage.instanceMatrix.needsUpdate = true;
     };
     let lastScale = -1;
-    const panel = kit.addPanel(g, 0.8, 0.3, 0, 0.12);
+    const panel = kit.addPanel(g, 0.8, 0.38, 0, 0.15);
+    // The game crop is a real crop (CSA data); its growth is time-compressed and labelled as such.
+    const csa = kit.game.data.real?.csa_food;
+    const crop = csa?.crops.items.find((/** @type {any} */ c) => c.id === csa.gameCropId);
     const harvest = kit.addButton(g, { width: 0.3, height: 0.09, label: t('ui.hydro.harvest'),
       onSelect: () => game.intent('food:harvest') }, 0, -0.12);
     kit.onRefresh(() => {
@@ -51,6 +55,7 @@ export const builders = {
         : [t('ui.hydro.growth', { value: f.growthHours.toFixed(1), total: cfg.growthHoursToReady })];
       if (f.neglectHours > 0) lines.push({ text: t('ui.hydro.neglect', { hours: f.neglectHours.toFixed(1), limit: cfg.spoilWithoutCareHours }), color: COLORS.critical });
       lines.push(t('ui.hydro.lights', { state: t(f.lightsOn ? 'ui.state.running' : s.power.served.hydro ? 'ui.state.idle' : 'ui.state.unpowered') }));
+      if (crop) lines.push({ text: t('ui.hydro.real_cycle', { name: t(crop.nameKey), min: crop.daysMin, max: crop.daysMax }), color: COLORS.dim, size: 0.8 });
       panel.renderLines(t('ui.hydro.title'), lines);
       harvest.setState(t('ui.hydro.harvest'), f.ready ? BUTTON.warn : BUTTON.off);
       const scale = 0.4 + 0.6 * Math.min(1, f.growthHours / cfg.growthHoursToReady);
@@ -78,6 +83,30 @@ export const builders = {
     });
   },
 
+  hydro_cropguide(g, _station, kit) {
+    const { t, sim } = kit;
+    const csa = kit.game.data.real?.csa_food;
+    const panel = kit.addPanel(g, 1.05, 0.72);
+    if (!csa) {
+      panel.renderLines(t('hydro.guide.title'), [{ text: t('hydro.guide.no_data'), color: COLORS.warning }]);
+      return;
+    }
+    kit.onRefresh(() => {
+      const kcalPerDay = Math.round((sim().balance.food.consumptionPerHour * 24) / 100) * 100;
+      panel.renderLines(t('hydro.guide.title'), [
+        ...csa.crops.items.map((/** @type {any} */ c) => ({
+          text: t('hydro.guide.crop', { name: t(c.nameKey), min: c.daysMin, max: c.daysMax }),
+          color: c.id === csa.gameCropId ? COLORS.nominal : COLORS.text,
+          size: 0.85,
+        })),
+        { text: t('hydro.guide.o2'), size: 0.8 },
+        { text: t('hydro.guide.leds', { leds: csa.plantHabitat.aphLeds.map((/** @type {string} */ l) => t(`hydro.led.${l}`)).join(', ') }), size: 0.8 },
+        { text: t('hydro.guide.diet', { min: csa.crewDiet.kcalPerDayMin, max: csa.crewDiet.kcalPerDayMax, game: kcalPerDay }), size: 0.8 },
+        { text: t('hydro.guide.source', { date: formatDay(csa.source.retrievedAt) }), color: COLORS.dim, size: 0.7 },
+      ]);
+    });
+  },
+
   hydro_food(g, _station, kit) {
     const { t, sim } = kit;
     const panel = kit.addPanel(g, 0.6, 0.32);
@@ -90,3 +119,9 @@ export const builders = {
     });
   },
 };
+
+/** "2026-11-14" → "14/11/2026" */
+function formatDay(/** @type {string} */ iso) {
+  const [y, m, d] = iso.split('-');
+  return `${d}/${m}/${y}`;
+}

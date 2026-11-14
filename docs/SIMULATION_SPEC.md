@@ -344,6 +344,20 @@ Source: `docs/references/registro_nasa_donki.md` (NASA CCMC DONKI, 7 days ending
 
 Events: `spaceWeather:alert { kind: 'cme' | 'flare', speedKms?, etaHours? }`, `spaceWeather:impact { kind }`.
 
+### 6.5 Real-data grounding (Person A rooms)
+
+Real data are embedded as **static, dated snapshots** and labelled in-world as "no en vivo" (`src/data/real/*.json`, listed on the hub "Fuentes científicas" board).
+
+| Data | Source | Game use | Rule |
+| :-- | :-- | :-- | :-- |
+| Mars-surface absorbed dose rate, 24 h on 2023-01-01 (MSL RAD, ≈ 5.8–7.5 µGy/h, mean ≈ 6.5) | NASA OSDR RadLab | `systems/Radiation.js`: the game time of day replays the real record (UTC), and the surface dose accumulates during the shift. Personal dosimeter shows rate, chart and dose | **Informational only: no health damage.** The sources give no threshold, and the base is regolith-shielded; no shielding factor is invented |
+| ISS DosTel same day (median ≈ 4.7 µGy/h; SAA spikes to ≈ 510) | NASA OSDR RadLab | Comparison line on the dosimeter (median, not mean) | — |
+| Crop growth times (lettuce 21–28 d, tomato 50–90 d, …) | CSA food-production toolkit | Hidroponía guide; the game crop **is lettuce** and its growth is **time-compressed** (48 game hours), labelled so in-world | Do not present the compressed time as real |
+| Crew diet 1900–3200 kcal/day | CSA | Validates `food.consumptionPerHour` (≈ 2500 kcal/day) | Keep the value inside the range |
+| Plants produce O₂ and recycle CO₂; APH LEDs white/red/blue/green | CSA | Facts on the Hidroponía guide | Not yet a gas-exchange mechanic |
+
+Refresh: `npm run data:radlab -- YYYY-MM-DD` (Node, no CORS), and edit `csa_food.json` by hand. The ISS DosTel data has no coverage in 2024, so 2023-01-01 is used for both series.
+
 ### 6.4 RNG
 - `mulberry32` seeded PRNG.
 - New run seed = `Date.now()`; override with the URL param `?seed=` for tests and demos.

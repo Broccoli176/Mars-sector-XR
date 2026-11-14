@@ -1,1 +1,23 @@
-[]
+[
+  {
+    "id": "personal_dosimeter",
+    "room": "room_personal",
+    "wall": "west",
+    "along": 0,
+    "y": 1.45
+  },
+  {
+    "id": "personal_bunk",
+    "room": "room_personal",
+    "wall": "south",
+    "along": -8.5,
+    "y": 0.5
+  },
+  {
+    "id": "personal_locker",
+    "room": "room_personal",
+    "wall": "north",
+    "along": -9.2,
+    "y": 1
+  }
+]

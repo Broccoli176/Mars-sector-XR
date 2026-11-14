@@ -51,6 +51,17 @@ Parámetros de desarrollo (combinables con `&`):
 - `?iwer`: activa el Quest 3 emulado sin extensión.
 - `?debug`: expone `window.__marte` para inspeccionar desde la consola.
 
+### Datos reales (NASA / CSA)
+
+El juego usa datos reales **embebidos como registros con fecha, no en vivo**. Se listan dentro del juego en el panel «Fuentes científicas» de la Sala central.
+
+| Datos | Fuente | Dónde se ven | Cómo actualizar |
+| :-- | :-- | :-- | :-- |
+| Radiación en la superficie de Marte (MSL RAD, Curiosity) e ISS, 24 h del 01/01/2023 | [NASA OSDR RadLab](https://visualization.osdr.nasa.gov/radlab/gui/data-api/) | Dosímetro (Personal) | `npm run data:radlab -- AAAA-MM-DD` |
+| Ciclos de cultivo, dieta de la tripulación, hábitats de plantas | [CSA – Food production](https://www.asc-csa.gc.ca/eng/youth-educators/toolkits/food-production/) | Guía de cultivos y bastidor (Hidroponía) | Editar `src/data/real/csa_food.json` |
+
+**Por qué no se consultan en vivo:** la API de RadLab no envía la cabecera CORS, así que el navegador del Quest no puede llamarla. Un script de Node descarga los datos en tu PC y el JSON se versiona.
+
 ### Testing en Quest 3
 
 WebXR requiere **contexto seguro**. Opciones típicas:
