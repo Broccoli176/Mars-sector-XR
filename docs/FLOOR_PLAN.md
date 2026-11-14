@@ -1,96 +1,94 @@
 # Floor Plan — Marte VR Survival
 
-> **Baseline (2026-11-14).** Dimensioned plan of the underground base, derived from the owner's sketch. It is the reference for the greybox (`docs/ASSET_CREATION_WORKFLOW.md` Stage 0/1) and for panel placement (`docs/SIMULATION_SPEC.md` §9.2). If the layout changes, update this file, the spec §9 and the `AGENT_CONTEXT.md` diagram in the same change.
+> **Baseline (2026-11-14, v2: hub layout).** A hub-and-spokes underground base derived from the owner's sketch. It is the reference for the greybox (`docs/ASSET_CREATION_WORKFLOW.md` Stage 0/1) and for panel placement (`docs/SIMULATION_SPEC.md` §9.2).
+> **Source of truth for coordinates:** `src/data/layout.json`. Walls, floors, collision, teleport and stations are all generated from it. If the layout changes, update that file, this document, the spec §9 and the `AGENT_CONTEXT.md` diagram in the same change.
 
 ---
 
 ## 1) Conventions
 
-- Three.js axes: **+x = east, +y = up, −z = north**. 1 unit = 1 m.
-- Origin: west end of the corridor centerline, at floor level (y = 0).
+- Three.js axes: **+x = east, +y = up, −z = north**. 1 unit = 1 m. Origin at the centre of the hub, floor level.
 - Dimensions are **interior**. Walls are 0.2 m thick, ceiling 2.6 m.
-- Doors: 0.8 × 2.0 m clear opening (kit frame 0.9 × 2.1 m outer).
+- Doors: 0.8 × 2.0 m clear opening, with a yellow frame. Hub openings to the north and south connectors: 1.8 × 2.3 m.
+- The owner's sketch has diagonal corridors. They are built as straight L-shaped corridors with the **same connections**, because the engine handles 90° walls only.
 
 ## 2) Plan
 
 ```
-                         EXTERIOR (regolito)
- z=-4.9 ┌───────[ESCLUSA]───┐ ░░ ┌───────────────────┐
-        │     TELECOM       │ ░░ │   SOPORTE VITAL   │
-        │     5 × 4 m       │ ░░ │     5 × 4 m       │ ┌────────────────────┐ z=-3
- z=-0.9 └──────┤ ├──────────┘ ░░ └───────┤ ├─────────┘ │                    │
-  x=0   ═══════════════  PASILLO 12 × 1.8 m  ═══════════▶   SALA PRINCIPAL    │
- z=+0.9 ┌──────┤ ├──────────┐ ░░ ┌───────┤ ├─────────┐ │      6 × 6 m       │
-        │      TALLER       │ ░░ │    HIDROPONÍA     │ │                    │
-        │     5 × 4 m       │ ░░ │     5 × 4 m       │ └────────────────────┘ z=+3
- z=+4.9 └───────────────────┘ ░░ └───────────────────┘      x=12 ─── x=18
-        x=0.5           x=5.5   x=6.5             x=11.5
+                          (exterior: Mars, seen through the window)
+   ┌────────[VENTANA]──┐                                   ┌──────────────────┐ z=-8.5
+   │     TELECOM       │                                   │  SALA DE CONTROL │
+   │      5 × 4        ├┤ ├═══════ north hall ════════┤ ├──┤      6 × 6       │
+   │   (airlock W)     │          10 × 1.8 m              │  (spawn, main PC)│
+   └───────────────────┘              ║                    └──────────────────┘ z=-2.5
+ z=-7.5…-3.5                   north connector
+ ┌──────────────────┐                ║
+ │    PERSONAL      │          ┌─────╨──────┐ z=-2.5
+ │      5 × 4       ├┤ ├═ west ═┤ ├  HUB /  │
+ │    (empty)       │ corridor │HERRAMIENTAS│
+ └──────────────────┘          │   6 × 5    │
+ z=-2…2                        └─────╥──────┘ z=2.5
+                               south connector
+   ┌──────────────────┐              ║                      ┌──────────────────┐ z=4.5
+   │   HIDROPONÍA ·   ├┤ ├═══════ south hall ══════════┤ ├──┤  ENERGÍA Y       │
+   │   AGRICULTURA    │           12 × 1.8 m                │  OXÍGENO  6 × 5  │
+   │      5 × 4       │                                     │                  │
+   └──────────────────┘ z=5…9                               └──────────────────┘ z=9.5
+   x=-10            x=-5     x=-0.9  x=0.9                  x=7               x=13
 
-   ┤ ├ = door (0.8 m)      ░░ = 1 m service shaft (conduits, not walkable)
-   ▶   = 1.8 m open archway into the main room
+   ┤ ├ = door 0.8 m      ║ / ═ = corridor (1.8 m wide)      [VENTANA] = panoramic window
 ```
 
-## 3) Rooms
+## 3) Areas
 
-| Room (player name) | id | x | z | Size | Door |
+| Area (player name) | id | x | z | Size | Doors / openings |
 | :-- | :-- | :-- | :-- | :-- | :-- |
-| Pasillo | `corridor` | 0 → 12 | −0.9 → 0.9 | 12 × 1.8 m | — |
-| Telecom / esclusa | `room_telecom` | 0.5 → 5.5 | −4.9 → −0.9 | 5 × 4 m | south wall, x = 3 |
-| Soporte Vital | `room_lifesupport` | 6.5 → 11.5 | −4.9 → −0.9 | 5 × 4 m | south wall, x = 9 |
-| Taller (electrónica/reparación) | `room_workshop` | 0.5 → 5.5 | 0.9 → 4.9 | 5 × 4 m | north wall, x = 3 |
-| Hidroponía | `room_hydro` | 6.5 → 11.5 | 0.9 → 4.9 | 5 × 4 m | north wall, x = 9 |
-| Sala principal | `room_central` | 12 → 18 | −3 → 3 | 6 × 6 m | 1.8 m archway, west wall |
-| Service shafts (×2) | `shaft_north`, `shaft_south` | 5.5 → 6.5 | north/south rows | 1 × 4 m | closed; seal panel on corridor side |
+| Sala central · Herramientas (hub) | `room_hub` | −3 → 3 | −2.5 → 2.5 | 6 × 5 m | N + S 1.8 m openings (x 0), W door (z 0) |
+| Sala de control | `room_control` | 5 → 11 | −8.5 → −2.5 | 6 × 6 m | W door (z −5.5) |
+| Telecom / Esclusa | `room_telecom` | −10 → −5 | −7.5 → −3.5 | 5 × 4 m | E door (z −5.5); window on the N wall |
+| Personal | `room_personal` | −11 → −6 | −2 → 2 | 5 × 4 m | E door (z 0). **Empty for now** |
+| Hidroponía · Agricultura | `room_hydro` | −10 → −5 | 5 → 9 | 5 × 4 m | E door (z 6.9) |
+| Energía y oxígeno | `room_energy` | 7 → 13 | 4.5 → 9.5 | 6 × 5 m | W door (z 6.9) |
+| North connector | `conn_north` | −0.9 → 0.9 | −4.6 → −2.5 | 1.8 × 2.1 m | — |
+| North hall | `hall_north` | −5 → 5 | −6.4 → −4.6 | 10 × 1.8 m | opening to the connector (x 0) |
+| West corridor | `hall_west` | −6 → −3 | −0.9 → 0.9 | 3 × 1.8 m | — |
+| South connector | `conn_south` | −0.9 → 0.9 | 2.5 → 6 | 1.8 × 3.5 m | — |
+| South hall | `hall_south` | −5 → 7 | 6 → 7.8 | 12 × 1.8 m | opening to the connector (x 0) |
 
-Checks: 0.5 + 5 + 1 + 5 + 0.5 = 12 m of corridor; 4 + 1.8 + 4 = 9.8 m total depth; the main room (6 m) is centered on z = 0. Sketch deviation: the main room does not span both rows; it stays at 6 × 6 m to keep the budget.
+Corridor areas (`light: false`) have emissive ceiling fixtures and colour-coded conduits but no point light. The 6 rooms have one point light each (Quest light budget).
 
 ## 4) Panel placement
 
-Panel centers at 1.2–1.5 m height; comfortable grab distance 0.4–0.7 m from the teleport anchor.
+Panel centres at 1.2–1.5 m height.
 
 | Room | Wall → elements |
 | :-- | :-- |
-| Sala principal | **E:** main PC (incl. periscope feed, "Iniciar turno"/"Continuar") + time lever. **N:** breaker wall (6 breakers + relay reset lever + demand meter). **S:** bio panel, log terminal (manual save), "Ajustes" panel near the archway |
-| Telecom | **N:** airlock hatch with porthole (only exterior view). **W:** radio console + antenna crank + signal gauge + message printer. **E:** `hull_seal_telecom` |
-| Soporte Vital | **N:** electrolyzer + 2 O₂ tanks (`valve_o2_tank_1/2`). **E:** scrubber with filter socket. **W:** O₂/CO₂/pressure gauges. **S (by the door):** thermostat dial |
-| Taller | **W:** tool wall. **S:** training bench + mission board (`PANEL_TrainingBoard`, also has "Iniciar turno"). **E:** workbench, spares locker, component status board |
-| Hidroponía | **S:** grow racks with crop status lights (harvest). **E:** water tank + gauge + `valve_recycler`. **W:** ration locker + kcal counter |
-| Pasillo | Emergency lights every 2 m; alarm beacon above each door; `hull_seal_corridor` on the north wall at the shaft (x = 6) |
+| Sala de control | **E:** main PC (incl. "Iniciar turno"/"Continuar") + time lever. **S:** bio panel. Settings panel and log terminal pending |
+| Energía y oxígeno | **N:** breaker wall (6 breakers + relay reset + demand meter). **E:** O₂/CO₂/pressure/temperature gauges. **S:** CO₂ scrubber with filter socket; 2 emergency O₂ tanks + electrolyzer. **W** (by the door): thermostat |
+| Hidroponía · Agricultura | **W:** grow racks with plants + "Cosechar". **N:** water tank + recycler status. **S:** ration locker + kcal |
+| Telecom / Esclusa | **N:** panoramic window (opening x −8.4…−6.6, y 1.1…2.1; 3D Mars diorama `src/world/Porthole.js`) with the operator console under it (status panel, "Alinear antena" button on the desk) and the antenna motor unit. **W:** airlock hatch (wheel + status LED) |
+| Sala central · Herramientas | **E:** training bench + mission board (`PANEL_TrainingBoard`, also has "Iniciar turno"). Tool wall / spares locker pending |
+| Personal | Nothing yet (door sign only) |
 
 ## 5) Teleport, spawn and flow
 
-| Anchor | Position (x, z) | Facing |
-| :-- | :-- | :-- |
-| `tp_central_pc` (spawn) | 15.5, 0 | east (main PC) |
-| `tp_central_breakers` | 15, −1.8 | north |
-| `tp_corridor_west` | 3, 0 | — |
-| `tp_corridor_east` | 9, 0 | — |
-| `tp_telecom` | 3, −2.9 | north |
-| `tp_lifesupport` | 9, −2.9 | north |
-| `tp_workshop` | 3, 2.9 | south (training bench) |
-| `tp_hydro` | 9, 2.9 | south |
+- **Spawn:** Sala de control, in front of the main PC at (9, −5.5), facing east. In `training` the PC sends the player to the Sala central (hub) for the training bench.
+- Teleport works on any floor (`COL_Floor_*`, merged). There are no fixed anchors yet.
+- Typical routes from the hub: Control ≈ 13 m, Telecom ≈ 11 m, Energy ≈ 14 m, Hydro ≈ 12 m, Personal ≈ 7 m.
+- Keyboard collision (`src/vr/Collision.js`) uses the same walls, the door frames and the solid furniture, with door assist.
 
-Free floor targeting is also allowed on `COL_Floor_*`.
-
-- **Spawn** at `tp_central_pc`. In `training`, the main PC shows "Ve al Taller para el entrenamiento", so crossing the corridor is the first teleport practice.
-- "Iniciar turno" exists on the main PC **and** on the training board.
-- Walking distance from the main PC to the farthest room (Taller/Telecom) is ≈ 15 m, about 3–4 teleports.
-
-## 6) Alarm sources (positional)
+## 6) Alarm sources (positional, planned)
 
 | Source | Position |
 | :-- | :-- |
-| Breaker wall / relay | central N wall |
-| Life support resources, scrubber, electrolyzer | Soporte Vital |
-| Thermal (`pump_thermal`) | north shaft, audible from the corridor at x = 6 |
-| Water, crop, recycler | Hidroponía |
+| Breaker wall / relay, life support resources, scrubber, electrolyzer | Energía y oxígeno |
+| Water, crop, recycler | Hidroponía · Agricultura |
 | Signal / link lost, antenna | Telecom console |
-| Leaks | at the leaking seal (`hull_seal_corridor` x = 6; `hull_seal_telecom`) |
-| Health | biomonitor (wrist) |
-| Door beacons | above each door, mirroring the room's worst alarm (guides the player down the corridor) |
+| Leaks | at the leaking seal (positions to be defined for the new layout) |
+| Health | biomonitor (wrist) + bio panel in Control |
+| Door beacons | above each door, mirroring the room's worst alarm |
 
-## 7) Rendering groups
+## 7) Rendering
 
-- Each room, the corridor and the shafts are separate `Group`s for room-level culling. Rooms not visible from the player's room are disabled.
-- Draw-call guide: ≈ 25 per room + 15 for corridor and shafts (< 150 total, `AGENTS.md` §7).
-- The shafts are closed volumes: model only their corridor-facing panel and the seal.
+- Static geometry is merged by material: walls, floors, ceilings, door frames + conduits, and fixtures each take 1 draw call.
+- Measured (desktop, `?debug`, 2026-11-14): 6–59 draw calls per view (budget < 150); 6 point lights + 1 hemisphere light.

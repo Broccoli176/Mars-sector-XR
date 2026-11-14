@@ -17,7 +17,8 @@ const _dir = new THREE.Vector3();
 /**
  * Keyboard locomotion that works on desktop AND inside an XR session (Immersive Web Emulator):
  * W/S (↑/↓) forward/back where you look, A/D strafe, Q/E (←/→) turn.
- * Movement is clamped to the walkable area so walls can only be crossed through doors.
+ * The body is a circle that collides with walls, door frames and furniture and slides along them;
+ * walking at a door slightly off-centre is guided through it (see Collision.js).
  */
 export class KeyboardLocomotion {
   /**
@@ -25,14 +26,14 @@ export class KeyboardLocomotion {
    * @param {THREE.PerspectiveCamera} camera
    * @param {THREE.Group} dolly
    * @param {import('./Locomotion.js').Locomotion} locomotion
-   * @param {{ contains: (x: number, z: number) => boolean }} walkable
+   * @param {ReturnType<typeof import('./Collision.js').buildCollider>} collider
    */
-  constructor(renderer, camera, dolly, locomotion, walkable) {
+  constructor(renderer, camera, dolly, locomotion, collider) {
     this.renderer = renderer;
     this.camera = camera;
     this.dolly = dolly;
     this.locomotion = locomotion;
-    this.walkable = walkable;
+    this.collider = collider;
     /** @type {Set<string>} */
     this.keys = new Set();
 
@@ -78,13 +79,8 @@ export class KeyboardLocomotion {
     const dz = ((_dir.z * forward + _dir.x * strafe) / len) * step;
 
     this.locomotion.headWorld(_head);
-    const free = !this.walkable.contains(_head.x, _head.z); // never trap a player who is already outside
-    const ok = (/** @type {number} */ x, /** @type {number} */ z) => free || this.walkable.contains(x, z);
-
-    // Try the full move, then slide along each axis.
-    if (ok(_head.x + dx, _head.z + dz)) this.#translate(dx, dz);
-    else if (ok(_head.x + dx, _head.z)) this.#translate(dx, 0);
-    else if (ok(_head.x, _head.z + dz)) this.#translate(0, dz);
+    const next = this.collider.move(_head.x, _head.z, dx, dz);
+    this.#translate(next.x - _head.x, next.z - _head.z);
   }
 
   /** @param {number} dx @param {number} dz */

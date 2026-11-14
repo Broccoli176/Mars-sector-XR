@@ -21,12 +21,12 @@
 | D6 | Win | ✅ Alive at the end of day 7 ⇒ win. Post-run summary | §5 |
 | D7 | Power shortage | Breakers are on/off. When the battery is empty, circuits are served by **fixed priority**; unserved circuits go `offline` | §2.3 |
 | D8 | Telecom consequence | Signal gates early warnings, storm forecast and CME alert. Below 20 % **no data is transmitted** ✅ | §3.8 |
-| D9 | Windows | Underground base: only the **airlock porthole** + **periscope feed** on the main PC | §9 |
-| D10 | Player-facing language | ✅ Spanish, via `src/data/strings.es.json`; code/comments in English | §9 |
+| D9 | Windows | Underground base: one **panoramic window** in Telecom (looks at the dish antenna) + **periscope feed** on the main PC | §9 |
+| D10 | Player-facing language | ✅ Spanish, via `src/data/strings/es/*.json` (one file per owner, merged at load); code/comments in English | §9 |
 | D11 | Physics | **No physics engine in MVP.** Dropped tools fall to the floor plane (simple kinematic) and can be re-grabbed; sockets snap | §9 |
 | D12 | TypeScript | **Not in MVP.** JS + JSDoc + `// @ts-check`; migrate post-MVP | — |
 | D13 | Time controls | Physical lever in the central room: pause / 1× / 2× / 4×. Time keeps running while reading panels. **Pause = speed 0, not a game phase** | §1 |
-| D14 | Tutorial | ✅ **Training bench** in the Workshop (Taller, `room_workshop`) (phase `training`, sim time stopped, skippable), then day 1 keeps two guided real incidents | §1, §9.4 |
+| D14 | Tutorial | ✅ **Training bench** in the Sala central · Herramientas (hub, `room_hub`) (phase `training`, sim time stopped, skippable), then day 1 keeps two guided real incidents | §1, §9.4 |
 | D15 | Platform | ✅ **Meta Quest 3** (WebXR, Quest Browser). Budgets stay conservative (72 Hz, Quest 2-class), so Quest 2/3S likely work but are not guaranteed | §9 |
 | D16 | Day boundary | ✅ An in-game day **starts at 06:00** | §1 |
 | D17 | Headset removal | ✅ **Auto-pause** when the headset is removed or the session loses focus | §1 |
@@ -220,7 +220,7 @@ Start **3**. Up to **5** failures can require a spare (4 scripted + `relay_main`
 | Formula | `signal = 95 × antennaAlignment / 100` when telecom is powered; 0 otherwise |
 | `antennaAlignment` | 0–100, starts at 100 |
 | Dust storm | alignment −2 points/h |
-| Realign | `antenna:align`: crank on the telecom console, hold 4 real s ⇒ alignment 100 |
+| Realign | `antenna:align` ⇒ alignment 100. Prototype: button press on the telecom console (spec target: crank held 4 real s) |
 | `antenna_motor` broken | signal capped at 40, realignment impossible |
 | Radio blackout (§6.3) | signal forced to 0 for its duration |
 
@@ -387,32 +387,31 @@ Ver **`AGENTS.md` §4.2** para el contrato de eventos y payloads (baseline + pro
 | Item | Value |
 | :-- | :-- |
 | Ceiling height | 2.6 m |
-| Central control | 6 × 6 m |
-| Life support, food/hydro, telecom/airlock, workshop (Taller) | 5 × 4 m each (5 m along the corridor) |
-| Corridor | 1.8 m wide × 12 m long, all rooms open onto it; central at the east end |
-| Service shafts | 1 m wide between the two rooms of each row (closed; corridor leak seal at x = 6) |
+| Layout | **Hub and spokes** (v2, 2026-11-14). Sala central · Herramientas (hub, 6 × 5 m) in the middle. North hall → Telecom (5 × 4) and Sala de control (6 × 6). West corridor → Personal (5 × 4, empty). South hall → Hidroponía · Agricultura (5 × 4) and Energía y oxígeno (6 × 5) |
+| Corridors | 1.8 m wide, straight (L-shaped where the sketch was diagonal); emissive fixtures + conduits, no point lights |
 | Layout | Coordinates, doors, panel walls and teleport anchors: **`docs/FLOOR_PLAN.md`** (authoritative) |
 | Doorways | 0.8 × 2.0 m clear opening |
 | Teleport | only onto `COL_Floor_*` meshes; 1–2 named teleport anchors per room plus free floor targeting |
 | Reference space | `local-floor`; standing default, seated toggle adds +0.4 m eye-height offset |
 | Turning | snap 30° default; smooth turn optional, with vignette |
-| Start / restart | Player spawns in central room in front of the main PC (`tp_central_pc`); the PC sends the player to the Taller for training. "Iniciar turno" exists on the main PC and on the training board. After game over, the same PC shows the summary and a physical restart lever |
-| Window | airlock porthole (dust storm VFX, 1 quad layer max) + periscope feed on main PC |
+| Start / restart | Player spawns in the Sala de control in front of the main PC (9, −5.5); the PC sends the player to the Sala central (hub) for training. "Iniciar turno" exists on the main PC and on the training board. After game over, the same PC shows the summary and a physical restart lever |
+| Window | Telecom panoramic window with a 3D exterior (dunes, rocks, dish antenna following `alignment`, sun/stars, dust). No extra dynamic lights: baked vertex shading tinted by time of day/storm. Plus periscope feed on main PC |
 | Device | **Meta Quest 3**, Quest Browser (D15) |
 | XR settings | 72 Hz default (90 Hz only if measured stable); `setFoveation(1.0)` to start (measure text legibility); `framebufferScaleFactor` 1.0 |
 | Audio | ≤ 8 simultaneous positional sources; red alarms preempt amber; at most 2 alarms audible at once |
-| Strings | `src/data/strings.es.json`; no hard-coded player-facing text (keys in `docs/CONTENT_SCRIPT.md`) |
+| Strings | `src/data/strings/es/*.json` (per owner, merged; duplicate keys fail the tests); no hard-coded player-facing text (keys in `docs/CONTENT_SCRIPT.md`) |
 
 ### 9.2 Panels per room
 
 | Room | Panels / interactables |
 | :-- | :-- |
-| Central | Main PC (pages: Estado, Energía, Comms, Resumen; "Iniciar turno" / "Continuar"), breaker wall (6 breakers + relay reset lever + demand meter kW vs 3.0 limit), time lever, bio panel (biomonitor mirror), log terminal (manual save), "Ajustes" panel |
-| Life support | O₂, CO₂ and pressure gauges; thermostat dial (temperature gauge built in); filter socket; `valve_o2_tank_1`, `valve_o2_tank_2` |
-| Food / hydro | Water tank gauge; kcal counter + ration locker; crop lights (growing / ready / spoiling); harvest rack; `valve_recycler` |
-| Telecom / airlock | Signal gauge; alignment crank + alignment needle; message screen/printer; porthole; airlock pressure gauge |
-| Workshop (Taller) | Tool wall, spares counter, component status board, **training bench** (§9.4) |
-| Corridor | Emergency lights, hull seal panels (leak points), alarm beacons |
+| Sala de control | Main PC (pages: Estado, Energía, Comms, Resumen; "Iniciar turno" / "Continuar"), time lever, bio panel (biomonitor mirror), log terminal (manual save), "Ajustes" panel |
+| Energía y oxígeno | Breaker wall (6 breakers + relay reset lever + demand meter kW vs 3.0 limit); O₂, CO₂ and pressure gauges; thermostat dial; filter socket; `valve_o2_tank_1`, `valve_o2_tank_2`; electrolyzer |
+| Hidroponía · Agricultura | Water tank gauge; kcal counter + ration locker; crop lights (growing / ready / spoiling); harvest rack; `valve_recycler` |
+| Telecom / airlock | N: window + console (signal/alignment/motor panel, "Alinear antena" button). W: airlock hatch with status LED. Pending: message printer, airlock pressure gauge |
+| Sala central · Herramientas (hub) | **Training bench** (§9.4); tool wall, spares counter, component status board (pending) |
+| Personal | Empty for now |
+| Corridors | Emergency lights, hull seal panels (leak points), alarm beacons |
 | Wrist | Biomonitor on the non-dominant hand |
 
 Every threshold in §3.0 must be readable on at least one of these panels. Wall-by-wall placement: `docs/FLOOR_PLAN.md` §4.
@@ -443,7 +442,7 @@ Acknowledge button on each panel mutes the audio for 60 in-game minutes; the lig
 
 ### 9.4 Training bench (tutorial, D14)
 
-Located on the south wall of the Workshop (Taller). The phase is `training`, so sim time is stopped. The bench has a mission board (`PANEL_TrainingBoard`) and practice components that consume no resources or spares. Missions are checked off on the board. The player can skip at any time with "Iniciar turno" on the main PC or on the board.
+Located on the east wall of the Sala central · Herramientas (hub). The phase is `training`, so sim time is stopped. The bench has a mission board (`PANEL_TrainingBoard`) and practice components that consume no resources or spares. Missions are checked off on the board. The player can skip at any time with "Iniciar turno" on the main PC or on the board.
 
 | Mission | Teaches |
 | :-- | :-- |
@@ -520,9 +519,9 @@ JSON Schemas live in `src/data/schemas/<file>.schema.json` and are validated by 
 | File | Shape (key fields) |
 | :-- | :-- |
 | `resources.json` | `{ [ResourceId]: { unit, min, max, start, direction, warnAt, criticalAt, failAt? } }` (§3.0) |
-| `balance.json` | `{ time: { secondsPerDay, ticksPerHour, maxTicksPerFrame, dayStartHour }, power: { batteryKwh, rtgKw, solarKw, solarHours, stormSolarFactor, busLimitKw, overloadTicks, relayBurnTrips }, circuits: { [id]: { drawKw, priority, activeHours? } }, lifeSupport: {...}, thermal: {...}, water: {...}, food: {...}, telecom: {...}, health: {...}, cascade: {...} }` |
+| `balance/*.json` (merged: `core`, `energy`, `telecom`, `hydro`; see docs/COLLABORATION.md) | `{ time: { secondsPerDay, ticksPerHour, maxTicksPerFrame, dayStartHour }, power: { batteryKwh, rtgKw, solarKw, solarHours, stormSolarFactor, busLimitKw, overloadTicks, relayBurnTrips }, circuits: { [id]: { drawKw, priority, activeHours? } }, lifeSupport: {...}, thermal: {...}, water: {...}, food: {...}, telecom: {...}, health: {...}, cascade: {...} }` |
 | `components.json` | `[ { id, system, effect, toolId, spares, holdSeconds, needsRepairBay } ]` (§6.1) |
 | `events.json` | `[ { id, day, time: "HH:MM", type: 'failure' \| 'leak' \| 'storm' \| 'flare' \| 'cme' \| 'scripted', params: {}, durationHours?, warnLeadHours?, minSignal?, jitter: bool, stringKey } ]` (§6.2) |
 | `spaceWeather.json` | `{ source: { institution, platform, url, capturedAt, period }, flr: { total, m, x }, cme: { total, minKms, maxKms, medianKms, meanKms }, sep: {...}, hss: {...}, rbe: {...}, gst: {...}, derived: { marsDistanceKm, cmeEtaHours } }` (§6.3) |
-| `strings.es.json` | Flat map `{ "<domain>.<context>.<id>[.<variant>]": "texto con {param}" }` (`docs/CONTENT_SCRIPT.md`) |
+| `strings/es/*.json` | Flat map (merged from `common` + one file per room) `{ "<domain>.<context>.<id>[.<variant>]": "texto con {param}" }` (`docs/CONTENT_SCRIPT.md`) |
 | `graphics.json` | Render/XR settings (§9.1), optional |

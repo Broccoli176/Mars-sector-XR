@@ -1,0 +1,23 @@
+[
+  {
+    "id": "main_pc",
+    "room": "room_control",
+    "wall": "east",
+    "along": -5.5,
+    "y": 1.5
+  },
+  {
+    "id": "time_lever",
+    "room": "room_control",
+    "wall": "east",
+    "along": -3.75,
+    "y": 1.3
+  },
+  {
+    "id": "bio_panel",
+    "room": "room_control",
+    "wall": "south",
+    "along": 8,
+    "y": 1.45
+  }
+]

@@ -1,0 +1,18 @@
+{
+  "ui.pc.title": "ARES UNO · ORDENADOR CENTRAL",
+  "ui.pc.clock": "Día {day} · {time}",
+  "ui.pc.speed": "Velocidad: {speed}",
+  "ui.pc.paused": "PAUSA",
+  "ui.pc.autopaused": "PAUSA AUTOMÁTICA · usa la palanca de tiempo",
+  "ui.pc.training": "Entrenamiento: tiempo detenido",
+  "ui.pc.log": "Registro",
+  "ui.power.battery": "Batería: {value} kWh ({pct} %)",
+  "ui.power.net": "Neto: {value} kW",
+  "ui.power.generation": "Generación: {value} kW",
+  "ui.power.demand": "Demanda: {value} / {limit} kW",
+  "ui.power.relay_ok": "Relé principal: CERRADO",
+  "ui.power.relay_tripped": "Relé principal: DISPARADO · rearma en la pared de breakers",
+  "ui.power.relay_burned": "Relé principal: QUEMADO",
+  "ui.power.storm": "Tormenta de polvo: solar al 20 %",
+  "ui.time.title": "TIEMPO"
+}

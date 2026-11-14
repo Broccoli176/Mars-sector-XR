@@ -1,13 +1,10 @@
 // Headless balance report: `npm run sim` (optionally `npm run sim -- competent`).
 // Runs scripted policies through a full session and prints daily snapshots.
-import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
 import { Simulation } from '../src/systems/Simulation.js';
+import { loadSimData } from './loadData.js';
 import { idlePolicy, greedyPolicy, competentPolicy, runSession } from '../tests/helpers/policies.js';
 
-const dataDir = fileURLToPath(new URL('../src/data/', import.meta.url));
-const load = (/** @type {string} */ name) => JSON.parse(readFileSync(dataDir + name, 'utf8'));
-const data = { resources: load('resources.json'), balance: load('balance.json'), events: load('events.json') };
+const data = loadSimData();
 
 const policies = { idle: idlePolicy, greedy: greedyPolicy, competent: competentPolicy };
 const selected = process.argv[2] ? [process.argv[2]] : Object.keys(policies);

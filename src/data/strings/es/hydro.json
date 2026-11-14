@@ -1,0 +1,12 @@
+{
+  "ui.hydro.title": "HIDROPONÍA",
+  "ui.hydro.growth": "Crecimiento: {value} / {total} h",
+  "ui.hydro.ready": "¡LISTO! Se pudre en {hours} h",
+  "ui.hydro.neglect": "Sin luz/agua: {hours} / {limit} h",
+  "ui.hydro.lights": "Luces de cultivo: {state}",
+  "ui.hydro.harvest": "Cosechar",
+  "ui.water.title": "TANQUE DE AGUA",
+  "ui.water.recycler": "Reciclador: {state}",
+  "ui.food.title": "RACIONES",
+  "ui.food.days": "≈ {days} días de comida"
+}

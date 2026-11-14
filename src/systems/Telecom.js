@@ -1,9 +1,9 @@
 // @ts-check
 /**
- * Telecom system (Persona B).
- * Manages the Martian communications link with Earth / Mission Control.
- * Signal depends on electrical power, antenna alignment and antenna motor state.
- * Emits and responds to 'antenna:align' intent.
+ * Telecom system (SIMULATION_SPEC §3.8).
+ * signal = nominalSignal × alignment when the telecom circuit is powered, 0 otherwise.
+ * Dust storms drift the alignment; 'antenna:align' restores it; a broken antenna motor
+ * caps the signal and makes realignment impossible. Tunables come from balance.telecom.
  */
 export class Telecom {
   /**
@@ -12,16 +12,19 @@ export class Telecom {
    * @param {import('./ResourceManager.js').ResourceManager} [resources]
    */
   constructor(cfg = {}, bus, resources) {
+    // Fallbacks only keep old saves/tests working; the source of truth is balance.json.
     this.cfg = {
       nominalSignal: 95,
-      stormDriftPerHour: 6,
-      brokenMotorCap: 25,
-      alignStep: 0.15,
+      initialAlignment: 1,
+      stormDriftPerHour: 0.02,
+      minAlignment: 0,
+      alignTarget: 1,
+      brokenMotorCap: 40,
       ...cfg,
     };
     this.bus = bus;
     this.resources = resources;
-    this.alignment = 0.95;
+    this.alignment = this.cfg.initialAlignment;
     this.motorBroken = false;
 
     bus?.on('antenna:align', () => this.align());
@@ -34,7 +37,7 @@ export class Telecom {
   }
 
   reset() {
-    this.alignment = 0.95;
+    this.alignment = this.cfg.initialAlignment;
     this.motorBroken = false;
   }
 
@@ -47,7 +50,7 @@ export class Telecom {
       this.bus?.emit('hint', { key: 'hint.motorBroken' });
       return 'broken';
     }
-    this.alignment = Math.min(1.0, this.alignment + this.cfg.alignStep);
+    this.alignment = this.cfg.alignTarget;
     this.bus?.emit('hint', {
       key: 'hint.aligned',
       params: { pct: Math.round(this.alignment * 100) },
@@ -63,7 +66,7 @@ export class Telecom {
    */
   update(powered, stormActive, dt) {
     if (stormActive) {
-      this.alignment = Math.max(0.1, this.alignment - this.cfg.stormDriftPerHour * dt * 0.05);
+      this.alignment = Math.max(this.cfg.minAlignment, this.alignment - this.cfg.stormDriftPerHour * dt);
     }
 
     if (!this.resources) return;

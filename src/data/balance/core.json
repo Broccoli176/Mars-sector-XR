@@ -1,0 +1,72 @@
+{
+  "time": {
+    "secondsPerDay": 360,
+    "minutesPerDay": 1440,
+    "dayStartHour": 6,
+    "maxTicksPerFrame": 8,
+    "totalDays": 7,
+    "speeds": [
+      0,
+      1,
+      2,
+      4
+    ]
+  },
+  "health": {
+    "regenPerHour": 2,
+    "causeWindowHours": 6,
+    "regenBlockers": [
+      "oxygen",
+      "co2",
+      "pressure",
+      "temperature",
+      "water",
+      "food"
+    ],
+    "damage": [
+      {
+        "resource": "oxygen",
+        "cause": "suffocation",
+        "criticalPerHour": 10,
+        "failPerHour": 30
+      },
+      {
+        "resource": "co2",
+        "cause": "suffocation",
+        "criticalPerHour": 8,
+        "failPerHour": 30
+      },
+      {
+        "resource": "pressure",
+        "cause": "suffocation",
+        "criticalPerHour": 8,
+        "failPerHour": 30
+      },
+      {
+        "resource": "temperature",
+        "cause": "hypothermia",
+        "criticalPerHour": 8,
+        "failPerHour": 30
+      },
+      {
+        "resource": "water",
+        "cause": "dehydration",
+        "zeroPerHour": 4
+      },
+      {
+        "resource": "food",
+        "cause": "starvation",
+        "zeroPerHour": 2
+      }
+    ]
+  },
+  "inventory": {
+    "filters": 3,
+    "sealantCharges": 3,
+    "o2Tanks": 2
+  },
+  "gameRules": {
+    "powerLossHours": 3,
+    "guidedTripExtraHours": 3
+  }
+}

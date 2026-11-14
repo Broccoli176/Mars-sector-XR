@@ -12,7 +12,7 @@ import { Locomotion } from '../vr/Locomotion.js';
 import { XRControls } from '../vr/XRControls.js';
 import { DesktopControls } from '../vr/DesktopControls.js';
 import { KeyboardLocomotion } from '../vr/KeyboardLocomotion.js';
-import { buildWalkable } from '../vr/Walkable.js';
+import { buildCollider } from '../vr/Collision.js';
 
 // Dev-only: `?iwer` installs Meta's Immersive Web Emulation Runtime (Quest 3) without the browser
 // extension. Must run before VRButton checks session support. Lazy-loaded: not in the main bundle.
@@ -31,8 +31,11 @@ const game = new Game(gameData, t);
 const { layout } = gameData;
 
 // Renderer: conservative Quest settings (AGENTS.md §7): no shadows, no post-processing.
+// ACES tone mapping runs inside the material shaders (no extra pass); UI panels opt out (toneMapped: false).
 const container = /** @type {HTMLElement} */ (document.getElementById('app'));
 const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.15;
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.xr.enabled = true;
@@ -67,17 +70,32 @@ if (viewParam) {
 // World + stations
 const basement = buildBasement(layout, t);
 scene.add(basement.group);
-const porthole = buildPorthole(scene, game.sim);
+// Telecom panoramic window: the first wall with a "windows" entry (exterior lies to its -z side).
+const windowWall = layout.walls.find((/** @type {any} */ w) => w.windows?.length);
+const [ws0, ws1, wy0, wy1] = windowWall.windows[0];
+const porthole = buildPorthole(scene, () => game.sim, {
+  center: [(ws0 + ws1) / 2, (wy0 + wy1) / 2, windowWall.from[1] + 0.02],
+  width: ws1 - ws0,
+  height: wy1 - wy0 - 0.04,
+});
 /** @type {THREE.Object3D[]} */
 const interactive = [];
 const stations = buildStations({ layout, rooms: basement.rooms, game, t, scene, interactive });
 
 // Interaction and locomotion
-const interaction = new Interaction(interactive, basement.floors, basement.walls);
+// Furniture blocks the teleport ray and the keyboard body (top-down AABBs).
+scene.updateMatrixWorld(true);
+const collider = buildCollider(layout);
+const _bounds = new THREE.Box3();
+for (const solid of stations.solids) {
+  _bounds.setFromObject(solid);
+  if (_bounds.max.y > 0.3) collider.addBox({ x0: _bounds.min.x, x1: _bounds.max.x, z0: _bounds.min.z, z1: _bounds.max.z });
+}
+const interaction = new Interaction(interactive, basement.floors, [...basement.walls, ...stations.solids]);
 const locomotion = new Locomotion(renderer, dolly, camera);
 const xr = new XRControls(renderer, dolly, interaction, locomotion);
 const desktop = new DesktopControls(renderer.domElement, renderer, dolly, camera, interaction, locomotion);
-const keyboard = new KeyboardLocomotion(renderer, camera, dolly, locomotion, buildWalkable(layout));
+const keyboard = new KeyboardLocomotion(renderer, camera, dolly, locomotion, collider);
 if (devParams.has('iwer') || devParams.has('debug')) {
   // Do not expose the THREE namespace here: referencing it as a value defeats tree-shaking.
   /** @type {any} */ (window).__marte = { renderer, camera, dolly, game, Vector3: THREE.Vector3 };
@@ -121,18 +139,12 @@ window.addEventListener('resize', () => {
 });
 
 // Emergency lighting when the lighting circuit is not served.
-const NORMAL_LIGHT = new THREE.Color('#fff1dc');
-const EMERGENCY_LIGHT = new THREE.Color('#ff3b2f');
 let emergency = false;
 function applyLighting() {
   const lit = game.sim.power.served.lighting;
   if (lit === !emergency) return;
   emergency = !lit;
-  basement.hemi.intensity = emergency ? 0.25 : 1.1;
-  for (const light of Object.values(basement.roomLights)) {
-    light.color.copy(emergency ? EMERGENCY_LIGHT : NORMAL_LIGHT);
-    light.intensity = emergency ? 1.6 : 5;
-  }
+  basement.setEmergency(emergency);
 }
 
 const timer = new THREE.Timer();

@@ -26,23 +26,25 @@
 
 ## 2) Player fantasy and core loop
 
-The player never leaves the basement. Locomotion is a short teleport between rooms; the "world" is five rooms and a corridor.
+The player never leaves the basement. Locomotion is a short teleport between rooms; the "world" is six rooms around a central hub.
 
 ```
-            EXTERIOR (regolith)
-   ┌──[AIRLOCK]──────┐ ░ ┌─────────────────┐
-   │ Telecom /       │ ░ │  Life Support   │
-   │ Airlock         │ ░ │  (Soporte Vital)│  ┌──────────────┐
-   └─────┤ ├─────────┘ ░ └──────┤ ├────────┘  │   Central    │
-   ══════════════ Corridor 12 × 1.8 m ═════════▶ (Main PC,    │
-   ┌─────┤ ├─────────┐ ░ ┌──────┤ ├────────┐  │  breakers)   │
-   │ Workshop        │ ░ │  Food / Hydro   │  └──────────────┘
-   │ (Taller)        │ ░ │  (Hidroponía)   │
-   └─────────────────┘ ░ └─────────────────┘
-                 ░ = 1 m service shaft
+   ┌─[WINDOW]─┐                                ┌──────────────┐
+   │ Telecom /├═══════ north hall ═════════════┤ Control room │
+   │ Airlock  │            ║                   │ (main PC)    │
+   └──────────┘            ║                   └──────────────┘
+   ┌──────────┐      ┌─────╨──────┐
+   │ Personal ├══════┤ Hub / Tools│  (training bench)
+   │ (empty)  │      └─────╥──────┘
+   └──────────┘            ║
+   ┌──────────┐            ║                   ┌──────────────┐
+   │ Hydro /  ├═══════ south hall ═════════════┤ Energy & O2  │
+   │ Farming  │                                │ (breakers,   │
+   └──────────┘                                │  life supp.) │
+                                               └──────────────┘
 ```
 
-Five rooms + corridor; Central sits at the east end of the corridor. The dimensioned plan, coordinates, panel placement and teleport anchors are in `docs/FLOOR_PLAN.md` (authoritative); sizes also in `docs/SIMULATION_SPEC.md` §9. Keep this diagram consistent with them.
+Hub-and-spokes base: six rooms around the Sala central · Herramientas, linked by straight corridors. The dimensioned plan, coordinates, panel placement and teleport anchors are in `docs/FLOOR_PLAN.md` (authoritative); sizes also in `docs/SIMULATION_SPEC.md` §9. Keep this diagram consistent with them.
 
 Core loop, repeated each in-game day:
 
@@ -155,11 +157,12 @@ Rendering reads state; it never drives it. Time scaling is a property of `TimeMa
 | File (objetivo) | Contenido previsto |
 | :-- | :-- |
 | `src/data/resources.json` | definiciones de recursos: ids, unidades, límites, valores iniciales, umbrales/dirección/fallo |
-| `src/data/balance.json` | tasas, tuning, tiempos y parámetros de economía |
+| `src/data/balance/*.json` | tasas, tuning, tiempos y parámetros de economía (un archivo por dueño, se fusionan) |
+| `src/data/stations/*.json` | colocación de estaciones por sala |
 | `src/data/components.json` | metadatos de componentes/herramientas/repuestos |
 | `src/data/events.json` | guion de incidentes y avisos |
 | `src/data/graphics.json` | ajustes visuales/render (si aplica) |
-| `src/data/strings.es.json` | strings de UI/comunicaciones en español |
+| `src/data/strings/es/*.json` | strings de UI/comunicaciones en español (común + uno por sala) |
 | `src/data/connections.json` (opcional) | dependencias/topología si se externaliza |
 
 Reglas: sin números mágicos en código; los sistemas deben leer configuración y tolerar campos opcionales ausentes con defaults seguros. Mantener `docs/SIMULATION_SPEC.md`, datos y pruebas sincronizados cuando existan.
@@ -192,14 +195,15 @@ Early first-pass numbers (kept for context only; units/threshold semantics diffe
 
 | Room | Contents | Primary interactions |
 | :-- | :-- | :-- |
-| Central control | Main computer, breaker wall, time lever, status board, settings panel | Reroute power, reset relay, read telemetry, set time speed |
-| Life support | Electrolyzer, scrubber, O₂ tanks, valves, thermostat | Open O₂ tank valves, swap filters, set thermostat, read gauges |
-| Food / hydro | Racks, water tank, ration locker, recycler valve | Harvest before it spoils, unstick recycler, read water/food |
-| Telecom / airlock | Radio console, antenna crank, message printer, airlock hatch + porthole (the only direct view outside; the base is underground) | Realign antenna, read comms and space-weather alerts, inspect dust storm |
-| Workshop (Taller) — electronics / repair | Workbench, tool wall, spares locker, **training bench** with mission board | Tutorial missions, pick tools, repair components, consume spares |
+| Control room (Sala de control) | Main computer, time lever, bio panel, settings panel | Read telemetry, start/restart, set time speed |
+| Energy & oxygen (Energía y oxígeno) | Breaker wall + relay, electrolyzer, scrubber, O₂ tanks, thermostat | Reroute power, reset relay, open O₂ tank valves, swap filters, set thermostat |
+| Hydro / farming (Hidroponía · Agricultura) | Racks, water tank, ration locker, recycler valve | Harvest before it spoils, unstick recycler, read water/food |
+| Telecom / airlock | Console under the panoramic window (the only direct view outside), antenna motor, airlock hatch | Realign antenna, read comms and space-weather alerts, inspect dust storm |
+| Hub / tools (Sala central · Herramientas) | Training bench with mission board; tool wall, spares locker (pending) | Tutorial missions, pick tools, repair components, consume spares |
+| Personal | Empty for now | — |
 
 Panel placement per wall: `docs/FLOOR_PLAN.md` §4. Alarm catalog, tools/holsters and accessibility: `docs/SIMULATION_SPEC.md` §9.
-| Corridor | Conduits, emergency lights, patched panels | Navigation, leak discovery, alarm localization |
+| Corridors | Conduits, emergency lights, patched panels | Navigation, leak discovery, alarm localization |
 
 **Interaction affordances**
 - Breakers: physical toggle, haptic click, audible clunk.
@@ -228,11 +232,11 @@ Audio is the primary spatial cue. Every alarm must be positional at the failing 
 > The open-issue list lives in `docs/SIMULATION_SPEC.md` §11. MVP scope decision (D20): adjustable thermostat **in**; grow lights = `hydro` breaker; rationing, water refill, door seals and emergent failures are **post-MVP**.
 
 1. ~~Does the player have a body?~~ **MVP:** controllers with grip models only, plus 2 hip holsters.
-2. ~~Tutorial?~~ **Resolved 2026-11-14:** training bench in the Workshop (Taller) (time stopped, skippable) + guided day-1 incidents.
+2. ~~Tutorial?~~ **Resolved 2026-11-14:** training bench in the Sala central · Herramientas hub (time stopped, skippable) + guided day-1 incidents.
 3. ~~Pause while reading?~~ **Resolved:** continuous time, physical lever (pause = speed 0), auto-pause on headset removal.
 4. ~~Randomization?~~ **Resolved:** fixed script + seeded jitter (timing ± 2 h, magnitude ± 25 %).
 5. ~~Is the win state a score (efficiency) or binary?~~ **Resolved 2026-11-11:** binary (alive at end of day 7), with a post-run summary.
-6. ~~Which language is the UI?~~ **Resolved 2026-11-11:** player-facing text in Spanish (`src/data/strings.es.json`); code/docs in English.
+6. ~~Which language is the UI?~~ **Resolved 2026-11-11:** player-facing text in Spanish (`src/data/strings/es/*.json`); code/docs in English.
 7. **Resolved 2026-11-11:** the player has a `health` bar (0–100) on a diegetic wrist biomonitor; see `docs/SIMULATION_SPEC.md` §4.
 
 ---

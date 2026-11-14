@@ -46,7 +46,7 @@ Dev URL params:
 - `?iwer` installs Meta's Immersive Web Emulation Runtime (Quest 3) without the browser extension. It is lazy-loaded and kept out of the main bundle.
 - `?debug` exposes `window.__marte`.
 
-Keyboard locomotion (WASD, Q/E or arrows) works on desktop and inside emulated XR sessions, clamped to the walkable area. With the Immersive Web Emulator extension, click the page once so it receives the keys.
+Keyboard locomotion (WASD, Q/E or arrows) works on desktop and inside emulated XR sessions. The body is a 0.22 m circle that collides with and slides along walls, door frames and furniture, with door assist (`src/vr/Collision.js`). With the Immersive Web Emulator extension, click the page once so it receives the keys.
 
 ### CI (pending)
 GitHub Actions on every push/PR: `npm ci` → `npm test` → `npm run build`. On `main`, deploy `dist/` to GitHub Pages (HTTPS) for headset playtests.
@@ -130,7 +130,7 @@ H1 = sábado 14, H2 = domingo 15. El greybox sigue `docs/FLOOR_PLAN.md`.
 | **H1 tarde** | `LifeSupport`, `Crew`, breakers, palanca de tiempo, relé, paneles de Central | Breaker apaga un circuito real y se ve/oye |
 | **H1 cierre** | Pase en Quest 3: sesión, teleport, agarre, 72 Hz | Checklist VR §8 sin bloqueantes |
 | **H2 mañana** | `IncidentRunner` + tormenta + clima espacial DONKI, `Telecom`, `Electronics` (reparaciones), banco de entrenamiento | Partida headless completa con guion |
-| **H2 tarde** | Victoria/derrota, resumen, `strings.es.json`, alarmas, audio | Escenarios de aceptación 1–6 de la spec en verde |
+| **H2 tarde** | Victoria/derrota, resumen, textos (`src/data/strings/es/`), alarmas, audio | Escenarios de aceptación 1–6 de la spec en verde |
 | **H2 últimas 2 h** | Perf pass en Quest 3, deploy a GitHub Pages, ensayo de demo. `SaveSystem` solo si sobra tiempo | Build desplegado jugable de principio a fin |
 
 Recortes si falta tiempo (en este orden): guardado → termostato → recordatorio de CME → segundo apagón de radio → T4/T5 del tutorial. Nunca recortar el pase en hardware.
@@ -139,6 +139,7 @@ Recortes si falta tiempo (en este orden): guardado → termostato → recordator
 
 ## 7) Branching y commits (recomendado)
 
+- **Flujo vigente para el equipo de 2: `docs/COLLABORATION.md`** (ramas `<usuario>/<tarea>` desde `main`, PR cada 1–2 h, reparto de archivos por sala, archivos compartidos).
 - Inicializar Git en el bootstrap (H1) con remoto en GitHub (necesario para CI y Pages). Preferir ramas cortas y commits convencionales (`feat:`, `fix:`, `docs:`, etc.).
 - Un commit = una intención revisable. No mezclar importación de assets con cambios de lógica.
 - Configurar LFS antes de versionar binarios pesados (fuentes o runtime) cuando aplique. Excluir artefactos generados (`dist/`, dependencias).

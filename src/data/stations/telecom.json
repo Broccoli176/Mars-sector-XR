@@ -1,0 +1,16 @@
+[
+  {
+    "id": "telecom_console",
+    "room": "room_telecom",
+    "wall": "north",
+    "along": -7.5,
+    "y": 0.95
+  },
+  {
+    "id": "airlock",
+    "room": "room_telecom",
+    "wall": "west",
+    "along": -5.5,
+    "y": 1
+  }
+]

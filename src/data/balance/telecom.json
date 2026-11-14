@@ -1,0 +1,10 @@
+{
+  "telecom": {
+    "nominalSignal": 95,
+    "initialAlignment": 1,
+    "stormDriftPerHour": 0.02,
+    "minAlignment": 0,
+    "alignTarget": 1,
+    "brokenMotorCap": 40
+  }
+}

@@ -1,0 +1,9 @@
+[
+  {
+    "id": "training_board",
+    "room": "room_hub",
+    "wall": "east",
+    "along": 0,
+    "y": 1.5
+  }
+]

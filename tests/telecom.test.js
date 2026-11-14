@@ -1,12 +1,15 @@
 import { describe, it, expect } from 'vitest';
 import { newSim, runTicks } from './helpers/sim.js';
 
-describe('Telecom system (Persona B)', () => {
+describe('Telecom system (spec §3.8)', () => {
   it('initializes with nominal signal and alignment', () => {
     const sim = newSim({ events: [] });
     expect(sim.telecom).toBeDefined();
-    expect(sim.telecom.alignment).toBeCloseTo(0.95);
+    expect(sim.telecom.alignment).toBe(1);
     expect(sim.resources.value('signal')).toBe(95);
+    sim.bus.emit('game:start');
+    runTicks(sim, 1);
+    expect(sim.resources.value('signal')).toBe(95); // 95 × 100 % alignment
   });
 
   it('drifts alignment during a storm', () => {
@@ -14,14 +17,14 @@ describe('Telecom system (Persona B)', () => {
     sim.power.stormActive = true;
     sim.bus.emit('game:start');
     runTicks(sim, 60);
-    expect(sim.telecom.alignment).toBeLessThan(0.95);
+    expect(sim.telecom.alignment).toBeCloseTo(0.98, 5); // −2 points per hour
   });
 
   it('aligns antenna upon antenna:align intent', () => {
     const sim = newSim({ events: [] });
     sim.telecom.alignment = 0.5;
     sim.bus.emit('antenna:align');
-    expect(sim.telecom.alignment).toBeCloseTo(0.65);
+    expect(sim.telecom.alignment).toBe(1); // realigning restores 100 %
   });
 
   it('loses signal when telecom breaker is turned off', () => {
@@ -38,6 +41,6 @@ describe('Telecom system (Persona B)', () => {
     sim.bus.emit('component:damaged', { componentId: 'antenna_motor' });
     runTicks(sim, 1);
     expect(sim.telecom.motorBroken).toBe(true);
-    expect(sim.resources.value('signal')).toBeLessThanOrEqual(25);
+    expect(sim.resources.value('signal')).toBeLessThanOrEqual(40);
   });
 });

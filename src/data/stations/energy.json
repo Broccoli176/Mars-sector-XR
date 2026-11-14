@@ -1,0 +1,37 @@
+[
+  {
+    "id": "breakers",
+    "room": "room_energy",
+    "wall": "north",
+    "along": 10,
+    "y": 1.6
+  },
+  {
+    "id": "ls_gauges",
+    "room": "room_energy",
+    "wall": "east",
+    "along": 7,
+    "y": 1.45
+  },
+  {
+    "id": "ls_scrubber",
+    "room": "room_energy",
+    "wall": "south",
+    "along": 11.6,
+    "y": 1.4
+  },
+  {
+    "id": "ls_o2tanks",
+    "room": "room_energy",
+    "wall": "south",
+    "along": 9.2,
+    "y": 1.45
+  },
+  {
+    "id": "ls_thermostat",
+    "room": "room_energy",
+    "wall": "west",
+    "along": 8.6,
+    "y": 1.4
+  }
+]

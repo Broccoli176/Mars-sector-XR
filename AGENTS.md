@@ -12,7 +12,7 @@
 - **Datos** en `src/data/` y **tests** Vitest en `tests/`.
 - **Greybox WebXR** del plano con paneles y botones en `src/world`, `src/ui`, `src/objects` y `src/vr`. El arranque está en `src/core/main.js`.
 
-Pendiente: telecom/clima espacial, electrónica/reparaciones, fugas, herramientas/fundas, banco de entrenamiento (T1–T5), alarmas sonoras, guardado, CI y assets. **Desviaciones del prototipo:**
+Telecom básico implementado (`src/systems/Telecom.js`: señal = 95 × alineación, deriva en tormenta, botón «Alinear antena», motor averiado limita a 40). Pendiente: cola de mensajes/enlace <20 % y clima espacial, electrónica/reparaciones, fugas, herramientas/fundas, banco de entrenamiento (T1–T5), alarmas sonoras, guardado, CI y assets. **Desviaciones del prototipo:**
 - Los controles se pulsan con rayo + gatillo; el agarre directo llegará después.
 - Hay un modo escritorio de desarrollo (no es modo de juego).
 - Strings y balance siguen en un solo archivo cada uno.
@@ -23,6 +23,7 @@ Decisiones/objetivos iniciales (a confirmar al arrancar):
 - **Stack:** Three.js + Vite + WebXR + `mitt`; JavaScript ES modules + JSDoc/`@ts-check`; Vitest. Node 22 LTS + npm. Versiones exactas fijadas en el bootstrap (ver §8).
 - **Calendario:** hackathon de **2 días, 14–15 de noviembre de 2026** (H1 = sáb 14, H2 = dom 15); plan en `docs/DEVELOPMENT_WORKFLOW.md` §6.
 - **Plano:** `docs/FLOOR_PLAN.md` (coordenadas, puertas, paneles, anclas de teleport).
+- **Trabajo en equipo (2 personas):** reparto por salas y flujo de ramas en **`docs/COLLABORATION.md`** (léelo antes de tocar código). Persona A: Personal, Hidroponía y Sala central. Persona B: Telecom, Control y Energía. Usad ramas cortas desde `main` con PR; `CODEOWNERS` pide revisión al dueño.
 - **Arquitectura objetivo:** simulación headless desacoplada de render; composición clara entre core/systems/vr/world/objects/ui/data/utils.
 - **MVP objetivo:** sobrevivir 7 días acelerados gestionando energía, soporte vital, comida/agua, telecom y electrónica/reparaciones.
 - **Persistencia:** sin implementación; definir `SaveSystem` y migraciones cuando se aborde.
@@ -59,13 +60,13 @@ Decisiones/objetivos iniciales (a confirmar al arrancar):
 | Idioma UI | Español (tabla de strings externa); código/docs en inglés |
 | Tiempo | Simulación acelerada basada en ticks (no acoplar reglas a delta de render). El día empieza a las **06:00**; la partida termina el día 8 06:00 (7 días exactos, ≈42 min a 1×) |
 | Fases | `boot → training → playing → over \| won`. **Pausa = velocidad 0**, no es fase. **Pausa automática** al quitarse el visor |
-| Tutorial | Banco de entrenamiento en el Taller (`room_workshop`) (fase `training`, tiempo parado, saltable) + incidentes guiados del día 1 |
+| Tutorial | Banco de entrenamiento en la Sala central · Herramientas (`room_hub`) (fase `training`, tiempo parado, saltable) + incidentes guiados del día 1 |
 | Clima espacial | Snapshot estático de NASA DONKI (`src/data/spaceWeather.json`): una CME y dos apagones de radio |
 | Locomoción | Teleport por defecto; movimiento suave opcional **con viñeta** |
 | Interacción | Agarre directo para controles físicos; ray solo para controles diegéticos pequeños si aplica |
 | Input | Mandos primero; sin hand tracking en MVP salvo decisión explícita |
 | UI | Paneles/indicadores diegéticos. **Sin HUD head-locked** |
-| Entorno | 5 salas + pasillo: Telecom y Soporte Vital al norte, Taller e Hidroponía al sur, Sala principal al este (`docs/FLOOR_PLAN.md`); base subterránea con vista exterior limitada/indirecta |
+| Entorno | Base en estrella alrededor de la **Sala central · Herramientas** (hub). Al norte: Telecom y Sala de control. Al oeste: Personal (vacía). Al sur: Hidroponía · Agricultura y Energía y oxígeno. Ver `docs/FLOOR_PLAN.md`. Base subterránea; la única vista exterior es la ventana de Telecom |
 | Persistencia | Guardado versionado con migraciones (cuando se implemente) |
 
 ### Principio de diseño
@@ -203,6 +204,7 @@ Los tanques de O₂ de emergencia usan `valve:turn` (`valve_o2_tank_1/2`). Pendi
 - **Partida:** `game:start`, `game:phaseChanged`, `game:over`, `game:won`.
 - **Soporte vital y comida:** `thermostat:set`, `valve:turn` (tanques O₂), `filter:swap`/`swapped`, `food:harvest`/`harvested`/`ready`/`spoiled`, `crew:damage`.
 - **Incidentes y avisos:** `incident:warning`/`triggered`, `weather:changed`, `comms:message`, `hint`.
+- **Telecom:** `antenna:align` (intent); escucha `component:damaged`/`system:repaired` para `antenna_motor`.
 
 El resto sigue **propuesto**.
 
@@ -242,7 +244,8 @@ Reglas:
 │   ├── systems/
 │   ├── objects/
 │   ├── ui/
-│   ├── data/
+│   ├── rooms/         # una carpeta por sala: <sala>/stations.js (dueño por sala, ver docs/COLLABORATION.md)
+│   ├── data/          # layout.json (geometría) + stations/ + strings/es/ + balance/ (un archivo por dueño)
 │   ├── types/
 │   └── utils/
 ├── docs/
@@ -280,7 +283,7 @@ Presupuesto deliberadamente de clase Quest 2 para dejar margen en Quest 3 (y pro
 | Métrica | Presupuesto |
 | :-- | :-- |
 | Frame rate | 72 Hz objetivo (90 Hz solo si se mide estable), nunca por debajo de 60 Hz |
-| Draw calls | < 100–150 por frame; guía por sala ≈ 25 (5 salas) + 15 pasillo |
+| Draw calls | < 100–150 por frame; guía por sala ≈ 25 (6 salas + pasillos); máximo medido 59 |
 | Triángulos | 500k–1M visibles |
 | Memoria de texturas | ~300–500 MB GPU-resident objetivo (medir) |
 | Texturas | 1K props, 2K superficies grandes; formato comprimido en runtime |
@@ -290,6 +293,15 @@ Presupuesto deliberadamente de clase Quest 2 para dejar margen en Quest 3 (y pro
 | MSAA | Conservador y medido en XR |
 
 Medir en hardware real antes de cerrar decisiones de presupuesto.
+
+**Medido en v0.1** (escritorio, `renderer.info`): 6–59 draw calls por vista en la base en estrella (antes 67 en el peor pasillo del plano anterior).
+
+Patrones que lo mantienen bajo:
+- Geometría estática fusionada por material.
+- Botones de 2 draw calls (cuerpo + etiqueta), nunca cajas multimaterial.
+- Plantas instanciadas.
+- Tone mapping ACES en el propio shader, sin pase de post-procesado.
+- No exponer el espacio de nombres `THREE` como valor, porque rompe el tree-shaking.
 
 ---
 
@@ -313,7 +325,10 @@ Parámetros de URL solo de desarrollo:
 - `?iwer`: emulación de Quest 3 con el runtime IWER de Meta, carga diferida y sin extensión.
 - `?debug`: expone `window.__marte`.
 
-Locomoción de desarrollo por teclado (`src/vr/KeyboardLocomotion.js`): WASD + Q/E. Funciona también dentro de sesiones XR emuladas y se limita al área caminable de `src/vr/Walkable.js`, que se deriva de `layout.json` y solo deja cruzar paredes por las puertas.
+Locomoción de desarrollo por teclado (`src/vr/KeyboardLocomotion.js`): WASD + Q/E. Funciona también dentro de sesiones XR emuladas. Colisión en `src/vr/Collision.js`:
+- El cuerpo es un círculo de 0,22 m que choca con paredes y marcos (derivados de `layout.json`) y con los muebles sólidos de las estaciones, y se desliza a lo largo de ellos.
+- Avanza en sub-pasos para no atravesar paredes.
+- Asistencia de puertas: si caminas hacia una puerta un poco descentrado, te guía al centro.
 
 **Regla:** para la posición o dirección de la cabeza en XR, usar la cámara del usuario (hija del rig), nunca recalcular la matriz de `renderer.xr.getCamera()`. Esa cámara no tiene padre y pierde la transformación del rig (ver `Locomotion.headWorld`).
 
@@ -347,7 +362,7 @@ Requisitos recomendados:
 
 - [ ] Sesión VR funcional en Quest 3 por ruta de prueba documentada
 - [ ] Banco de entrenamiento (T1–T5) funcional y saltable
-- [ ] Entorno base jugable (5 salas + pasillo) con locomoción cómoda
+- [ ] Entorno base jugable (6 salas en estrella + pasillos) con locomoción cómoda
 - [ ] Reruteo de energía con consecuencias visibles/audibles
 - [ ] Soporte vital con degradación y estados de fallo legibles
 - [ ] Al menos un trade-off forzado entre sistemas
@@ -373,6 +388,7 @@ Requisitos recomendados:
 | `docs/ASSET_REGISTRY.md` | Registro de assets/licencias y fuentes de datos |
 | `docs/CONTENT_SCRIPT.md` | Guion de comms, tutorial y convención de claves de strings |
 | `docs/FLOOR_PLAN.md` | Plano acotado: salas, puertas, paneles por muro, anclas de teleport, alarmas |
+| `docs/COLLABORATION.md` | Reparto de archivos por sala entre 2 personas, archivos compartidos y flujo de ramas/PR en GitHub |
 | `docs/references/registro_nasa_donki.md` | Snapshot NASA DONKI usado para el clima espacial |
 | `docs/project-context.json` | Resumen machine-readable |
 | `llms.txt` | Mapa compacto del repo |

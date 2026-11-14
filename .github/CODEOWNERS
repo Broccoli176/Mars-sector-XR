@@ -1,0 +1,41 @@
+# Ownership by room — see docs/COLLABORATION.md
+# The LAST matching pattern wins.
+#
+# Persona A (@Broccoli176): Personal · Hidroponía · Sala central (hub)
+# Persona B (@dredby13-cpu): Telecom · Sala de control · Energía y oxígeno
+
+# Shared by default: both review
+*                                   @Broccoli176 @dredby13-cpu
+
+# --- Persona A: Personal · Hydro · Hub ---
+/src/rooms/personal/                @Broccoli176
+/src/rooms/hydro/                   @Broccoli176
+/src/rooms/hub/                     @Broccoli176
+/src/data/stations/personal.json    @Broccoli176
+/src/data/stations/hydro.json       @Broccoli176
+/src/data/stations/hub.json         @Broccoli176
+/src/data/strings/es/personal.json  @Broccoli176
+/src/data/strings/es/hydro.json     @Broccoli176
+/src/data/strings/es/hub.json       @Broccoli176
+/src/data/balance/hydro.json        @Broccoli176
+/src/systems/Food.js                @Broccoli176
+/tests/hydro.test.js                @Broccoli176
+
+# --- Persona B: Telecom · Control · Energy ---
+/src/rooms/telecom/                 @dredby13-cpu
+/src/rooms/control/                 @dredby13-cpu
+/src/rooms/energy/                  @dredby13-cpu
+/src/world/Porthole.js              @dredby13-cpu
+/src/data/stations/telecom.json     @dredby13-cpu
+/src/data/stations/control.json     @dredby13-cpu
+/src/data/stations/energy.json      @dredby13-cpu
+/src/data/strings/es/telecom.json   @dredby13-cpu
+/src/data/strings/es/control.json   @dredby13-cpu
+/src/data/strings/es/energy.json    @dredby13-cpu
+/src/data/balance/energy.json       @dredby13-cpu
+/src/data/balance/telecom.json      @dredby13-cpu
+/src/systems/PowerGrid.js           @dredby13-cpu
+/src/systems/LifeSupport.js         @dredby13-cpu
+/src/systems/Telecom.js             @dredby13-cpu
+/tests/power.test.js                @dredby13-cpu
+/tests/telecom.test.js              @dredby13-cpu

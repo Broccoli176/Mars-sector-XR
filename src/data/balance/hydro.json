@@ -1,0 +1,16 @@
+{
+  "food": {
+    "consumptionPerHour": 104,
+    "harvestKcal": 1200,
+    "growthHoursToReady": 48,
+    "initialGrowthHours": 24,
+    "spoilAfterReadyHours": 12,
+    "spoilWithoutCareHours": 6
+  },
+  "water": {
+    "drinkingPerHour": 0.104,
+    "recycleFraction": 0.85,
+    "hydroPerHour": 0.15,
+    "hydroCondensateFraction": 0.5
+  }
+}

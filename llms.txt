@@ -13,6 +13,7 @@
 - [docs/ASSET_REGISTRY.md](docs/ASSET_REGISTRY.md): registro de assets/licencias, fuentes de datos y atribuciones
 - [docs/CONTENT_SCRIPT.md](docs/CONTENT_SCRIPT.md): guion de comms, tutorial y convención de claves de strings
 - [docs/FLOOR_PLAN.md](docs/FLOOR_PLAN.md): plano acotado (salas, puertas, paneles, anclas de teleport)
+- [docs/COLLABORATION.md](docs/COLLABORATION.md): reparto de archivos por sala (2 personas) y flujo de ramas/PR
 - [docs/references/registro_nasa_donki.md](docs/references/registro_nasa_donki.md): snapshot NASA DONKI (clima espacial) y su uso en el juego
 - [docs/project-context.json](docs/project-context.json): resumen machine-readable del proyecto
 - [README.md](README.md): visión general y quickstart (plantilla)
@@ -30,6 +31,6 @@
 - **Contratos a definir/implementar:** eventos y esquema de guardado en `AGENTS.md`; reglas numéricas en `docs/SIMULATION_SPEC.md`.
 - **Boundaries objetivo:** simulación desacoplada de render; un único dueño del estado de recursos; interacción por intents/eventos.
 - **Plataforma:** Meta Quest 3 (WebXR); hackathon de 2 días, 14–15 de noviembre de 2026.
-- **Plano:** Telecom y Soporte Vital al norte, Taller e Hidroponía al sur, Sala principal al este del pasillo (`docs/FLOOR_PLAN.md`).
+- **Plano:** base en estrella alrededor de la Sala central · Herramientas. Al norte: Telecom y Sala de control. Al oeste: Personal. Al sur: Hidroponía y Energía y oxígeno (`docs/FLOOR_PLAN.md`).
 - **Comandos:** `npm ci`, `npm run dev|build|preview`, `npm test`, `npm run sim`.
 - **WebXR:** requiere contexto seguro (HTTPS o localhost) cuando exista implementación.

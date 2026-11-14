@@ -46,14 +46,26 @@
       "src/core/Game.js",
       "src/world/Basement.js",
       "src/ui/Panel.js",
-      "src/ui/Stations.js",
       "src/objects/Button.js",
       "src/vr/Interaction.js",
       "src/vr/Locomotion.js",
       "src/vr/XRControls.js",
-      "src/vr/DesktopControls.js"
+      "src/vr/DesktopControls.js",
+      "src/ui/Stations.js (registry)",
+      "src/ui/StationKit.js",
+      "src/rooms/{control,energy,telecom,hydro,hub,personal}/stations.js",
+      "src/world/Porthole.js",
+      "src/systems/Telecom.js",
+      "src/vr/Collision.js"
     ],
-    "data": ["src/data/resources.json", "src/data/balance.json", "src/data/events.json", "src/data/layout.json", "src/data/strings.es.json"],
+    "data": [
+      "src/data/resources.json",
+      "src/data/events.json",
+      "src/data/layout.json (geometry)",
+      "src/data/stations/*.json",
+      "src/data/strings/es/*.json",
+      "src/data/balance/*.json"
+    ],
     "tests": "tests/*.test.js (Vitest, headless)",
     "notes": "Prototype v0.1. Pending: telecom/space weather, electronics/repairs, leaks, tools/holsters, training missions, audio, save, CI, typecheck, schemas, assets. Interaction uses ray + trigger press (direct grab pending)."
   },
@@ -64,9 +76,15 @@
   "mvp": {
     "win": "Reach end of day 7 alive (day 8 06:00, tick 10080)",
     "dayStart": "06:00",
-    "phases": ["boot", "training", "playing", "over", "won"],
+    "phases": [
+      "boot",
+      "training",
+      "playing",
+      "over",
+      "won"
+    ],
     "pause": "time speed 0 (not a phase); auto-pause on headset removal",
-    "tutorial": "training bench in the Workshop/Taller (missions T1-T5, skippable)",
+    "tutorial": "training bench in the Sala central / Herramientas hub (missions T1-T5, skippable)",
     "health": "0-100 health bar on diegetic biomonitor; lose at 0",
     "playerLanguage": "es",
     "lose": [
@@ -80,10 +98,13 @@
     "spaceWeather": "static NASA DONKI snapshot: one CME (974 km/s, ETA ~65 h) and two radio blackouts",
     "comms": "text only with radio SFX; no data transmitted below 20% signal",
     "save": "v1 localStorage; stretch goal for the hackathon",
-    "locomotion": ["teleport (default)", "smooth with vignette (optional)"],
+    "locomotion": [
+      "teleport (default)",
+      "smooth with vignette (optional)"
+    ],
     "input": "Quest 3 controllers; 2 hip holsters for tools",
     "ui": "diegetic panels, gauges, indicator lights; no head-locked HUD",
-    "environment": "5 rooms + corridor: Telecom and Life Support (north), Workshop/Taller and Hydro (south), Central at the corridor's east end; airlock porthole and periscope feed",
+    "environment": "hub-and-spokes: Sala central / Herramientas hub; north hall to Telecom (panoramic window) and Control room (spawn); west corridor to Personal (empty); south hall to Hydro / Agriculture and Energy & Oxygen (breakers + life support)",
     "floorPlan": "docs/FLOOR_PLAN.md"
   },
   "resources": [
@@ -119,7 +140,7 @@
   },
   "performanceBudget": {
     "fps": "72 target (90 only if measured stable), 60 floor (Quest 3)",
-    "drawCalls": "<150 (guide ~25 per room + 15 corridor)",
+    "drawCalls": "<150 (measured max 59 on desktop)",
     "triangles": "500000-1000000",
     "textureMemory": "300-500MB GPU-resident target",
     "textureFormat": "KTX2",
@@ -130,7 +151,11 @@
   "testing": {
     "secureContext": "WebXR requires HTTPS or localhost",
     "recommendedDeviceLoop": "adb reverse tcp:5173 tcp:5173 then http://localhost:5173 on Quest Browser",
-    "alternative": ["cloudflared tunnel", "trusted local HTTPS", "deployed HTTPS build (GitHub Pages)"],
+    "alternative": [
+      "cloudflared tunnel",
+      "trusted local HTTPS",
+      "deployed HTTPS build (GitHub Pages)"
+    ],
     "desktopLoop": "Chrome + Immersive Web Emulator",
     "sessionCheck": "navigator.xr.isSessionSupported('immersive-vr')",
     "reproducibility": "?seed= URL parameter"
@@ -155,7 +180,8 @@
     "assetRegistry": "docs/ASSET_REGISTRY.md",
     "spaceWeatherReference": "docs/references/registro_nasa_donki.md",
     "llmIndex": "llms.txt",
-    "readme": "README.md"
+    "readme": "README.md",
+    "collaboration": "docs/COLLABORATION.md"
   },
   "commands": {
     "install": "npm ci",
@@ -165,5 +191,26 @@
     "test": "npm test (vitest run)",
     "sim": "npm run sim (headless balance report: idle/greedy/competent)",
     "typecheck": "pending"
+  },
+  "team": {
+    "workflow": "docs/COLLABORATION.md",
+    "branches": "short branches <user>/<task> from main, PR every 1-2 h, squash merge",
+    "personA": {
+      "github": "@Broccoli176",
+      "rooms": [
+        "room_personal",
+        "room_hydro",
+        "room_hub"
+      ]
+    },
+    "personB": {
+      "github": "@dredby13-cpu",
+      "rooms": [
+        "room_telecom",
+        "room_control",
+        "room_energy"
+      ]
+    },
+    "codeowners": ".github/CODEOWNERS"
   }
 }
