@@ -18,5 +18,6 @@ export function loadSimData() {
     resources: readJson('resources.json'),
     balance: mergeObjects(folder('balance'), 'balance'),
     events: readJson('events.json'),
+    real: Object.fromEntries(folder('real').map(([f, d]) => [f.replace(/\.json$/, ''), d])),
   };
 }

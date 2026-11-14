@@ -109,3 +109,11 @@ Each mission has `stepN` keys for multi-step hints (e.g. `tutorial.t3.step2` = "
 ## 6) Pending
 - The remaining `ui.*`, `alarm.*` and `settings.*` keys are written during implementation, following §2.
 - Credits text: `docs/ASSET_REGISTRY.md` → "Attribution text".
+
+## 7) Real-data panels (Person A)
+
+| Keys | File | Content |
+| :-- | :-- | :-- |
+| `personal.dosimeter.*` | `strings/es/personal.json` | Dosimeter: rate, shift dose, ISS comparison, chart label, context, **source + "no en vivo"** |
+| `hydro.guide.*`, `hydro.led.*`, `real.crop.*`, `ui.hydro.real_cycle` | `strings/es/hydro.json` | CSA crop guide, LEDs, crop names, real cycle on the rack panel |
+| `hub.sources.*` (incl. `hub.sources.use.<datasetId>`) | `strings/es/hub.json` | "Fuentes científicas" board; one `use` line per dataset in `src/data/real/` |

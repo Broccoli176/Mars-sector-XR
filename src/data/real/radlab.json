@@ -1,0 +1,372 @@
+{
+  "_about": "Embedded REAL data snapshot (not live). Regenerate with `npm run data:radlab -- YYYY-MM-DD`.",
+  "source": {
+    "institution": "NASA Open Science Data Repository (OSDR)",
+    "product": "RadLab",
+    "url": "https://visualization.osdr.nasa.gov/radlab/",
+    "apiDocs": "https://visualization.osdr.nasa.gov/radlab/gui/data-api/",
+    "terms": "https://www.nasa.gov/reference/osdr-help-terms-and-conditions/",
+    "retrievedAt": "2026-11-14"
+  },
+  "day": "2023-01-01",
+  "units": {
+    "rate": "µGy/h (absorbed dose rate)"
+  },
+  "mars": {
+    "label": "Mars surface, Gale crater — RAD on the Curiosity rover (MSL)",
+    "instrumentId": "MSL-RAD-Surface",
+    "query": "https://visualization.osdr.nasa.gov/radlab/api/?instrument_id=MSL-RAD-Surface&timestamp%3E=2023-01-01&timestamp%3C2023-01-02&absorbed_dose_rate&format=csv",
+    "summary": {
+      "samples": 82,
+      "meanUGyPerHour": 6.477,
+      "medianUGyPerHour": 6.434,
+      "p95UGyPerHour": 6.997,
+      "minUGyPerHour": 5.808,
+      "maxUGyPerHour": 7.508,
+      "meanUGyPerDay": 155.445
+    },
+    "samples": [
+      {
+        "t": "2023-01-01T00:04:31",
+        "uGyPerHour": 6.372
+      },
+      {
+        "t": "2023-01-01T00:21:36",
+        "uGyPerHour": 5.997
+      },
+      {
+        "t": "2023-01-01T00:38:41",
+        "uGyPerHour": 6.307
+      },
+      {
+        "t": "2023-01-01T00:55:45",
+        "uGyPerHour": 6.533
+      },
+      {
+        "t": "2023-01-01T01:12:50",
+        "uGyPerHour": 6.78
+      },
+      {
+        "t": "2023-01-01T01:29:55",
+        "uGyPerHour": 7.508
+      },
+      {
+        "t": "2023-01-01T01:47:01",
+        "uGyPerHour": 6.951
+      },
+      {
+        "t": "2023-01-01T02:04:07",
+        "uGyPerHour": 6.609
+      },
+      {
+        "t": "2023-01-01T02:21:13",
+        "uGyPerHour": 6.723
+      },
+      {
+        "t": "2023-01-01T02:38:19",
+        "uGyPerHour": 6.187
+      },
+      {
+        "t": "2023-01-01T02:55:25",
+        "uGyPerHour": 6.325
+      },
+      {
+        "t": "2023-01-01T03:12:31",
+        "uGyPerHour": 6.666
+      },
+      {
+        "t": "2023-01-01T03:29:37",
+        "uGyPerHour": 7.324
+      },
+      {
+        "t": "2023-01-01T03:46:43",
+        "uGyPerHour": 6.897
+      },
+      {
+        "t": "2023-01-01T04:03:49",
+        "uGyPerHour": 6.332
+      },
+      {
+        "t": "2023-01-01T04:20:55",
+        "uGyPerHour": 7.032
+      },
+      {
+        "t": "2023-01-01T04:38:01",
+        "uGyPerHour": 6.223
+      },
+      {
+        "t": "2023-01-01T04:55:07",
+        "uGyPerHour": 6.163
+      },
+      {
+        "t": "2023-01-01T05:12:13",
+        "uGyPerHour": 6.062
+      },
+      {
+        "t": "2023-01-01T05:29:19",
+        "uGyPerHour": 6.951
+      },
+      {
+        "t": "2023-01-01T05:46:25",
+        "uGyPerHour": 6.947
+      },
+      {
+        "t": "2023-01-01T06:03:31",
+        "uGyPerHour": 6.788
+      },
+      {
+        "t": "2023-01-01T06:20:37",
+        "uGyPerHour": 6.336
+      },
+      {
+        "t": "2023-01-01T06:37:43",
+        "uGyPerHour": 6.794
+      },
+      {
+        "t": "2023-01-01T06:54:49",
+        "uGyPerHour": 6.634
+      },
+      {
+        "t": "2023-01-01T07:25:18",
+        "uGyPerHour": 6.909
+      },
+      {
+        "t": "2023-01-01T07:42:22",
+        "uGyPerHour": 5.964
+      },
+      {
+        "t": "2023-01-01T07:59:28",
+        "uGyPerHour": 6.674
+      },
+      {
+        "t": "2023-01-01T08:16:34",
+        "uGyPerHour": 6.957
+      },
+      {
+        "t": "2023-01-01T08:33:40",
+        "uGyPerHour": 6.464
+      },
+      {
+        "t": "2023-01-01T08:50:46",
+        "uGyPerHour": 6.482
+      },
+      {
+        "t": "2023-01-01T09:07:52",
+        "uGyPerHour": 6.301
+      },
+      {
+        "t": "2023-01-01T09:24:58",
+        "uGyPerHour": 6.672
+      },
+      {
+        "t": "2023-01-01T09:42:04",
+        "uGyPerHour": 6.001
+      },
+      {
+        "t": "2023-01-01T09:59:10",
+        "uGyPerHour": 6.253
+      },
+      {
+        "t": "2023-01-01T10:16:16",
+        "uGyPerHour": 5.972
+      },
+      {
+        "t": "2023-01-01T10:33:22",
+        "uGyPerHour": 6.749
+      },
+      {
+        "t": "2023-01-01T10:50:28",
+        "uGyPerHour": 6.349
+      },
+      {
+        "t": "2023-01-01T11:07:34",
+        "uGyPerHour": 6.646
+      },
+      {
+        "t": "2023-01-01T11:24:40",
+        "uGyPerHour": 6.951
+      },
+      {
+        "t": "2023-01-01T11:41:46",
+        "uGyPerHour": 6.269
+      },
+      {
+        "t": "2023-01-01T11:58:52",
+        "uGyPerHour": 6.398
+      },
+      {
+        "t": "2023-01-01T12:15:58",
+        "uGyPerHour": 6.365
+      },
+      {
+        "t": "2023-01-01T12:33:04",
+        "uGyPerHour": 6.48
+      },
+      {
+        "t": "2023-01-01T12:50:10",
+        "uGyPerHour": 6.997
+      },
+      {
+        "t": "2023-01-01T13:07:16",
+        "uGyPerHour": 6.299
+      },
+      {
+        "t": "2023-01-01T13:24:22",
+        "uGyPerHour": 6.097
+      },
+      {
+        "t": "2023-01-01T13:58:46",
+        "uGyPerHour": 6.335
+      },
+      {
+        "t": "2023-01-01T14:15:51",
+        "uGyPerHour": 6.324
+      },
+      {
+        "t": "2023-01-01T14:32:56",
+        "uGyPerHour": 5.956
+      },
+      {
+        "t": "2023-01-01T14:50:01",
+        "uGyPerHour": 6.934
+      },
+      {
+        "t": "2023-01-01T15:07:06",
+        "uGyPerHour": 6.507
+      },
+      {
+        "t": "2023-01-01T15:24:12",
+        "uGyPerHour": 6.495
+      },
+      {
+        "t": "2023-01-01T15:41:18",
+        "uGyPerHour": 6.059
+      },
+      {
+        "t": "2023-01-01T15:58:24",
+        "uGyPerHour": 6.434
+      },
+      {
+        "t": "2023-01-01T16:19:04",
+        "uGyPerHour": 6.409
+      },
+      {
+        "t": "2023-01-01T16:36:08",
+        "uGyPerHour": 6.313
+      },
+      {
+        "t": "2023-01-01T16:53:14",
+        "uGyPerHour": 6.306
+      },
+      {
+        "t": "2023-01-01T17:10:20",
+        "uGyPerHour": 6.665
+      },
+      {
+        "t": "2023-01-01T17:27:26",
+        "uGyPerHour": 6.564
+      },
+      {
+        "t": "2023-01-01T17:44:32",
+        "uGyPerHour": 7.023
+      },
+      {
+        "t": "2023-01-01T18:01:38",
+        "uGyPerHour": 6.819
+      },
+      {
+        "t": "2023-01-01T18:18:44",
+        "uGyPerHour": 6.308
+      },
+      {
+        "t": "2023-01-01T18:35:50",
+        "uGyPerHour": 6.322
+      },
+      {
+        "t": "2023-01-01T18:52:56",
+        "uGyPerHour": 6.832
+      },
+      {
+        "t": "2023-01-01T19:10:02",
+        "uGyPerHour": 5.985
+      },
+      {
+        "t": "2023-01-01T19:27:08",
+        "uGyPerHour": 6.535
+      },
+      {
+        "t": "2023-01-01T19:44:14",
+        "uGyPerHour": 6.027
+      },
+      {
+        "t": "2023-01-01T20:01:20",
+        "uGyPerHour": 6.489
+      },
+      {
+        "t": "2023-01-01T20:18:26",
+        "uGyPerHour": 6.159
+      },
+      {
+        "t": "2023-01-01T20:35:32",
+        "uGyPerHour": 6.331
+      },
+      {
+        "t": "2023-01-01T20:52:38",
+        "uGyPerHour": 6.258
+      },
+      {
+        "t": "2023-01-01T21:09:44",
+        "uGyPerHour": 6.12
+      },
+      {
+        "t": "2023-01-01T21:26:50",
+        "uGyPerHour": 6.729
+      },
+      {
+        "t": "2023-01-01T21:43:56",
+        "uGyPerHour": 5.922
+      },
+      {
+        "t": "2023-01-01T22:01:02",
+        "uGyPerHour": 6.044
+      },
+      {
+        "t": "2023-01-01T22:18:08",
+        "uGyPerHour": 6.753
+      },
+      {
+        "t": "2023-01-01T22:35:14",
+        "uGyPerHour": 6.208
+      },
+      {
+        "t": "2023-01-01T22:51:59",
+        "uGyPerHour": 6.294
+      },
+      {
+        "t": "2023-01-01T23:09:04",
+        "uGyPerHour": 5.808
+      },
+      {
+        "t": "2023-01-01T23:26:09",
+        "uGyPerHour": 6.558
+      },
+      {
+        "t": "2023-01-01T23:43:15",
+        "uGyPerHour": 6.591
+      }
+    ]
+  },
+  "iss": {
+    "label": "International Space Station — DosTel",
+    "query": "https://visualization.osdr.nasa.gov/radlab/api/?spacecraft=ISS&instrument=DosTel&timestamp%3E=2023-01-01&timestamp%3C2023-01-02&absorbed_dose_rate&format=csv",
+    "summary": {
+      "samples": 895,
+      "meanUGyPerHour": 28.303,
+      "medianUGyPerHour": 4.742,
+      "p95UGyPerHour": 203.46,
+      "minUGyPerHour": 1.281,
+      "maxUGyPerHour": 510.373,
+      "meanUGyPerDay": 679.274
+    }
+  }
+}

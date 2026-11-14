@@ -8,7 +8,7 @@ import { Simulation } from '../../src/systems/Simulation.js';
 export function newSim(overrides = {}) {
   const balance = deepMerge(structuredClone(gameData.balance), overrides.balance ?? {});
   const events = overrides.events ?? structuredClone(gameData.events);
-  return new Simulation({ resources: structuredClone(gameData.resources), balance, events });
+  return new Simulation({ resources: structuredClone(gameData.resources), balance, events, real: gameData.real });
 }
 
 /** @param {any} target @param {any} source */

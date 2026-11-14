@@ -19,5 +19,12 @@
     "wall": "south",
     "along": -7.5,
     "y": 1.45
+  },
+  {
+    "id": "hydro_cropguide",
+    "room": "room_hydro",
+    "wall": "north",
+    "along": -9.05,
+    "y": 1.5
   }
 ]

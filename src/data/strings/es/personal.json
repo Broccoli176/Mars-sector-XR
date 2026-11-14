@@ -1,1 +1,10 @@
-{}
+{
+  "personal.dosimeter.title": "DOSÍMETRO · RADIACIÓN EN LA SUPERFICIE DE MARTE",
+  "personal.dosimeter.shift_dose": "Dosis en superficie durante tu turno: {dose}",
+  "personal.dosimeter.iss": "ISS (valor típico, mismo día): {value} µGy/h",
+  "personal.dosimeter.chart": "Registro real de 24 h · {day}",
+  "personal.dosimeter.context": "Medido en el exterior, cráter Gale. La base, bajo el regolito, recibe menos.",
+  "personal.dosimeter.source": "Datos reales: NASA OSDR RadLab · MSL RAD (rover Curiosity) · registro {day} · descargado {retrieved}",
+  "personal.dosimeter.replay": "Reproducción de un registro real, no datos en vivo.",
+  "personal.dosimeter.no_data": "Sin datos de radiación. Ejecuta: npm run data:radlab"
+}

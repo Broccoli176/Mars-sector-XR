@@ -1,5 +1,11 @@
 {
   "ui.training.title": "BANCO DE ENTRENAMIENTO",
   "ui.training.pending": "Misiones T1–T5: próximamente",
-  "ui.training.start_here": "Puedes iniciar el turno aquí."
+  "ui.training.start_here": "Puedes iniciar el turno aquí.",
+  "hub.sources.title": "FUENTES CIENTÍFICAS · DATOS REALES",
+  "hub.sources.use.radlab": "Radiación en la superficie de Marte (MSL RAD, Curiosity) y en la ISS → Dosímetro (Personal)",
+  "hub.sources.use.csa_food": "Ciclos de cultivo, dieta de la tripulación y hábitats de plantas → Hidroponía",
+  "hub.sources.meta": "consultado {date} · {url}",
+  "hub.sources.none": "No hay conjuntos de datos reales cargados.",
+  "hub.sources.disclaimer": "Datos reales incluidos en el juego como registros estáticos: no son datos en vivo."
 }

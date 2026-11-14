@@ -25,6 +25,7 @@ export class Game {
       resources: structuredClone(this.data.resources),
       balance: structuredClone(this.data.balance),
       events: structuredClone(this.data.events),
+      real: this.data.real,
     });
     this.log = [];
     this.#wireLog(sim);

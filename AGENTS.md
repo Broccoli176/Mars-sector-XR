@@ -12,6 +12,11 @@
 - **Datos** en `src/data/` y **tests** Vitest en `tests/`.
 - **Greybox WebXR** del plano con paneles y botones en `src/world`, `src/ui`, `src/objects` y `src/vr`. El arranque está en `src/core/main.js`.
 
+Datos reales embebidos (sin «en vivo»), ver `docs/SIMULATION_SPEC.md` §6.5:
+- `src/data/real/radlab.json` (NASA OSDR RadLab, MSL RAD) → `systems/Radiation.js` (informativo, sin daño) y dosímetro de Personal.
+- `src/data/real/csa_food.json` (CSA) → Hidroponía.
+- Ambos se atribuyen en el panel «Fuentes científicas» del hub.
+
 Telecom básico implementado (`src/systems/Telecom.js`: señal = 95 × alineación, deriva en tormenta, botón «Alinear antena», motor averiado limita a 40). Pendiente: cola de mensajes/enlace <20 % y clima espacial, electrónica/reparaciones, fugas, herramientas/fundas, banco de entrenamiento (T1–T5), alarmas sonoras, guardado, CI y assets. **Desviaciones del prototipo:**
 - Los controles se pulsan con rayo + gatillo; el agarre directo llegará después.
 - Hay un modo escritorio de desarrollo (no es modo de juego).
@@ -317,6 +322,7 @@ npm run preview        # vite preview --host
 npm test               # vitest run (simulación headless)
 npm run test:watch     # vitest
 npm run sim            # informe headless de balance: políticas idle/greedy/competent (`npm run sim -- competent`)
+npm run data:radlab    # descarga un día real de NASA OSDR RadLab (MSL RAD + ISS) → src/data/real/radlab.json
 ```
 
 Parámetros de URL solo de desarrollo:

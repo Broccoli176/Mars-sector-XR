@@ -33,4 +33,14 @@ describe('Per-owner data files', () => {
       expect(gameData.strings[rooms[sign.room].nameKey], rooms[sign.room].nameKey).toBeDefined();
     }
   });
+
+  it('every real dataset is attributed (url + retrieval date) and listed on the hub sources board', () => {
+    const real = Object.entries(gameData.real ?? {});
+    expect(real.length).toBeGreaterThan(0);
+    for (const [id, d] of real) {
+      expect(d.source?.url, `${id}.source.url`).toMatch(/^https:\/\//);
+      expect(d.source?.retrievedAt, `${id}.source.retrievedAt`).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+      expect(gameData.strings[`hub.sources.use.${id}`], `hub.sources.use.${id}`).toBeDefined();
+    }
+  });
 });

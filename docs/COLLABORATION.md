@@ -23,7 +23,8 @@ Plano y coordenadas de las salas: `docs/FLOOR_PLAN.md`.
 | Textos (español) | `src/data/strings/es/{personal,hydro,hub}.json` | `src/data/strings/es/{telecom,control,energy}.json` |
 | Números de balance | `src/data/balance/hydro.json` (comida, agua) | `src/data/balance/{energy,telecom}.json` (energía, circuitos, soporte vital, térmica, telecom) |
 | Sistemas de simulación | `src/systems/Food.js` (+ futuros de Personal / entrenamiento) | `src/systems/{PowerGrid,LifeSupport,Telecom}.js` |
-| Tests | `tests/hydro.test.js` | `tests/power.test.js`, `tests/telecom.test.js` |
+| Datos reales (NASA/CSA) | `src/data/real/{radlab,csa_food}.json`, `scripts/fetch-radlab.js`, `src/systems/Radiation.js` | (futuro) `src/data/real/space_weather.json` si se materializa DONKI |
+| Tests | `tests/hydro.test.js`, `tests/radiation.test.js` | `tests/power.test.js`, `tests/telecom.test.js` |
 
 > **Trabaja solo en tus archivos.** Si necesitas algo en un archivo del otro, pídeselo por chat o abre un PR pequeño y espera su revisión.
 
@@ -103,6 +104,11 @@ Después, en GitHub:
 
 **Nueva sala o pared**
 - Es geometría compartida (`layout.json`). Aplica las reglas de la §2.
+
+**Añadir un conjunto de datos reales**
+- Va en `src/data/real/<id>.json` con un objeto `source` que tenga `institution`, `product`, `url` y `retrievedAt` (AAAA-MM-DD).
+- Añade el texto `hub.sources.use.<id>` en `strings/es/hub.json` (lo pide Persona A, dueña del hub). Aparecerá solo en el panel «Fuentes científicas». `npm test` comprueba la atribución.
+- Nunca lo presentes como «en vivo» si es un registro.
 
 **Resolver un conflicto**
 ```bash

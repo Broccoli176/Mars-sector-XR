@@ -166,6 +166,19 @@
       "extracted": "2026-11-14",
       "reference": "docs/references/registro_nasa_donki.md",
       "runtime": "src/data/spaceWeather.json (planned)"
+    },
+    {
+      "name": "NASA OSDR RadLab — MSL RAD surface + ISS DosTel (2023-01-01)",
+      "extracted": "2026-11-14",
+      "runtime": "src/data/real/radlab.json",
+      "refresh": "npm run data:radlab -- YYYY-MM-DD",
+      "note": "snapshot, replayed; API has no CORS"
+    },
+    {
+      "name": "CSA Food production toolkit (crop times, crew diet, plant habitats)",
+      "extracted": "2026-11-14",
+      "runtime": "src/data/real/csa_food.json",
+      "note": "curated facts"
     }
   ],
   "documentation": {
@@ -190,7 +203,8 @@
     "preview": "npm run preview",
     "test": "npm test (vitest run)",
     "sim": "npm run sim (headless balance report: idle/greedy/competent)",
-    "typecheck": "pending"
+    "typecheck": "pending",
+    "dataRadlab": "npm run data:radlab (download real RadLab day)"
   },
   "team": {
     "workflow": "docs/COLLABORATION.md",

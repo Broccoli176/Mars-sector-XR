@@ -46,7 +46,7 @@
 | Sala central · Herramientas (hub) | `room_hub` | −3 → 3 | −2.5 → 2.5 | 6 × 5 m | N + S 1.8 m openings (x 0), W door (z 0) |
 | Sala de control | `room_control` | 5 → 11 | −8.5 → −2.5 | 6 × 6 m | W door (z −5.5) |
 | Telecom / Esclusa | `room_telecom` | −10 → −5 | −7.5 → −3.5 | 5 × 4 m | E door (z −5.5); window on the N wall |
-| Personal | `room_personal` | −11 → −6 | −2 → 2 | 5 × 4 m | E door (z 0). **Empty for now** |
+| Personal | `room_personal` | −11 → −6 | −2 → 2 | 5 × 4 m | E door (z 0). Crew quarters + dosimeter |
 | Hidroponía · Agricultura | `room_hydro` | −10 → −5 | 5 → 9 | 5 × 4 m | E door (z 6.9) |
 | Energía y oxígeno | `room_energy` | 7 → 13 | 4.5 → 9.5 | 6 × 5 m | W door (z 6.9) |
 | North connector | `conn_north` | −0.9 → 0.9 | −4.6 → −2.5 | 1.8 × 2.1 m | — |
@@ -65,10 +65,10 @@ Panel centres at 1.2–1.5 m height.
 | :-- | :-- |
 | Sala de control | **E:** main PC (incl. "Iniciar turno"/"Continuar") + time lever. **S:** bio panel. Settings panel and log terminal pending |
 | Energía y oxígeno | **N:** breaker wall (6 breakers + relay reset + demand meter). **E:** O₂/CO₂/pressure/temperature gauges. **S:** CO₂ scrubber with filter socket; 2 emergency O₂ tanks + electrolyzer. **W** (by the door): thermostat |
-| Hidroponía · Agricultura | **W:** grow racks with plants + "Cosechar". **N:** water tank + recycler status. **S:** ration locker + kcal |
+| Hidroponía · Agricultura | **W:** grow racks with plants + "Cosechar" (panel shows the real lettuce cycle, CSA). **N:** water tank + recycler status; **crop guide** with real CSA data (`hydro_cropguide`). **S:** ration locker + kcal |
 | Telecom / Esclusa | **N:** panoramic window (opening x −8.4…−6.6, y 1.1…2.1; 3D Mars diorama `src/world/Porthole.js`) with the operator console under it (status panel, "Alinear antena" button on the desk) and the antenna motor unit. **W:** airlock hatch (wheel + status LED) |
-| Sala central · Herramientas | **E:** training bench + mission board (`PANEL_TrainingBoard`, also has "Iniciar turno"). Tool wall / spares locker pending |
-| Personal | Nothing yet (door sign only) |
+| Sala central · Herramientas | **E:** training bench + mission board (`PANEL_TrainingBoard`, also has "Iniciar turno"). **N:** "Fuentes científicas" board (`hub_sources`, real-data attribution). Tool wall / spares locker pending |
+| Personal | **W:** dosimeter with real Mars-surface radiation (`personal_dosimeter`, NASA OSDR RadLab / MSL RAD). **S:** bunk. **N:** locker |
 
 ## 5) Teleport, spawn and flow
 

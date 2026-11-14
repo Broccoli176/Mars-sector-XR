@@ -5,7 +5,8 @@
     "growthHoursToReady": 48,
     "initialGrowthHours": 24,
     "spoilAfterReadyHours": 12,
-    "spoilWithoutCareHours": 6
+    "spoilWithoutCareHours": 6,
+    "_source": "consumptionPerHour 104 kcal/h ≈ 2500 kcal/day, within the CSA crew-diet range 1900–3200 kcal/day (src/data/real/csa_food.json). Crop growth is time-compressed; the real cycle (lettuce 21–28 days) is shown in-game."
   },
   "water": {
     "drinkingPerHour": 0.104,

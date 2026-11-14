@@ -13,7 +13,8 @@
     "preview": "vite preview --host",
     "test": "vitest run",
     "test:watch": "vitest",
-    "sim": "node scripts/simulate.js"
+    "sim": "node scripts/simulate.js",
+    "data:radlab": "node scripts/fetch-radlab.js"
   },
   "dependencies": {
     "mitt": "3.0.1",
