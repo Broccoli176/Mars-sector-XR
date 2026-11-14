@@ -4,6 +4,8 @@
 import { COLORS, statusColor, startButtonState } from '../../ui/StationKit.js';
 import { buildToolWall } from './tools.js';
 import { createT1, isT1Done } from './toolRules.js';
+import { Panel } from '../../ui/Panel.js';
+import { describeInputSource, createInputCounters, handLines } from './controllerDiag.js';
 
 // Shared between the tool wall (events) and the training board (checklist). Presentation-only state.
 const hubState = { t1: createT1() };
@@ -100,6 +102,52 @@ export const builders = {
     lines.push({ text: t('hub.sources.disclaimer'), color: COLORS.title, size: 0.75 });
     panel.renderLines(t('hub.sources.title'), lines);
   },
+};
+
+/**
+ * «Prueba de mandos»: live diagnostics of the Quest controllers (read-only, presentation only).
+ * Shows what the browser receives per hand, the select/squeeze events that reach the session, and a
+ * test button that checks the full ray + trigger → Interaction path.
+ * @param {import('three').Group} g @param {any} _station @param {import('../../ui/StationKit.js').StationKit} kit
+ */
+builders.hub_controllers = (g, _station, kit) => {
+  const { t } = kit;
+  /** @type {import('three').WebGLRenderer | undefined} */
+  const renderer = kit.services.renderer;
+  const panel = new Panel(1.3, 0.95, { pxPerMeter: 760 });
+  g.add(panel.mesh);
+  const counters = createInputCounters();
+  let rayPresses = 0;
+  renderer?.xr.addEventListener('sessionstart', () => {
+    counters.reset();
+    const session = renderer.xr.getSession();
+    if (session) counters.attach(session);
+  });
+  renderer?.xr.addEventListener('sessionend', () => counters.detach());
+  kit.addButton(g, { width: 0.42, height: 0.1, label: t('hub.ctrl.test_button'), onSelect: () => { rayPresses++; } }, 0, -0.56);
+
+  kit.onRefresh(() => {
+    const session = renderer?.xr.getSession() ?? null;
+    /** @type {{ text: string, color?: string, size?: number }[]} */
+    const lines = [];
+    if (!session) {
+      lines.push({ text: t('hub.ctrl.no_session'), color: COLORS.warning, size: 0.85 });
+    } else {
+      const hz = /** @type {any} */ (session).frameRate;
+      lines.push({ text: t('hub.ctrl.session', { hz: hz ? Math.round(hz) : '—', vis: session.visibilityState, n: session.inputSources.length, changes: counters.sourcesChanged }), color: COLORS.nominal, size: 0.8 });
+      const sources = [...session.inputSources];
+      for (const [hand, key] of /** @type {const} */ ([['left', 'hub.ctrl.left'], ['right', 'hub.ctrl.right']])) {
+        const src = sources.find((s) => s.handedness === hand);
+        lines.push(...handLines(src ? describeInputSource(src) : null, key, counters.get(hand), t, COLORS));
+      }
+      const others = sources.filter((s) => s.handedness !== 'left' && s.handedness !== 'right');
+      if (others.length) lines.push({ text: t('hub.ctrl.others', { n: others.length, list: others.map((s) => s.profiles?.[0] ?? s.targetRayMode).join(', ') }), color: COLORS.warning, size: 0.75 });
+    }
+    lines.push({ text: t('hub.ctrl.ray_presses', { n: rayPresses }), color: rayPresses ? COLORS.nominal : COLORS.text, size: 0.85 });
+    lines.push({ text: t('hub.ctrl.legend'), color: COLORS.dim, size: 0.72 });
+    lines.push({ text: t('hub.ctrl.hint'), color: COLORS.dim, size: 0.68 });
+    panel.renderLines(t('hub.ctrl.title'), lines, { border: session ? COLORS.info : COLORS.border });
+  });
 };
 
 /**

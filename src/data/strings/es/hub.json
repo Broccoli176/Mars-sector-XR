@@ -38,5 +38,20 @@
   "hub.t1.rest": "T2–T5: próximamente",
   "hub.toolwall.hint": "Gatillo de agarre del mando (o tecla G) para coger · suéltala junto a su silueta para colgarla",
   "hub.sources.use.osdr_health": "Estudios reales de salud en el espacio (músculo, hueso, defensas) → Salud del astronauta (Personal)",
-  "hub.sources.use.donki_recent": "Clima espacial: EN VIVO desde api.nasa.gov si hay conexión; si no, este registro → El Sol ahora (Personal)"
+  "hub.sources.use.donki_recent": "Clima espacial: EN VIVO desde api.nasa.gov si hay conexión; si no, este registro → El Sol ahora (Personal)",
+  "hub.ctrl.title": "PRUEBA DE MANDOS · META QUEST",
+  "hub.ctrl.no_session": "Fuera de VR: pulsa «ENTER VR» y vuelve a mirar este panel.",
+  "hub.ctrl.session": "Sesión VR activa · {hz} Hz · {vis} · fuentes de entrada: {n} (cambios: {changes})",
+  "hub.ctrl.left": "IZQUIERDO",
+  "hub.ctrl.right": "DERECHO",
+  "hub.ctrl.missing": "no detectado (enciéndelo o pulsa un botón)",
+  "hub.ctrl.no_gamepad": "sin gamepad",
+  "hub.ctrl.buttons": "Gatillo {trigger} · Agarre {grip} · {a} · {b}",
+  "hub.ctrl.stick": "Stick X {x} Y {y} · clic {press} · (ejes 0/1: {px} {py})",
+  "hub.ctrl.events": "Eventos: gatillo (select) {select} · agarre (squeeze) {squeeze} · último: {last}",
+  "hub.ctrl.others": "Otras fuentes ({n}): {list} — ¿manos en vez de mandos?",
+  "hub.ctrl.ray_presses": "Pulsaciones con el rayo en el botón de abajo: {n}",
+  "hub.ctrl.legend": "En el juego: Gatillo = pulsar botones o teletransportarte (apunta al suelo) · Agarre = coger herramientas a ≤ 3 m apuntando con el rayo · Stick a los lados = girar 30°.",
+  "hub.ctrl.hint": "Si los valores cambian pero el contador del rayo no sube, el fallo está en el rayo, no en el mando. ● pulsado · ○ suelto · × no existe",
+  "hub.ctrl.test_button": "Pulsa con el gatillo"
 }

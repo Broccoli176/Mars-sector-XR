@@ -55,3 +55,4 @@
 # --- Persona A: hub tools ---
 /src/data/balance/hub.json          @Broccoli176
 /tests/tools.test.js                @Broccoli176
+/tests/controllers.test.js          @Broccoli176

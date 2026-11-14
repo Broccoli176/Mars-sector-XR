@@ -342,6 +342,8 @@ Parámetros de URL solo de desarrollo:
 
 Agarre: botón de agarre (grip) del mando en XR, tecla **G** en escritorio (`src/vr/Grab.js`). Hay fundas en la cadera (`src/vr/Holsters.js`).
 
+**Diagnóstico de mandos:** panel «Prueba de mandos» en la Sala central (muro norte, a la derecha de la puerta; `src/rooms/hub/controllerDiag.js`). Dentro del visor muestra lo que llega de cada mando (gatillo, agarre, A/B/X/Y, stick, eventos select/squeeze) y tiene un botón para probar el rayo. Lee `renderer.xr` mediante `kit.services.renderer` (solo lectura).
+
 Locomoción de desarrollo por teclado (`src/vr/KeyboardLocomotion.js`): WASD + Q/E. Funciona también dentro de sesiones XR emuladas. Colisión en `src/vr/Collision.js`:
 - El cuerpo es un círculo de 0,22 m que choca con paredes y marcos (derivados de `layout.json`) y con los muebles sólidos de las estaciones, y se desliza a lo largo de ellos.
 - Avanza en sub-pasos para no atravesar paredes.
