@@ -26,19 +26,25 @@ export class Telecom {
     this.resources = resources;
     this.alignment = this.cfg.initialAlignment;
     this.motorBroken = false;
+    /** Signal cap from the receiver power supply (null = healthy), see src/systems/Electronics.js. */
+    /** @type {number | null} */
+    this.rxCap = null;
 
     bus?.on('antenna:align', () => this.align());
     bus?.on('component:damaged', (e) => {
       if (e?.componentId === 'antenna_motor') this.motorBroken = true;
+      if (e?.componentId === 'rx_psu') this.rxCap = e.signalCap ?? 0;
     });
     bus?.on('system:repaired', (e) => {
-      if (e?.partId === 'antenna_motor' || e?.systemId === 'telecom') this.motorBroken = false;
+      if (e?.partId === 'rx_psu') this.rxCap = null;
+      else if (e?.partId === 'antenna_motor' || (e?.systemId === 'telecom' && !e?.partId)) this.motorBroken = false;
     });
   }
 
   reset() {
     this.alignment = this.cfg.initialAlignment;
     this.motorBroken = false;
+    this.rxCap = null;
   }
 
   /**
@@ -75,6 +81,7 @@ export class Telecom {
     if (this.motorBroken) {
       targetSignal = Math.min(targetSignal, this.cfg.brokenMotorCap);
     }
+    if (this.rxCap !== null) targetSignal = Math.min(targetSignal, this.rxCap);
     const current = this.resources.value('signal');
     const target = Math.round(targetSignal);
     if (current !== target) {
@@ -83,6 +90,6 @@ export class Telecom {
   }
 
   snapshot() {
-    return { alignment: this.alignment, motorBroken: this.motorBroken };
+    return { alignment: this.alignment, motorBroken: this.motorBroken, rxCap: this.rxCap };
   }
 }

@@ -3,11 +3,13 @@
 // component status board and the "Fuentes científicas" board. Placement: src/data/stations/hub.json
 import { COLORS, statusColor, startButtonState } from '../../ui/StationKit.js';
 import { buildToolWall } from './tools.js';
+import { buildElectronicsBench } from './electronics.js';
 import { createT1, isT1Done } from './toolRules.js';
 import { Panel } from '../../ui/Panel.js';
 import { describeInputSource, createInputCounters, handLines } from './controllerDiag.js';
 
 // Shared between the tool wall (events) and the training board (checklist). Presentation-only state.
+/** @type {{ t1: ReturnType<typeof createT1>, tools?: any[] }} */
 const hubState = { t1: createT1() };
 
 /** @type {Record<string, (g: import('three').Group, station: any, kit: import('../../ui/StationKit.js').StationKit) => void>} */
@@ -40,7 +42,12 @@ export const builders = {
 
   /** Tool wall with the 4 tools (wrench, screwdriver, soldering iron, sealant gun). */
   hub_toolwall(g, _station, kit) {
-    buildToolWall(g, kit, hubState);
+    hubState.tools = buildToolWall(g, kit, hubState).items; // the electronics bench needs the soldering iron tip
+  },
+
+  /** Electronics bench: repair the Telecom receiver power supply (diodes + filter capacitor). */
+  hub_electronics(g, station, kit) {
+    buildElectronicsBench(g, station, kit, hubState);
   },
 
   /** Spares locker with live counters (resource `spares` + consumable inventory). */
@@ -163,6 +170,7 @@ export function brokenComponents(s) {
   if (s.power.relayBurned) out.add('relay_main');
   if (s.lifeSupport.recyclerStuck) out.add('valve_recycler');
   if (s.lifeSupport.leaks.length > 0) out.add('hull_seal');
+  if (s.electronics && s.electronics.output.quality !== 'ok') out.add('rx_psu');
   return out;
 }
 

@@ -25,6 +25,7 @@ export function competentPolicy(sim) {
   if (lifeSupport.filterLifeHours <= 0.25 && sim.inventory.filters > 0) bus.emit('filter:swap');
   if (food.anyReady) bus.emit('food:harvest');
   tendTrays(sim);
+  repairReceiver(sim);
   if (resources.value('oxygen') < 20) {
     for (const [valveId, used] of Object.entries(lifeSupport.o2TanksUsed)) {
       if (!used) {
@@ -78,5 +79,25 @@ function tendTrays(sim) {
     } else if (tray.moisture < 0.4 && food.lightsScheduled) {
       bus.emit('hydro:water', { trayId: tray.id, liters: (0.6 - tray.moisture) * food.cfg.trayCapacityL });
     }
+  }
+}
+
+/**
+ * Competent technician: replaces every bad part of the Telecom receiver supply with the right one
+ * (desolder → remove → insert, correct orientation → solder).
+ * @param {any} sim
+ */
+function repairReceiver(sim) {
+  const el = sim.electronics;
+  if (!el || el.output.quality === 'ok') return;
+  const right = { diode: '1N4007', cap: 'C470u25V' };
+  for (const s of el.slots) {
+    if (s.partId === right[s.kind] && s.health === 'ok' && !s.reversed && s.soldered) continue;
+    const partId = right[s.kind];
+    if ((el.stock[partId] ?? 0) <= 0) continue;
+    if (s.partId && s.soldered) sim.bus.emit('electronics:heat', { slotId: s.id });
+    if (s.partId) sim.bus.emit('electronics:remove', { slotId: s.id });
+    sim.bus.emit('electronics:insert', { slotId: s.id, partId, reversed: false });
+    sim.bus.emit('electronics:heat', { slotId: s.id });
   }
 }

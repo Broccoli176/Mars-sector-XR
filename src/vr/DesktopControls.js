@@ -7,7 +7,7 @@ const GRAB_RANGE = 3; // m
 /**
  * Development-only desktop controls (not a gameplay fallback): drag to look,
  * click to press buttons or teleport onto the floor under the cursor, G to grab/release the tool under the cursor,
- * hold F to use the held object (e.g. spray with the hydro hose).
+ * hold F to use the held object (e.g. spray with the hydro hose), R to flip the held object.
  * Keyboard movement lives in KeyboardLocomotion (works on desktop and in XR emulators).
  */
 export class DesktopControls {
@@ -45,6 +45,8 @@ export class DesktopControls {
     });
     window.addEventListener('keydown', (e) => {
       if (e.code === 'KeyF' && !e.repeat && !this.renderer.xr.isPresenting) this.grab?.use('desktop', true);
+      // R flips the held object (e.g. a diode's orientation at the electronics bench; in XR you turn your wrist).
+      if (e.code === 'KeyR' && !e.repeat && !this.renderer.xr.isPresenting) this.grab?.held.get('desktop')?.rotateY(Math.PI);
     });
     window.addEventListener('keyup', (e) => {
       if (e.code === 'KeyF') this.grab?.use('desktop', false);

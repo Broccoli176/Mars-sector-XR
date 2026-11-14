@@ -1,18 +1,107 @@
 {
   "tools": [
-    { "id": "wrench", "assetId": "TOOL_Wrench", "nameKey": "hub.tool.wrench", "color": "#9aa4ad", "accent": "#c9a227" },
-    { "id": "screwdriver", "assetId": "TOOL_Screwdriver", "nameKey": "hub.tool.screwdriver", "color": "#b8bfc6", "accent": "#d24a3a" },
-    { "id": "solder_iron", "assetId": "TOOL_SolderIron", "nameKey": "hub.tool.solder_iron", "color": "#8b9299", "accent": "#2f6fb3" },
-    { "id": "sealant_gun", "assetId": "TOOL_SealantGun", "nameKey": "hub.tool.sealant_gun", "color": "#c9a227", "accent": "#3a4048" }
+    {
+      "id": "wrench",
+      "assetId": "TOOL_Wrench",
+      "nameKey": "hub.tool.wrench",
+      "color": "#9aa4ad",
+      "accent": "#c9a227"
+    },
+    {
+      "id": "screwdriver",
+      "assetId": "TOOL_Screwdriver",
+      "nameKey": "hub.tool.screwdriver",
+      "color": "#b8bfc6",
+      "accent": "#d24a3a"
+    },
+    {
+      "id": "solder_iron",
+      "assetId": "TOOL_SolderIron",
+      "nameKey": "hub.tool.solder_iron",
+      "color": "#8b9299",
+      "accent": "#2f6fb3"
+    },
+    {
+      "id": "sealant_gun",
+      "assetId": "TOOL_SealantGun",
+      "nameKey": "hub.tool.sealant_gun",
+      "color": "#c9a227",
+      "accent": "#3a4048"
+    }
   ],
   "components": [
-    { "id": "pump_thermal", "nameKey": "hub.comp.pump_thermal", "system": "heating", "toolId": "wrench", "spares": 1, "holdSeconds": 10, "needsRepairBay": false },
-    { "id": "scrubber_fan", "nameKey": "hub.comp.scrubber_fan", "system": "lifeSupport", "toolId": "screwdriver", "spares": 1, "holdSeconds": 8, "needsRepairBay": false },
-    { "id": "electrolyzer_cell", "nameKey": "hub.comp.electrolyzer_cell", "system": "lifeSupport", "toolId": "solder_iron", "spares": 1, "holdSeconds": 15, "needsRepairBay": true },
-    { "id": "antenna_motor", "nameKey": "hub.comp.antenna_motor", "system": "telecom", "toolId": "wrench", "spares": 1, "holdSeconds": 10, "needsRepairBay": false },
-    { "id": "relay_main", "nameKey": "hub.comp.relay_main", "system": "power", "toolId": "screwdriver", "spares": 1, "holdSeconds": 8, "needsRepairBay": false },
-    { "id": "valve_recycler", "nameKey": "hub.comp.valve_recycler", "system": "lifeSupport", "toolId": "wrench", "spares": 0, "holdSeconds": 6, "needsRepairBay": false },
-    { "id": "hull_seal", "nameKey": "hub.comp.hull_seal", "system": "pressure", "toolId": "sealant_gun", "spares": 0, "holdSeconds": 5, "needsRepairBay": false }
+    {
+      "id": "pump_thermal",
+      "nameKey": "hub.comp.pump_thermal",
+      "system": "heating",
+      "toolId": "wrench",
+      "spares": 1,
+      "holdSeconds": 10,
+      "needsRepairBay": false
+    },
+    {
+      "id": "scrubber_fan",
+      "nameKey": "hub.comp.scrubber_fan",
+      "system": "lifeSupport",
+      "toolId": "screwdriver",
+      "spares": 1,
+      "holdSeconds": 8,
+      "needsRepairBay": false
+    },
+    {
+      "id": "electrolyzer_cell",
+      "nameKey": "hub.comp.electrolyzer_cell",
+      "system": "lifeSupport",
+      "toolId": "solder_iron",
+      "spares": 1,
+      "holdSeconds": 15,
+      "needsRepairBay": true
+    },
+    {
+      "id": "antenna_motor",
+      "nameKey": "hub.comp.antenna_motor",
+      "system": "telecom",
+      "toolId": "wrench",
+      "spares": 1,
+      "holdSeconds": 10,
+      "needsRepairBay": false
+    },
+    {
+      "id": "relay_main",
+      "nameKey": "hub.comp.relay_main",
+      "system": "power",
+      "toolId": "screwdriver",
+      "spares": 1,
+      "holdSeconds": 8,
+      "needsRepairBay": false
+    },
+    {
+      "id": "valve_recycler",
+      "nameKey": "hub.comp.valve_recycler",
+      "system": "lifeSupport",
+      "toolId": "wrench",
+      "spares": 0,
+      "holdSeconds": 6,
+      "needsRepairBay": false
+    },
+    {
+      "id": "hull_seal",
+      "nameKey": "hub.comp.hull_seal",
+      "system": "pressure",
+      "toolId": "sealant_gun",
+      "spares": 0,
+      "holdSeconds": 5,
+      "needsRepairBay": false
+    },
+    {
+      "id": "rx_psu",
+      "nameKey": "hub.comp.rx_psu",
+      "system": "telecom",
+      "toolId": "solder_iron",
+      "spares": 0,
+      "holdSeconds": 1.5,
+      "needsRepairBay": false
+    }
   ],
   "holster": {
     "belowHeadMeters": 0.7,
@@ -23,5 +112,119 @@
   "toolWall": {
     "snapRadiusMeters": 0.35,
     "dropReturnSeconds": 10
+  },
+  "electronics": {
+    "_source": "Linear power supply: bridge rectifier (4 diodes) + capacitor-input filter + regulator. Ripple ≈ I/(2fC) full wave, I/(fC) half wave. 1N4007 = 1 A rectifier, 1N4148 = small-signal diode (≈0.2 A). Values chosen for teaching, not from a specific flight board.",
+    "circuit": {
+      "acPeakV": 17,
+      "diodeDropV": 0.7,
+      "mainsHz": 50,
+      "loadA": 0.1,
+      "regulatorV": 5,
+      "regulatorDropoutV": 2,
+      "noisyRippleV": 3,
+      "driedUF": 150,
+      "diodePeakA": 0.8,
+      "wrongPartFailHours": 1.5,
+      "signalCaps": {
+        "noisy": 60,
+        "half": 45,
+        "brownout": 20,
+        "off": 0
+      }
+    },
+    "parts": {
+      "1N4007": {
+        "kind": "diode",
+        "ratingA": 1,
+        "labelKey": "hub.elec.part.1N4007"
+      },
+      "1N4148": {
+        "kind": "diode",
+        "ratingA": 0.2,
+        "labelKey": "hub.elec.part.1N4148"
+      },
+      "C470u25V": {
+        "kind": "cap",
+        "uF": 470,
+        "ratedV": 25,
+        "labelKey": "hub.elec.part.C470u25V"
+      },
+      "C10u25V": {
+        "kind": "cap",
+        "uF": 10,
+        "ratedV": 25,
+        "labelKey": "hub.elec.part.C10u25V"
+      },
+      "C1000u6V": {
+        "kind": "cap",
+        "uF": 1000,
+        "ratedV": 6.3,
+        "labelKey": "hub.elec.part.C1000u6V"
+      }
+    },
+    "stock": {
+      "1N4007": 3,
+      "1N4148": 2,
+      "C470u25V": 2,
+      "C10u25V": 2,
+      "C1000u6V": 2
+    },
+    "slots": [
+      {
+        "id": "D1",
+        "kind": "diode",
+        "partId": "1N4007"
+      },
+      {
+        "id": "D2",
+        "kind": "diode",
+        "partId": "1N4007"
+      },
+      {
+        "id": "D3",
+        "kind": "diode",
+        "partId": "1N4007"
+      },
+      {
+        "id": "D4",
+        "kind": "diode",
+        "partId": "1N4007"
+      },
+      {
+        "id": "C1",
+        "kind": "cap",
+        "partId": "C470u25V"
+      }
+    ],
+    "faults": {
+      "scheduled": [
+        {
+          "day": 2,
+          "time": "10:00",
+          "slotId": "C1",
+          "health": "dried",
+          "reason": "aging",
+          "hintKey": "hint.elec.guided"
+        }
+      ],
+      "dustStorm": {
+        "slotId": "D2",
+        "health": "short",
+        "reason": "surge",
+        "hintKey": "hint.elec.surge"
+      },
+      "cme": {
+        "slotId": "D3",
+        "health": "open",
+        "reason": "cme",
+        "hintKey": "hint.elec.cme"
+      }
+    },
+    "bench": {
+      "heatSeconds": 1.5,
+      "probeRadiusMeters": 0.04,
+      "snapRadiusMeters": 0.05
+    }
   }
 }

@@ -364,6 +364,24 @@ Real data are embedded as **static, dated snapshots** and labelled in-world as "
 
 Refresh: `npm run data:radlab -- YYYY-MM-DD` (Node, no CORS), `npm run data:osdr`, `npm run data:donki` (offline fallback), and edit `csa_food.json` by hand. Judge-facing summary: `docs/DATA_SOURCES.md`. The ISS DosTel data has no coverage in 2024, so 2023-01-01 is used for both series.
 
+### 6.6 Telecom receiver power supply (hub electronics bench)
+
+A real linear supply in `src/systems/Electronics.js`, tunables in `balance/hub.json` → `electronics`: transformer 17 V peak, 50 Hz → bridge rectifier D1–D4 (1N4007, 0.7 V drop each) → filter capacitor C1 (470 µF 25 V) → 5 V regulator (2 V dropout) → receiver (0.1 A).
+
+| Item | Rule |
+| :-- | :-- |
+| Ripple | Full wave ≈ I / (2 f C), half wave ≈ I / (f C). Healthy: ≈ 2.1 Vpp |
+| Quality → Telecom signal cap | `ok` (none) · `noisy` ripple > 3 Vpp (60) · `half` one bridge pair missing (45) · `brownout` filter valley below 7 V (20) · `off` (0) |
+| Open diode | Half-wave |
+| Shorted or reversed diode, reversed or shorted capacitor | The resettable (PTC) fuse opens ⇒ `off` |
+| Dried capacitor | Reads 150 µF ⇒ `noisy`. 10 µF or no capacitor ⇒ `brownout`. A loose (not soldered) part makes no contact |
+| Wrong parts fail with use | 1N4148 (0.2 A) under 0.8 A peaks ⇒ opens; 1000 µF 6.3 V under 15.6 V ⇒ swells (dried). After 1.5 h |
+| Faults | Guided: day 2 10:00 C1 dries. Dust storm start: surge shorts D2. `spaceWeather:impact` CME: D3 opens |
+| Repair | Soldering iron tip on the joint 1.5 s (`electronics:heat`) ⇒ remove ⇒ insert from the bin (stock: 1N4007 ×3, 470 µF ×2, decoys 1N4148 ×2, 10 µF ×2, 1000 µF 6.3 V ×2) ⇒ solder |
+| Multimeter | Diode test: good 0.62 V, open or reversed OL, short 0.00 V. Capacitance: ≈ 461 µF good, 150 µF dried. Voltage: TP1 12 V~ (AC rms), TP2 filtered DC, TP3 5 V |
+
+It does not affect survival directly: it lowers the Telecom signal (comms/link once Person B adds the message queue).
+
 ### 6.4 RNG
 - `mulberry32` seeded PRNG.
 - New run seed = `Date.now()`; override with the URL param `?seed=` for tests and demos.
