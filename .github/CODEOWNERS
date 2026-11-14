@@ -57,4 +57,7 @@
 /tests/tools.test.js                @Broccoli176
 /tests/controllers.test.js          @Broccoli176
 /tests/hydroRules.test.js           @Broccoli176
+/src/systems/Electronics.js         @Broccoli176
+/tests/electronics.test.js          @Broccoli176
+/tests/electronicsRules.test.js     @Broccoli176
 /src/data/real/bioregen_crops.json  @Broccoli176

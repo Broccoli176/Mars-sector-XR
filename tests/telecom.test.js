@@ -44,3 +44,17 @@ describe('Telecom system (spec §3.8)', () => {
     expect(sim.resources.value('signal')).toBeLessThanOrEqual(40);
   });
 });
+
+describe('Telecom ← receiver power supply (hub electronics bench)', () => {
+  it('a faulty receiver supply caps the signal and its repair restores it without touching the antenna motor', () => {
+    const sim = newSim({ events: [] });
+    sim.bus.emit('component:damaged', { componentId: 'rx_psu', reason: 'test', signalCap: 45 });
+    sim.bus.emit('game:start');
+    runTicks(sim, 1);
+    expect(sim.resources.value('signal')).toBe(45);
+    sim.bus.emit('system:repaired', { systemId: 'telecom_rx', partId: 'rx_psu' });
+    runTicks(sim, 1);
+    expect(sim.resources.value('signal')).toBe(95);
+    expect(sim.telecom.motorBroken).toBe(false);
+  });
+});

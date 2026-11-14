@@ -19,7 +19,7 @@ Datos reales embebidos (sin «en vivo»), ver `docs/SIMULATION_SPEC.md` §6.5:
 - NASA DONKI **en vivo** (`src/rooms/personal/spaceWeatherLive.js`, solo presentación, nunca alimenta la simulación) → «El Sol ahora» de Personal; sin red usa el registro `src/data/real/donki_recent.json` y lo dice.
 - Todos se atribuyen en el panel «Fuentes científicas» del hub. Resumen: `docs/DATA_SOURCES.md`.
 
-Telecom básico implementado (`src/systems/Telecom.js`: señal = 95 × alineación, deriva en tormenta, botón «Alinear antena», motor averiado limita a 40). Pendiente: cola de mensajes/enlace <20 % y clima espacial, electrónica/reparaciones, fugas, herramientas/fundas, banco de entrenamiento (T1–T5), alarmas sonoras, guardado, CI y assets. **Desviaciones del prototipo:**
+Telecom básico implementado (`src/systems/Telecom.js`: señal = 95 × alineación, deriva en tormenta, botón «Alinear antena», motor averiado limita a 40). Electrónica: banco de la Sala central que repara la fuente del receptor de Telecom (`src/systems/Electronics.js`, ver spec §6.6). Pendiente: cola de mensajes/enlace <20 % y clima espacial, reparaciones del resto de componentes, fugas, herramientas/fundas, banco de entrenamiento (T1–T5), alarmas sonoras, guardado, CI y assets. **Desviaciones del prototipo:**
 - Los controles se pulsan con rayo + gatillo; el agarre directo llegará después.
 - Hay un modo escritorio de desarrollo (no es modo de juego).
 - Strings y balance siguen en un solo archivo cada uno.
@@ -213,7 +213,12 @@ Los tanques de O₂ de emergencia usan `valve:turn` (`valve_o2_tank_1/2`). Pendi
 - **Hidroponía (4 bandejas + biorreactor de espirulina, `src/systems/Food.js`):**
   - Intents: `hydro:sow { trayId, cropId }` (solo bandeja vacía), `hydro:water { trayId, liters }` (manguera; resta agua del tanque) y `food:harvest { trayId? }` (`trayId: 'bioreactor'` para la espirulina).
   - Eventos: `hydro:sown { trayId, cropId }`, `hydro:rejected { trayId, reason: 'notEmpty' | 'noWater' }`, `food:ready { trayId, cropId }`, `food:harvested { trayId, cropId, kcal }`, `food:spoiled { trayId, cropId, reason: 'unharvested' | 'noLight' | 'noWater' | 'overwatered' }`.
-- **Usar lo que sostienes (compartido, `src/vr/Grab.js`):** `userData.grab.onUse(active, handId)`. Con un objeto así en la mano, el gatillo (XR) o la tecla F (escritorio) lo usan en vez del rayo. Lo usa la manguera de Hidroponía.
+- **Electrónica (fuente del receptor de Telecom, `src/systems/Electronics.js`):**
+  - Intents: `electronics:heat { slotId }` (el soldador funde o suelda la unión), `electronics:remove { slotId }` (solo desoldada) y `electronics:insert { slotId, partId, reversed }` (solo hueco vacío; gasta stock).
+  - Eventos: `component:damaged { componentId: 'rx_psu', reason, slotId, signalCap, quality }`, `system:repaired { systemId: 'telecom_rx', partId: 'rx_psu' }`, `electronics:rejected { slotId, partId?, reason: 'soldered' | 'occupied' | 'wrongKind' | 'noStock' }`, `electronics:changed { quality }`.
+  - Escucha `weather:changed` (tormenta ⇒ diodo en corto) y `spaceWeather:impact { kind: 'cme' }` (diodo abierto; lo emitirá Persona B).
+  - `Telecom` limita la señal a `signalCap` mientras la fuente falla.
+- **Usar lo que sostienes (compartido, `src/vr/Grab.js`):** `userData.grab.onUse(active, handId)`. Con un objeto así en la mano, el gatillo (XR) o la tecla F (escritorio) lo usan en vez del rayo. Lo usan la manguera de Hidroponía y el multímetro (cambia de modo). En escritorio, R gira lo que sostienes.
 - **Incidentes y avisos:** `incident:warning`/`triggered`, `weather:changed`, `comms:message`, `hint`.
 - **Telecom:** `antenna:align` (intent); escucha `component:damaged`/`system:repaired` para `antenna_motor`.
 - **Herramientas (presentación, fase 1):**

@@ -65,6 +65,7 @@ describe('Tool and component data (spec §6.1)', () => {
     const expected = {
       pump_thermal: 'wrench', scrubber_fan: 'screwdriver', electrolyzer_cell: 'solder_iron',
       antenna_motor: 'wrench', relay_main: 'screwdriver', valve_recycler: 'wrench', hull_seal: 'sealant_gun',
+      rx_psu: 'solder_iron', // Telecom receiver power supply (hub electronics bench)
     };
     expect(Object.fromEntries(components.map((c) => [c.id, c.toolId]))).toEqual(expected);
     for (const c of components) expect(gameData.strings[c.nameKey], c.nameKey).toBeDefined();
