@@ -1,0 +1,91 @@
+{
+  "time": {
+    "secondsPerDay": 360,
+    "minutesPerDay": 1440,
+    "dayStartHour": 6,
+    "maxTicksPerFrame": 8,
+    "totalDays": 7,
+    "speeds": [0, 1, 2, 4]
+  },
+  "power": {
+    "rtgKw": 0.5,
+    "solarKw": 1.6,
+    "solarStartHour": 6,
+    "solarEndHour": 18,
+    "stormSolarFactor": 0.2,
+    "busLimitKw": 3.0,
+    "overloadTicks": 5,
+    "relayBurnTrips": 3,
+    "relayTripWindowTicks": 1440
+  },
+  "circuits": {
+    "lifeSupport": { "priority": 1 },
+    "heating":     { "priority": 2, "drawKw": 1.0 },
+    "lighting":    { "priority": 3, "drawKw": 0.2 },
+    "telecom":     { "priority": 4, "drawKw": 0.3 },
+    "hydro":       { "priority": 5, "drawKw": 0.6, "activeStartHour": 6, "activeEndHour": 22 },
+    "repairBay":   { "priority": 6, "drawKw": 0.4 }
+  },
+  "lifeSupport": {
+    "electrolyzerKw": 0.5,
+    "scrubberKw": 0.3,
+    "o2ConsumptionPerHour": 1.5,
+    "o2ProductionPerHour": 2.0,
+    "electrolyzerWaterPerHour": 0.05,
+    "co2ProductionPerHour": 120,
+    "co2ScrubPerHour": 150,
+    "filterLifeHours": 48,
+    "initialFilterFraction": 0.1,
+    "o2TankBoost": 30,
+    "leakO2PerHour": 1.0,
+    "leakTempPerHour": 1.0,
+    "leakPressurePerHour": 2.0,
+    "pressureRecoveryPerHour": 1.0
+  },
+  "thermal": {
+    "externalC": -20,
+    "referenceC": 21,
+    "lossPerHourAtReference": 0.6,
+    "heaterPerHour": 1.8,
+    "setpointDefault": 21,
+    "setpointMin": 16,
+    "setpointMax": 22,
+    "hysteresis": 1
+  },
+  "water": {
+    "drinkingPerHour": 0.104,
+    "recycleFraction": 0.85,
+    "hydroPerHour": 0.15,
+    "hydroCondensateFraction": 0.5
+  },
+  "food": {
+    "consumptionPerHour": 104,
+    "harvestKcal": 1200,
+    "growthHoursToReady": 48,
+    "initialGrowthHours": 24,
+    "spoilAfterReadyHours": 12,
+    "spoilWithoutCareHours": 6
+  },
+  "health": {
+    "regenPerHour": 2,
+    "causeWindowHours": 6,
+    "regenBlockers": ["oxygen", "co2", "pressure", "temperature", "water", "food"],
+    "damage": [
+      { "resource": "oxygen",      "cause": "suffocation", "criticalPerHour": 10, "failPerHour": 30 },
+      { "resource": "co2",         "cause": "suffocation", "criticalPerHour": 8,  "failPerHour": 30 },
+      { "resource": "pressure",    "cause": "suffocation", "criticalPerHour": 8,  "failPerHour": 30 },
+      { "resource": "temperature", "cause": "hypothermia", "criticalPerHour": 8,  "failPerHour": 30 },
+      { "resource": "water",       "cause": "dehydration", "zeroPerHour": 4 },
+      { "resource": "food",        "cause": "starvation",  "zeroPerHour": 2 }
+    ]
+  },
+  "inventory": {
+    "filters": 3,
+    "sealantCharges": 3,
+    "o2Tanks": 2
+  },
+  "gameRules": {
+    "powerLossHours": 3,
+    "guidedTripExtraHours": 3
+  }
+}

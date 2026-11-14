@@ -1,0 +1,169 @@
+{
+  "name": "Marte VR Survival",
+  "version": "0.1.0",
+  "status": "prototype v0.1 (headless sim + greybox WebXR)",
+  "summary": "Stationary VR survival/management game set in the first human outpost on Mars. Survive 7 accelerated days by balancing life support, power, food, water, telecom and electronics, with space weather driven by a NASA DONKI snapshot.",
+  "platform": {
+    "primary": "Meta Quest 3",
+    "runtime": "Quest Browser / WebXR",
+    "budgetClass": "conservative (Quest 2-class budgets; Quest 2/3S likely but not guaranteed)",
+    "desktopPreview": "Chrome + Immersive Web Emulator (dev tooling only, no gameplay fallback)"
+  },
+  "stack": {
+    "engine": "three",
+    "engineVersion": "0.187.0",
+    "bundler": "vite",
+    "bundlerVersion": "8.3.8",
+    "testRunnerVersion": "vitest 5.1.0",
+    "eventBusVersion": "mitt 3.0.1",
+    "language": "JavaScript ES modules + JSDoc/@ts-check in MVP; TypeScript post-MVP (SIMULATION_SPEC D12)",
+    "languageTarget": "ES2022",
+    "runtime": "Node >= 22 + npm",
+    "eventBus": "mitt",
+    "physics": "none in MVP; kinematic floor drop + sockets (SIMULATION_SPEC D11)",
+    "testRunner": "vitest",
+    "schemaValidation": "pending (planned: ajv in tests)",
+    "ci": "pending (planned: GitHub Actions npm ci, test, build + GitHub Pages deploy)"
+  },
+  "schedule": {
+    "type": "hackathon",
+    "durationDays": 2,
+    "date": "2026-11-14/2026-11-15",
+    "plan": "docs/DEVELOPMENT_WORKFLOW.md §6 (H1/H2)"
+  },
+  "currentState": {
+    "entry": "index.html -> src/core/main.js",
+    "modulesPresent": [
+      "src/systems/Simulation.js",
+      "src/systems/TimeManager.js",
+      "src/systems/ResourceManager.js",
+      "src/systems/PowerGrid.js",
+      "src/systems/LifeSupport.js",
+      "src/systems/Food.js",
+      "src/systems/Crew.js",
+      "src/systems/IncidentRunner.js",
+      "src/systems/GameState.js",
+      "src/core/Game.js",
+      "src/world/Basement.js",
+      "src/ui/Panel.js",
+      "src/ui/Stations.js",
+      "src/objects/Button.js",
+      "src/vr/Interaction.js",
+      "src/vr/Locomotion.js",
+      "src/vr/XRControls.js",
+      "src/vr/DesktopControls.js"
+    ],
+    "data": ["src/data/resources.json", "src/data/balance.json", "src/data/events.json", "src/data/layout.json", "src/data/strings.es.json"],
+    "tests": "tests/*.test.js (Vitest, headless)",
+    "notes": "Prototype v0.1. Pending: telecom/space weather, electronics/repairs, leaks, tools/holsters, training missions, audio, save, CI, typecheck, schemas, assets. Interaction uses ray + trigger press (direct grab pending)."
+  },
+  "plannedState": {
+    "schemasRoot": "src/data/schemas (planned)",
+    "publicRoot": "public (planned, for assets)"
+  },
+  "mvp": {
+    "win": "Reach end of day 7 alive (day 8 06:00, tick 10080)",
+    "dayStart": "06:00",
+    "phases": ["boot", "training", "playing", "over", "won"],
+    "pause": "time speed 0 (not a phase); auto-pause on headset removal",
+    "tutorial": "training bench in the Workshop/Taller (missions T1-T5, skippable)",
+    "health": "0-100 health bar on diegetic biomonitor; lose at 0",
+    "playerLanguage": "es",
+    "lose": [
+      "suffocation",
+      "starvation or dehydration",
+      "hypothermia",
+      "total power loss",
+      "unrecoverable cascade"
+    ],
+    "timeScale": "accelerated, tick-based (1 tick = 1 in-game minute, 360 s per day at 1x)",
+    "spaceWeather": "static NASA DONKI snapshot: one CME (974 km/s, ETA ~65 h) and two radio blackouts",
+    "comms": "text only with radio SFX; no data transmitted below 20% signal",
+    "save": "v1 localStorage; stretch goal for the hackathon",
+    "locomotion": ["teleport (default)", "smooth with vignette (optional)"],
+    "input": "Quest 3 controllers; 2 hip holsters for tools",
+    "ui": "diegetic panels, gauges, indicator lights; no head-locked HUD",
+    "environment": "5 rooms + corridor: Telecom and Life Support (north), Workshop/Taller and Hydro (south), Central at the corridor's east end; airlock porthole and periscope feed",
+    "floorPlan": "docs/FLOOR_PLAN.md"
+  },
+  "resources": [
+    "power",
+    "oxygen",
+    "co2",
+    "temperature",
+    "pressure",
+    "water",
+    "food",
+    "spares",
+    "signal",
+    "health"
+  ],
+  "architecture": {
+    "layers": {
+      "core": "boot, engine, loop, scene manager, game state (planned)",
+      "vr": "controllers, locomotion, interaction, haptics (planned)",
+      "world": "environment geometry, lighting, atmosphere (planned)",
+      "systems": "headless simulation; single source of truth (planned)",
+      "objects": "interactable scene objects (planned)",
+      "ui": "diegetic presentation (planned)",
+      "data": "balance and topology/config data (planned)",
+      "types": "shared JSDoc contracts: resources, event payloads, save (planned)",
+      "utils": "shared utilities (planned)"
+    },
+    "rules": [
+      "systems must not import rendering/presentation layers",
+      "a single resource owner must be the only mutator of resource state",
+      "interaction emits intents; systems decide",
+      "events and save schema are public contracts once implemented"
+    ]
+  },
+  "performanceBudget": {
+    "fps": "72 target (90 only if measured stable), 60 floor (Quest 3)",
+    "drawCalls": "<150 (guide ~25 per room + 15 corridor)",
+    "triangles": "500000-1000000",
+    "textureMemory": "300-500MB GPU-resident target",
+    "textureFormat": "KTX2",
+    "textureSizes": "1K props, 2K large surfaces",
+    "lighting": "baked/static where possible; minimal real-time lights",
+    "postProcessing": "none by default"
+  },
+  "testing": {
+    "secureContext": "WebXR requires HTTPS or localhost",
+    "recommendedDeviceLoop": "adb reverse tcp:5173 tcp:5173 then http://localhost:5173 on Quest Browser",
+    "alternative": ["cloudflared tunnel", "trusted local HTTPS", "deployed HTTPS build (GitHub Pages)"],
+    "desktopLoop": "Chrome + Immersive Web Emulator",
+    "sessionCheck": "navigator.xr.isSessionSupported('immersive-vr')",
+    "reproducibility": "?seed= URL parameter"
+  },
+  "dataSources": [
+    {
+      "name": "NASA DONKI (CCMC) space-weather statistics, last 7 days",
+      "extracted": "2026-11-14",
+      "reference": "docs/references/registro_nasa_donki.md",
+      "runtime": "src/data/spaceWeather.json (planned)"
+    }
+  ],
+  "documentation": {
+    "agentRules": "AGENTS.md",
+    "claudePointer": "CLAUDE.md",
+    "designContext": "docs/AGENT_CONTEXT.md",
+    "simulationSpec": "docs/SIMULATION_SPEC.md",
+    "contentScript": "docs/CONTENT_SCRIPT.md",
+    "floorPlan": "docs/FLOOR_PLAN.md",
+    "developmentWorkflow": "docs/DEVELOPMENT_WORKFLOW.md",
+    "assetWorkflow": "docs/ASSET_CREATION_WORKFLOW.md",
+    "assetRegistry": "docs/ASSET_REGISTRY.md",
+    "spaceWeatherReference": "docs/references/registro_nasa_donki.md",
+    "llmIndex": "llms.txt",
+    "readme": "README.md"
+  },
+  "commands": {
+    "install": "npm ci",
+    "dev": "npm run dev (vite --host)",
+    "build": "npm run build",
+    "preview": "npm run preview",
+    "test": "npm test (vitest run)",
+    "sim": "npm run sim (headless balance report: idle/greedy/competent)",
+    "typecheck": "pending"
+  }
+}

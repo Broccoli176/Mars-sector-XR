@@ -1,0 +1,35 @@
+# Marte VR Survival
+
+> Stationary VR survival/management game: run the first human outpost on Mars for 7 accelerated days while balancing life support, power, food, water, telecom and electronics. **Prototipo v0.1:** simulación headless (`src/systems/`), datos (`src/data/`), tests (`tests/`) y greybox WebXR (`src/core/main.js`).
+
+## Docs
+
+- [AGENTS.md](AGENTS.md): contratos/reglas para agentes, arquitectura objetivo, eventos/save, presupuestos y convenciones (baseline)
+- [CLAUDE.md](CLAUDE.md): puntero corto para Claude Code
+- [docs/AGENT_CONTEXT.md](docs/AGENT_CONTEXT.md): intención de diseño, sistemas, riesgos y contexto
+- [docs/SIMULATION_SPEC.md](docs/SIMULATION_SPEC.md): especificación numérica/reglas de simulación (baseline, no implementada)
+- [docs/DEVELOPMENT_WORKFLOW.md](docs/DEVELOPMENT_WORKFLOW.md): flujo de desarrollo, pruebas WebXR/Quest y profiling (objetivo)
+- [docs/ASSET_CREATION_WORKFLOW.md](docs/ASSET_CREATION_WORKFLOW.md): pipeline de assets y validación VR (objetivo)
+- [docs/ASSET_REGISTRY.md](docs/ASSET_REGISTRY.md): registro de assets/licencias, fuentes de datos y atribuciones
+- [docs/CONTENT_SCRIPT.md](docs/CONTENT_SCRIPT.md): guion de comms, tutorial y convención de claves de strings
+- [docs/FLOOR_PLAN.md](docs/FLOOR_PLAN.md): plano acotado (salas, puertas, paneles, anclas de teleport)
+- [docs/references/registro_nasa_donki.md](docs/references/registro_nasa_donki.md): snapshot NASA DONKI (clima espacial) y su uso en el juego
+- [docs/project-context.json](docs/project-context.json): resumen machine-readable del proyecto
+- [README.md](README.md): visión general y quickstart (plantilla)
+
+## Estructura objetivo (por crear)
+
+- `src/` (planificado): `core/`, `systems/` (simulación headless), `vr/`, `world/`, `objects/`, `ui/`, `utils/`, `data/`, `types/`
+- `src/data/` (planificado): configuración/balance/recursos/componentes/eventos/strings/gráficos
+- `tests/` (planificado): pruebas headless de simulación
+- `public/` (planificado): assets runtime
+
+## Quick pointers (objetivo)
+
+- **UI jugador:** español (objetivo); **código/docs:** inglés.
+- **Contratos a definir/implementar:** eventos y esquema de guardado en `AGENTS.md`; reglas numéricas en `docs/SIMULATION_SPEC.md`.
+- **Boundaries objetivo:** simulación desacoplada de render; un único dueño del estado de recursos; interacción por intents/eventos.
+- **Plataforma:** Meta Quest 3 (WebXR); hackathon de 2 días, 14–15 de noviembre de 2026.
+- **Plano:** Telecom y Soporte Vital al norte, Taller e Hidroponía al sur, Sala principal al este del pasillo (`docs/FLOOR_PLAN.md`).
+- **Comandos:** `npm ci`, `npm run dev|build|preview`, `npm test`, `npm run sim`.
+- **WebXR:** requiere contexto seguro (HTTPS o localhost) cuando exista implementación.

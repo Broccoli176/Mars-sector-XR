@@ -1,0 +1,20 @@
+# CLAUDE.md
+
+> Prototipo v0.1 en marcha (simulación headless + greybox WebXR).
+
+This repository uses **AGENTS.md** as the single source of truth for agent instructions. Read it first:
+
+@AGENTS.md
+
+Quick reminders if you only have this file:
+
+- **Project:** stationary VR survival/management game in a first human Martian outpost (underground basement). **Meta Quest 3** primary, Three.js + Vite + WebXR + mitt, JavaScript + JSDoc/`@ts-check`, Vitest, Node 22. Player-facing text in **Spanish**; code/docs in English. Built in a **2-day hackathon, 14–15 Nov 2026**.
+- **Current state:** prototype v0.1. Headless sim in `src/systems/` (Simulation composes Time, Resources, PowerGrid, LifeSupport, Food, Crew, IncidentRunner, GameState), data in `src/data/`, Vitest tests in `tests/`, greybox WebXR presentation (`src/core/main.js`, `world/`, `ui/`, `objects/`, `vr/`). Pending systems are listed in `AGENTS.md` §0.
+- **Simulation boundaries (target):** simulation/systems logic headless (no rendering dependencies) and owning resource state through a single authority (e.g. `ResourceManager`). Presentation emits intents and reacts to events; do not mutate simulation state from render/interaction code.
+- **MVP (target):** survive 7 accelerated in-game days (days start at 06:00; run ends day 8 06:00, ≈42 min at 1×); lose on health 0 (suffocation/hypothermia/dehydration/starvation), total power loss, or unrecoverable cascade. Phases `boot → training → playing → over | won`; pause = speed 0; auto-pause on headset removal. Layout: Telecom + Life Support (north), Workshop/Taller + Hydro (south), Central at the corridor's east end (`docs/FLOOR_PLAN.md`). Tutorial = training bench in the Taller. Space weather (CME + radio blackouts) from a static NASA DONKI snapshot.
+- **VR/UX (target):** controllers first, teleport default (smooth optional with vignette), direct grab for physical controls, 2 hip holsters, **no head-locked HUD** (diegetic panels/gauges/biomonitor). Desktop = Immersive Web Emulator only (dev tooling).
+- **Perf budget (Quest 3, conservative Quest 2-class):** 72 Hz (60 floor), <150 draw calls (≈25 per room), 500k–1M tris, optimized textures, baked/static lighting favored, no post-processing chain by default.
+- **Commands:** `npm ci`, `npm run dev|build|preview`, `npm test`, `npm run sim` (headless balance report). Dev URL params `?view=x,z,deg`, `?ff=ticks`. Pending: `typecheck`, CI (GitHub Actions + Pages).
+- **Key docs:** `docs/AGENT_CONTEXT.md` (design), `docs/SIMULATION_SPEC.md` (numeric/spec baseline + data schemas), `docs/CONTENT_SCRIPT.md` (comms/tutorial/string keys), `docs/FLOOR_PLAN.md` (layout), `docs/DEVELOPMENT_WORKFLOW.md` (incl. hackathon plan), `docs/ASSET_CREATION_WORKFLOW.md`, `docs/references/registro_nasa_donki.md`, `docs/project-context.json`.
+
+When contracts (events, save schema, layout, budgets) are defined or changed, update `AGENTS.md` and related docs in the same change. Keep specs, data schemas, and tests consistent once implementation begins.

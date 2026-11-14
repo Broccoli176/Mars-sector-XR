@@ -1,0 +1,26 @@
+{
+  "name": "marte-vr-survival",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Stationary VR survival/management game in an underground Mars outpost (WebXR, Meta Quest 3).",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "vite --host",
+    "build": "vite build",
+    "preview": "vite preview --host",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "sim": "node scripts/simulate.js"
+  },
+  "dependencies": {
+    "mitt": "3.0.1",
+    "three": "0.187.0"
+  },
+  "devDependencies": {
+    "vite": "8.3.8",
+    "vitest": "5.1.0"
+  }
+}

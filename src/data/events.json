@@ -1,0 +1,5 @@
+[
+  { "id": "d1_relay_trip", "day": 1, "time": "09:00", "type": "relayTrip", "guided": true, "hintKey": "hint.relay.reset" },
+  { "id": "d1_filter_hint", "day": 1, "time": "14:00", "type": "hint", "hintKey": "hint.filter.swap" },
+  { "id": "d4_storm", "day": 4, "time": "06:00", "type": "storm", "durationHours": 36, "warnLeadHours": 12 }
+]

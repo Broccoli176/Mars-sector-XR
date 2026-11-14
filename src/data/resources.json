@@ -1,0 +1,12 @@
+{
+  "power":       { "unit": "kWh",  "min": 0,   "max": 60,    "start": 30,    "direction": "low",  "warnAt": 18,   "criticalAt": 6 },
+  "oxygen":      { "unit": "%",    "min": 0,   "max": 100,   "start": 100,   "direction": "low",  "warnAt": 40,   "criticalAt": 15,   "failAt": 10 },
+  "co2":         { "unit": "ppm",  "min": 400, "max": 10000, "start": 400,   "direction": "high", "warnAt": 2000, "criticalAt": 5000, "failAt": 8000 },
+  "temperature": { "unit": "°C",   "min": -20, "max": 30,    "start": 21,    "direction": "low",  "warnAt": 12,   "criticalAt": 4,    "failAt": -5 },
+  "pressure":    { "unit": "kPa",  "min": 0,   "max": 101,   "start": 101,   "direction": "low",  "warnAt": 85,   "criticalAt": 70,   "failAt": 60 },
+  "water":       { "unit": "L",    "min": 0,   "max": 50,    "start": 40,    "direction": "low",  "warnAt": 15,   "criticalAt": 5,    "failAt": 0 },
+  "food":        { "unit": "kcal", "min": 0,   "max": 15000, "start": 10000, "direction": "low",  "warnAt": 5000, "criticalAt": 1250, "failAt": 0 },
+  "spares":      { "unit": "u",    "min": 0,   "max": 10,    "start": 3,     "direction": "low",  "warnAt": 1,    "criticalAt": 0 },
+  "signal":      { "unit": "%",    "min": 0,   "max": 100,   "start": 95,    "direction": "low",  "warnAt": 50,   "criticalAt": 20 },
+  "health":      { "unit": "",     "min": 0,   "max": 100,   "start": 100,   "direction": "low",  "warnAt": 50,   "criticalAt": 25,   "failAt": 0 }
+}
