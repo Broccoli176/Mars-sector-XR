@@ -145,5 +145,5 @@
   "comms.storm.start": "Tormenta activa: solar al 20 %.",
   "comms.storm.end": "Tormenta finalizada.",
 
-  "dev.help": "Modo escritorio (solo desarrollo): arrastra para mirar · WASD para moverte · clic para usar o teletransportarte al suelo. En el visor: botón «ENTER VR»."
+  "dev.help": "Teclado (escritorio y emulador): W/S avanzar/retroceder · A/D lateral · Q/E o ←/→ girar. Ratón: arrastra para mirar · clic para usar o teletransportarte. En el visor: botón «ENTER VR»."
 }

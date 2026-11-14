@@ -26,7 +26,7 @@
 - Git + Git LFS
 
 ### Install and run
-Dependencies (pinned exact in `package.json`): `three` 0.187.0 and `mitt` 3.0.1 at runtime; `vite` 8.3.8 and `vitest` 5.1.0 for dev. Planned additions: `typescript` (typecheck only) and `ajv` (schema tests).
+Dependencies (pinned exact in `package.json`): `three` 0.187.0 and `mitt` 3.0.1 at runtime; `vite` 8.3.8, `vitest` 5.1.0 and `iwer` 2.7.0 (dev XR emulation) for dev. Planned additions: `typescript` (typecheck only) and `ajv` (schema tests).
 
 ```bash
 npm ci                 # install
@@ -43,6 +43,10 @@ Scripted player policies live in `tests/helpers/policies.js` and are shared by t
 Dev URL params:
 - `?view=x,z,deg` places the player rig.
 - `?ff=ticks` fast-forwards the simulation after "Iniciar turno".
+- `?iwer` installs Meta's Immersive Web Emulation Runtime (Quest 3) without the browser extension. It is lazy-loaded and kept out of the main bundle.
+- `?debug` exposes `window.__marte`.
+
+Keyboard locomotion (WASD, Q/E or arrows) works on desktop and inside emulated XR sessions, clamped to the walkable area. With the Immersive Web Emulator extension, click the page once so it receives the keys.
 
 ### CI (pending)
 GitHub Actions on every push/PR: `npm ci` → `npm test` → `npm run build`. On `main`, deploy `dist/` to GitHub Pages (HTTPS) for headset playtests.

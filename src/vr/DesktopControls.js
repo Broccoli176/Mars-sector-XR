@@ -1,12 +1,12 @@
 import * as THREE from 'three';
 
 const LOOK_SPEED = 0.0035;
-const MOVE_SPEED = 2.5; // m/s
 const DRAG_THRESHOLD = 5; // px
 
 /**
- * Development-only desktop controls (not a gameplay fallback): drag to look, WASD to move,
+ * Development-only desktop controls (not a gameplay fallback): drag to look,
  * click to press buttons or teleport onto the floor under the cursor.
+ * Keyboard movement lives in KeyboardLocomotion (works on desktop and in XR emulators).
  */
 export class DesktopControls {
   /**
@@ -24,8 +24,6 @@ export class DesktopControls {
     this.interaction = interaction;
     this.locomotion = locomotion;
     this.pitch = 0;
-    /** @type {Set<string>} */
-    this.keys = new Set();
     this.raycaster = new THREE.Raycaster();
     this.pointer = new THREE.Vector2();
     /** @type {null | { x: number, y: number, moved: boolean }} */
@@ -49,8 +47,6 @@ export class DesktopControls {
       if (this.drag && !this.drag.moved && !this.renderer.xr.isPresenting) this.#click(e, dom);
       this.drag = null;
     });
-    window.addEventListener('keydown', (e) => this.keys.add(e.code));
-    window.addEventListener('keyup', (e) => this.keys.delete(e.code));
   }
 
   /** @param {PointerEvent} e @param {HTMLElement} dom */
@@ -62,16 +58,8 @@ export class DesktopControls {
     this.interaction.activate(hit, (p) => this.locomotion.teleport(p));
   }
 
-  /** @param {number} dt */
-  update(dt) {
+  update() {
     if (this.renderer.xr.isPresenting) return;
     this.camera.rotation.set(this.pitch, 0, 0);
-    const forward = (this.keys.has('KeyW') ? 1 : 0) - (this.keys.has('KeyS') ? 1 : 0);
-    const strafe = (this.keys.has('KeyD') ? 1 : 0) - (this.keys.has('KeyA') ? 1 : 0);
-    if (!forward && !strafe) return;
-    const yaw = this.dolly.rotation.y;
-    const step = MOVE_SPEED * dt;
-    this.dolly.position.x += (-Math.sin(yaw) * forward + Math.cos(yaw) * strafe) * step;
-    this.dolly.position.z += (-Math.cos(yaw) * forward - Math.sin(yaw) * strafe) * step;
   }
 }

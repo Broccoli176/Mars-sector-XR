@@ -19,11 +19,23 @@ export class Locomotion {
     this.camera = camera;
   }
 
-  /** @param {THREE.Vector3} out */
+  /**
+   * Head position in world space. Always use the user camera: in XR three.js copies the headset pose
+   * into it (child of the dolly). The internal XR ArrayCamera has no parent, so recomputing its
+   * world matrix would drop the dolly transform.
+   * @param {THREE.Vector3} out
+   */
   headWorld(out) {
-    const cam = this.renderer.xr.isPresenting ? this.renderer.xr.getCamera() : this.camera;
-    cam.updateMatrixWorld(true);
-    return out.setFromMatrixPosition(cam.matrixWorld);
+    this.camera.updateMatrixWorld(true);
+    return out.setFromMatrixPosition(this.camera.matrixWorld);
+  }
+
+  /** Head forward direction flattened to the floor (unit vector, or zero if looking straight up/down). @param {THREE.Vector3} out */
+  headForward(out) {
+    this.camera.updateMatrixWorld(true);
+    this.camera.getWorldDirection(out);
+    out.y = 0;
+    return out.lengthSq() < 1e-6 ? out.set(0, 0, 0) : out.normalize();
   }
 
   /** @param {THREE.Vector3} point floor point */

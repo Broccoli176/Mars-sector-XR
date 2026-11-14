@@ -10,6 +10,16 @@ import { Interaction } from '../vr/Interaction.js';
 import { Locomotion } from '../vr/Locomotion.js';
 import { XRControls } from '../vr/XRControls.js';
 import { DesktopControls } from '../vr/DesktopControls.js';
+import { KeyboardLocomotion } from '../vr/KeyboardLocomotion.js';
+import { buildWalkable } from '../vr/Walkable.js';
+
+// Dev-only: `?iwer` installs Meta's Immersive Web Emulation Runtime (Quest 3) without the browser
+// extension. Must run before VRButton checks session support. Lazy-loaded: not in the main bundle.
+const devParams = new URLSearchParams(window.location.search);
+if (devParams.has('iwer')) {
+  const { installEmulatedQuest3 } = await import('../dev/iwer.js');
+  /** @type {any} */ (window).__xrDevice = installEmulatedQuest3();
+}
 
 const PANEL_REFRESH_SECONDS = 0.25; // 4 Hz canvas updates
 const MAX_FRAME_DT = 0.1;
@@ -45,9 +55,8 @@ scene.add(dolly);
 // Dev-only URL params:
 //   ?view=x,z,deg  places the rig (deg: 0 = north, -90 = east) for quick inspection/screenshots.
 //   ?ff=ticks      fast-forwards the simulation that many ticks right after "Iniciar turno".
-const params = new URLSearchParams(window.location.search);
-let fastForwardTicks = Math.max(0, Number(params.get('ff')) || 0);
-const viewParam = params.get('view');
+let fastForwardTicks = Math.max(0, Number(devParams.get('ff')) || 0);
+const viewParam = devParams.get('view');
 if (viewParam) {
   const [vx, vz, deg] = viewParam.split(',').map(Number);
   if ([vx, vz].every(Number.isFinite)) dolly.position.set(vx, 0, vz);
@@ -66,6 +75,11 @@ const interaction = new Interaction(interactive, basement.floors, basement.walls
 const locomotion = new Locomotion(renderer, dolly, camera);
 const xr = new XRControls(renderer, dolly, interaction, locomotion);
 const desktop = new DesktopControls(renderer.domElement, renderer, dolly, camera, interaction, locomotion);
+const keyboard = new KeyboardLocomotion(renderer, camera, dolly, locomotion, buildWalkable(layout));
+if (devParams.has('iwer') || devParams.has('debug')) {
+  // Do not expose the THREE namespace here: referencing it as a value defeats tree-shaking.
+  /** @type {any} */ (window).__marte = { renderer, camera, dolly, game, Vector3: THREE.Vector3 };
+}
 
 // Wrist biomonitor on the left controller (physical device, not a head-locked HUD).
 const wristBio = new Panel(0.13, 0.08, { pxPerMeter: 2400 });
@@ -132,7 +146,8 @@ renderer.setAnimationLoop((timestamp) => {
     fastForwardTicks = 0;
   }
   game.sim.advance(dt);
-  desktop.update(dt);
+  keyboard.update(dt);
+  desktop.update();
   xr.update();
   stations.animate(dt);
 

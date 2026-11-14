@@ -1,5 +1,9 @@
 import * as THREE from 'three';
+import { XRControllerModelFactory } from 'three/addons/webxr/XRControllerModelFactory.js';
 
+const RAY_COLOR = '#ffcf66';
+const RAY_RADIUS = 0.004;
+const DEFAULT_RAY_LENGTH = 5;
 const SNAP_ANGLE = THREE.MathUtils.degToRad(30);
 const STICK_THRESHOLD = 0.7;
 const STICK_RESET = 0.3;
@@ -33,18 +37,31 @@ export class XRControls {
     this.reticle.visible = false;
     dolly.parent?.add(this.reticle);
 
-    const gripGeometry = new THREE.BoxGeometry(0.04, 0.03, 0.12);
-    const gripMaterial = new THREE.MeshLambertMaterial({ color: '#c9d1d9' });
+    // Real controller models (Quest Touch profiles fetched from the WebXR input-profiles CDN),
+    // with a simple box shown until the model has loaded (or if it cannot load offline).
+    const modelFactory = new XRControllerModelFactory();
+    const fallbackGeometry = new THREE.BoxGeometry(0.04, 0.03, 0.12);
+    const fallbackMaterial = new THREE.MeshLambertMaterial({ color: '#c9d1d9' });
+    // Thick ray (1 px GL lines are nearly invisible in emulators) + hit dot.
+    const rayGeometry = new THREE.CylinderGeometry(RAY_RADIUS, RAY_RADIUS, 1, 8, 1, true)
+      .rotateX(Math.PI / 2)
+      .translate(0, 0, -0.5);
+    const rayMaterial = new THREE.MeshBasicMaterial({ color: RAY_COLOR, transparent: true, opacity: 0.85 });
+    const dotGeometry = new THREE.SphereGeometry(0.012, 12, 8);
+    const dotMaterial = new THREE.MeshBasicMaterial({ color: RAY_COLOR });
+    /** @type {{ model: THREE.Object3D, fallback: THREE.Object3D }[]} */
+    this.gripModels = [];
 
     this.controllers = [0, 1].map((i) => {
       const controller = renderer.xr.getController(i);
-      const line = new THREE.Line(
-        new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 0, -1)]),
-        new THREE.LineBasicMaterial({ color: '#ffcf66' }),
-      );
-      line.scale.z = 5;
+      const line = new THREE.Mesh(rayGeometry, rayMaterial);
+      line.scale.z = DEFAULT_RAY_LENGTH;
       controller.add(line);
       controller.userData.line = line;
+      const dot = new THREE.Mesh(dotGeometry, dotMaterial);
+      dot.visible = false;
+      controller.add(dot);
+      controller.userData.dot = dot;
       controller.userData.stickArmed = true;
       controller.addEventListener('connected', (e) => {
         controller.userData.inputSource = e.data;
@@ -60,7 +77,10 @@ export class XRControls {
       dolly.add(controller);
 
       const grip = renderer.xr.getControllerGrip(i);
-      grip.add(new THREE.Mesh(gripGeometry, gripMaterial));
+      const model = modelFactory.createControllerModel(grip);
+      const fallback = new THREE.Mesh(fallbackGeometry, fallbackMaterial);
+      grip.add(model, fallback);
+      this.gripModels.push({ model, fallback });
       dolly.add(grip);
       return controller;
     });
@@ -78,11 +98,15 @@ export class XRControls {
       this.reticle.visible = false;
       return;
     }
+    for (const { model, fallback } of this.gripModels) fallback.visible = model.children.length === 0;
     let reticleShown = false;
     for (const controller of this.controllers) {
       this.raycaster.setFromXRController(/** @type {any} */ (controller));
       const hit = this.interaction.pick(this.raycaster);
-      controller.userData.line.scale.z = hit ? hit.distance : 5;
+      const length = hit ? hit.distance : DEFAULT_RAY_LENGTH;
+      controller.userData.line.scale.z = length;
+      controller.userData.dot.visible = Boolean(hit);
+      controller.userData.dot.position.set(0, 0, -length);
       if (hit?.kind === 'floor' && !reticleShown) {
         this.reticle.position.copy(hit.point).setY(0.01);
         reticleShown = true;

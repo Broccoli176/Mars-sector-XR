@@ -307,7 +307,15 @@ npm run test:watch     # vitest
 npm run sim            # informe headless de balance: políticas idle/greedy/competent (`npm run sim -- competent`)
 ```
 
-Parámetros de URL solo de desarrollo: `?view=x,z,grados` (coloca al jugador) y `?ff=ticks` (adelanta la simulación al iniciar turno).
+Parámetros de URL solo de desarrollo:
+- `?view=x,z,grados`: coloca al jugador.
+- `?ff=ticks`: adelanta la simulación al iniciar turno.
+- `?iwer`: emulación de Quest 3 con el runtime IWER de Meta, carga diferida y sin extensión.
+- `?debug`: expone `window.__marte`.
+
+Locomoción de desarrollo por teclado (`src/vr/KeyboardLocomotion.js`): WASD + Q/E. Funciona también dentro de sesiones XR emuladas y se limita al área caminable de `src/vr/Walkable.js`, que se deriva de `layout.json` y solo deja cruzar paredes por las puertas.
+
+**Regla:** para la posición o dirección de la cabeza en XR, usar la cámara del usuario (hija del rig), nunca recalcular la matriz de `renderer.xr.getCamera()`. Esa cámara no tiene padre y pierde la transformación del rig (ver `Locomotion.headWorld`).
 
 Pendientes: `npm run typecheck` (JSDoc + `@ts-check`), validación de JSON Schemas en tests, CI (GitHub Actions `npm ci` → `npm test` → `npm run build`) y despliegue a GitHub Pages.
 

@@ -36,11 +36,20 @@ npm run build && npm run preview
 | Dónde | Cómo |
 | :-- | :-- |
 | Quest 3 | Botón «ENTER VR». Apunta con el rayo y aprieta el gatillo para pulsar botones o teletransportarte al suelo (aparece un aro azul). Stick: giro de 30°. Biomonitor en la muñeca izquierda |
-| Escritorio (solo desarrollo) | Arrastra para mirar, WASD para moverte, clic para pulsar o teletransportarte |
+| Teclado (escritorio **y** dentro de VR en el emulador) | **W/S** (o ↑/↓) avanzar/retroceder hacia donde miras · **A/D** lateral · **Q/E** (o ←/→) girar: continuo en escritorio, saltos de 30° en VR. No atraviesa paredes: solo cruza por las puertas |
+| Ratón (solo escritorio, desarrollo) | Arrastra para mirar, clic para pulsar o teletransportarte |
+
+**Immersive Web Emulator:** haz clic una vez en la página para darle el foco al teclado; si no, las teclas van al panel del emulador. Los mandos se ven con el modelo real del Quest (se descarga de la CDN de WebXR input profiles; sin conexión aparece una caja gris).
+
+**Sin extensión:** abre `http://localhost:5173/?iwer`. Usa el runtime de emulación de Meta (IWER, Quest 3) y basta con pulsar «ENTER VR».
 
 Para empezar, pulsa «Iniciar turno» en el ordenador central (muro este de la sala principal). Los breakers están en el muro norte. A las 09:00 del día 1 salta el relé: rearma desde allí.
 
-Parámetros de desarrollo: `?view=x,z,grados` coloca al jugador y `?ff=ticks` adelanta la simulación al iniciar turno (p. ej. `?ff=545` llega a la derrota por energía del jugador inactivo).
+Parámetros de desarrollo (combinables con `&`):
+- `?view=x,z,grados`: coloca al jugador.
+- `?ff=ticks`: adelanta la simulación al iniciar turno (p. ej. `?ff=545` llega a la derrota por energía del jugador inactivo).
+- `?iwer`: activa el Quest 3 emulado sin extensión.
+- `?debug`: expone `window.__marte` para inspeccionar desde la consola.
 
 ### Testing en Quest 3
 
