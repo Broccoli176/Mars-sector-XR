@@ -117,7 +117,7 @@ export function buildToolWall(g, kit, hubState) {
   const raycaster = new THREE.Raycaster();
   let now = performance.now() / 1000;
 
-  /** @type {{ id: string, mesh: THREE.Mesh, slot: THREE.Object3D, place: string, holster: number | null, landedAt: number | null, vy: number, floorY: number }[]} */
+  /** @type {{ id: string, mesh: THREE.Mesh, slot: THREE.Object3D, place: string, holster: number | null, landedAt: number | null, vy: number, floorY: number, forceHolster: number | null }[]} */
   const items = tools.map((tool, i) => {
     const slot = new THREE.Group();
     slot.position.set(HOOK_XS[i], HOOK_Y, HOOK_Z);
@@ -131,8 +131,9 @@ export function buildToolWall(g, kit, hubState) {
     }
     slot.add(mesh);
     kit.registerInteractive(mesh);
-    const item = { id: tool.id, mesh, slot, place: 'wall', holster: /** @type {number | null} */ (null), landedAt: /** @type {number | null} */ (null), vy: 0, floorY: 0 };
+    const item = { id: tool.id, mesh, slot, place: 'wall', holster: /** @type {number | null} */ (null), landedAt: /** @type {number | null} */ (null), vy: 0, floorY: 0, forceHolster: /** @type {number | null} */ (null) };
     mesh.userData.toolId = tool.id;
+    mesh.userData.holsterable = true; // belt rings light up while it is held
     mesh.userData.grab = {
       onGrab: (/** @type {string} */ hand) => onGrab(item, hand),
       onRelease: (/** @type {THREE.Vector3} */ pos) => onRelease(item, pos),
@@ -163,7 +164,10 @@ export function buildToolWall(g, kit, hubState) {
   /** @param {typeof items[number]} item @param {THREE.Vector3} pos */
   const onRelease = (item, pos) => {
     item.slot.getWorldPosition(_pos);
-    const decision = decideRelease(pos, {
+    // Belt button: straight into the chosen holster, wherever the hand is.
+    const forced = item.forceHolster;
+    item.forceHolster = null;
+    const decision = forced !== null ? { kind: /** @type {const} */ ('holster'), index: forced } : decideRelease(pos, {
       holsters: holsters.snapshot(),
       home: _pos,
       holsterRadius: cfg.holster.snapRadiusMeters,
@@ -199,6 +203,27 @@ export function buildToolWall(g, kit, hubState) {
     item.vy = 0;
     item.place = 'falling';
     item.mesh.rotation.set(0, item.mesh.rotation.y, 0); // lie flat
+  };
+
+  // Belt button (B/Y in XR, H on desktop): stow the held tool in this side's holster (or the other one),
+  // or, with an empty hand, draw the tool holstered on this side (or the other one).
+  holsters.onBelt = (/** @type {string} */ handId, /** @type {-1 | 1} */ side, /** @type {THREE.Object3D} */ hand) => {
+    const heldMesh = grab.held.get(handId);
+    if (heldMesh) {
+      const item = items.find((x) => x.mesh === heldMesh);
+      if (!item) return false;
+      const index = holsters.pick(side, (s) => s.item === null);
+      if (index === null) return false; // both holsters full
+      item.forceHolster = index;
+      grab.release(handId);
+      return true;
+    }
+    const index = holsters.pick(side, (s) => s.item !== null);
+    if (index === null) return false;
+    const item = items.find((x) => x.holster === index);
+    if (!item) return false;
+    grab.grab(item.mesh, hand, handId);
+    return true;
   };
 
   kit.onFrame((dt) => {

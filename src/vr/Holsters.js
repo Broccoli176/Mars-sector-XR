@@ -1,40 +1,93 @@
 import * as THREE from 'three';
 
-// SHARED (see docs/COLLABORATION.md): two hip holsters that follow the player's body (spec §9.3).
-// They hang below the head and turn with the head's yaw: body-attached, NOT a head-locked HUD.
+// SHARED (see docs/COLLABORATION.md): two hip holsters on a belt that follows the player's body (spec §9.3).
+// Body-attached, NOT a head-locked HUD: the belt only turns when the head turns more than a dead zone,
+// so looking around (or down at the belt) does not move it.
+// Two ways to holster: the belt button (B/Y on Quest, H on desktop) or releasing the tool next to a ring.
 const _head = new THREE.Vector3();
 const _fwd = new THREE.Vector3();
 const _right = new THREE.Vector3();
+const _pos = new THREE.Vector3();
 const UP = new THREE.Vector3(0, 1, 0);
+const IDLE = { color: '#ffcf66', opacity: 0.22, scale: 1 };
+const HOLDING = { color: '#ffcf66', opacity: 0.75, scale: 1 };
+const SNAP = { color: '#7fe07f', opacity: 0.95, scale: 1.35 };
+
+/** Shortest signed angle a − b in (−π, π]. @param {number} a @param {number} b */
+export function angleDelta(a, b) {
+  let d = (a - b) % (2 * Math.PI);
+  if (d > Math.PI) d -= 2 * Math.PI;
+  if (d <= -Math.PI) d += 2 * Math.PI;
+  return d;
+}
+
+/**
+ * Belt yaw that lags the head: unchanged inside ±deadzone, dragged along beyond it.
+ * @param {number} bodyYaw @param {number} headYaw @param {number} deadzone radians
+ */
+export function followYaw(bodyYaw, headYaw, deadzone) {
+  const d = angleDelta(headYaw, bodyYaw);
+  if (Math.abs(d) <= deadzone) return bodyYaw;
+  return bodyYaw + d - Math.sign(d) * deadzone;
+}
 
 export class Holsters {
   /**
    * @param {THREE.Object3D} scene
    * @param {import('./Locomotion.js').Locomotion} locomotion
-   * @param {{ belowHeadMeters: number, sideOffsetMeters: number, forwardOffsetMeters: number }} cfg
+   * @param {{ belowHeadMeters: number, sideOffsetMeters: number, forwardOffsetMeters: number, snapRadiusMeters: number, followDeadzoneDeg?: number }} cfg
    */
   constructor(scene, locomotion, cfg) {
     this.locomotion = locomotion;
     this.cfg = cfg;
-    const ringGeometry = new THREE.TorusGeometry(0.06, 0.006, 6, 24).rotateX(Math.PI / 2);
-    const ringMaterial = new THREE.MeshBasicMaterial({ color: '#ffcf66', transparent: true, opacity: 0.35, depthWrite: false });
-    /** @type {{ id: string, side: number, socket: THREE.Object3D, item: string | null }[]} */
-    this.slots = [-1, 1].map((side) => {
+    /** @type {import('./Grab.js').Grab | null} set by main.js (to highlight rings while holding something) */
+    this.grab = null;
+    /**
+     * Belt button handler, registered by whoever owns the holsterable objects (hub tools).
+     * Returns true if something was stowed or drawn.
+     * @type {((handId: string, side: -1 | 1, hand: THREE.Object3D) => boolean) | null}
+     */
+    this.onBelt = null;
+    this.bodyYaw = /** @type {number | null} */ (null);
+    const ringGeometry = new THREE.TorusGeometry(0.07, 0.007, 6, 24).rotateX(Math.PI / 2);
+    /** @type {{ id: string, side: -1 | 1, socket: THREE.Object3D, ring: THREE.Mesh, item: string | null }[]} */
+    this.slots = /** @type {const} */ ([-1, 1]).map((side) => {
       const socket = new THREE.Group();
       socket.name = side < 0 ? 'SKT_Holster_L' : 'SKT_Holster_R';
-      socket.add(new THREE.Mesh(ringGeometry, ringMaterial));
+      const ring = new THREE.Mesh(ringGeometry, new THREE.MeshBasicMaterial({ ...IDLE, transparent: true, depthWrite: false, toneMapped: false }));
+      ring.scale.setScalar(1);
+      socket.add(ring);
       scene.add(socket);
-      return { id: socket.name, side, socket, item: null };
+      return { id: socket.name, side, socket, ring, item: null };
     });
+  }
+
+  /**
+   * Belt button: stow what this hand holds, or draw a tool with an empty hand.
+   * @param {string} handId @param {-1 | 1} side hand side (left −1, right 1) @param {THREE.Object3D} hand
+   */
+  toggle(handId, side, hand) {
+    return this.onBelt ? this.onBelt(handId, side, hand) : false;
+  }
+
+  /** Preferred free/occupied slot index for a hand side: same side first, then the other. @param {-1 | 1} side @param {(s: Holsters['slots'][number]) => boolean} ok */
+  pick(side, ok) {
+    const order = side < 0 ? [0, 1] : [1, 0];
+    return order.find((i) => ok(this.slots[i])) ?? null;
   }
 
   /** Call once per frame (after locomotion, before render). */
   update() {
     this.locomotion.headWorld(_head);
     this.locomotion.headForward(_fwd);
-    if (_fwd.lengthSq() === 0) _fwd.set(0, 0, -1);
+    if (_fwd.lengthSq() > 0) {
+      const headYaw = Math.atan2(-_fwd.x, -_fwd.z);
+      const deadzone = THREE.MathUtils.degToRad(this.cfg.followDeadzoneDeg ?? 35);
+      this.bodyYaw = this.bodyYaw === null ? headYaw : followYaw(this.bodyYaw, headYaw, deadzone);
+    }
+    const yaw = this.bodyYaw ?? 0;
+    _fwd.set(-Math.sin(yaw), 0, -Math.cos(yaw));
     _right.crossVectors(_fwd, UP).normalize();
-    const yaw = Math.atan2(-_fwd.x, -_fwd.z);
     for (const slot of this.slots) {
       slot.socket.position
         .copy(_head)
@@ -42,6 +95,24 @@ export class Holsters {
         .addScaledVector(_right, slot.side * this.cfg.sideOffsetMeters)
         .addScaledVector(_fwd, this.cfg.forwardOffsetMeters);
       slot.socket.rotation.set(0, yaw, 0);
+    }
+    this.#highlight();
+  }
+
+  /** Rings: faint when idle, bright while holding something, green + bigger when a held object is in snap range. */
+  #highlight() {
+    const held = this.grab ? [...this.grab.held.values()].filter((o) => o.userData.holsterable) : [];
+    for (const slot of this.slots) {
+      let look = held.length && slot.item === null ? HOLDING : IDLE;
+      if (slot.item === null) {
+        for (const o of held) {
+          if (o.getWorldPosition(_pos).distanceTo(slot.socket.position) <= this.cfg.snapRadiusMeters) look = SNAP;
+        }
+      }
+      const m = /** @type {THREE.MeshBasicMaterial} */ (slot.ring.material);
+      m.color.set(look.color);
+      m.opacity = slot.item ? 0.1 : look.opacity;
+      slot.ring.scale.setScalar(look.scale);
     }
   }
 

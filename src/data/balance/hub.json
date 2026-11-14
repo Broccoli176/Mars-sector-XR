@@ -106,8 +106,9 @@
   "holster": {
     "belowHeadMeters": 0.7,
     "sideOffsetMeters": 0.22,
-    "forwardOffsetMeters": 0.08,
-    "snapRadiusMeters": 0.25
+    "forwardOffsetMeters": 0.12,
+    "snapRadiusMeters": 0.3,
+    "followDeadzoneDeg": 35
   },
   "toolWall": {
     "snapRadiusMeters": 0.35,

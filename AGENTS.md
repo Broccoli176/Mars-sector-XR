@@ -349,7 +349,7 @@ Parámetros de URL solo de desarrollo:
 - `?iwer`: emulación de Quest 3 con el runtime IWER de Meta, carga diferida y sin extensión.
 - `?debug`: expone `window.__marte`.
 
-Agarre: botón de agarre (grip) del mando en XR, tecla **G** en escritorio (`src/vr/Grab.js`). Hay fundas en la cadera (`src/vr/Holsters.js`).
+Agarre: botón de agarre (grip) del mando en XR, tecla **G** en escritorio (`src/vr/Grab.js`). Hay dos fundas en el cinturón (`src/vr/Holsters.js`): **B/Y** (tecla **H** en escritorio) guarda la herramienta en la funda de ese lado y, con la mano vacía, la saca. También se puede soltar junto al anillo: se ilumina verde cuando está a tiro. El cinturón solo gira con el cuerpo (zona muerta de 35°), no con cada mirada.
 
 **Diagnóstico de mandos:** panel «Prueba de mandos» en la Sala central (muro norte, a la derecha de la puerta; `src/rooms/hub/controllerDiag.js`). Dentro del visor muestra lo que llega de cada mando (gatillo, agarre, A/B/X/Y, stick, eventos select/squeeze) y tiene un botón para probar el rayo. Lee `renderer.xr` mediante `kit.services.renderer` (solo lectura).
 

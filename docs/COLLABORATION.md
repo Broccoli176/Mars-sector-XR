@@ -31,7 +31,7 @@ Plano y coordenadas de las salas: `docs/FLOOR_PLAN.md`.
 
 ### Archivos COMPARTIDOS (tocar solo con PR pequeño y aviso previo)
 
-- **Código base:** `src/core/`, `src/vr/` (incluye `Grab.js` y `Holsters.js`: agarre, fundas y «usar lo que sostienes» con `onUse`, usados por todas las salas), `src/utils/`, `src/objects/`.
+- **Código base:** `src/core/`, `src/vr/` (incluye `Grab.js` y `Holsters.js`: agarre, fundas del cinturón (botón B/Y → `holsters.onBelt`, registrado por las herramientas del hub) y «usar lo que sostienes» con `onUse`, usados por todas las salas), `src/utils/`, `src/objects/`.
 - **Mundo e interfaz:** `src/world/Basement.js`, `src/world/textures.js`, `src/ui/Panel.js`, `src/ui/StationKit.js` (`services` = { scene, grab, holsters, floors, renderer }), `src/ui/Stations.js`.
 - **Sistemas centrales:** `src/systems/{Simulation,TimeManager,ResourceManager,Crew,IncidentRunner,GameState}.js`.
 - **Datos comunes:**
