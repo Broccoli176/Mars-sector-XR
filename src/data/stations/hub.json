@@ -33,5 +33,12 @@
     "wall": "west",
     "along": -1.6,
     "y": 1.5
+  },
+  {
+    "id": "hub_controllers",
+    "room": "room_hub",
+    "wall": "north",
+    "along": 1.95,
+    "y": 1.5
   }
 ]

@@ -83,7 +83,7 @@ export function createStationKit({ game, t, interactive, services = {} }) {
     lambert,
     solids,
     registerButton,
-    /** Scene-level helpers from main.js: { scene, grab, holsters, floors }. */
+    /** Scene-level helpers from main.js: { scene, grab, holsters, floors, renderer } (renderer: read-only XR diagnostics). */
     services,
 
     /** Makes an object pickable by the ray (buttons, grabbable tools). @param {THREE.Object3D} obj */
