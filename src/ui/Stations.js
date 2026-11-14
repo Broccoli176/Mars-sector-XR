@@ -33,10 +33,10 @@ function mergeBuilders(modules) {
 /**
  * Builds every diegetic station from layout.stations and keeps them in sync with the simulation.
  * Stations only read simulation state and emit intents through `game.intent()`.
- * @param {{ layout: any, rooms: Record<string, any>, game: import('../core/Game.js').Game, t: Function, scene: THREE.Object3D, interactive: THREE.Object3D[] }} ctx
+ * @param {{ layout: any, rooms: Record<string, any>, game: import('../core/Game.js').Game, t: Function, scene: THREE.Object3D, interactive: THREE.Object3D[], services?: Record<string, any> }} ctx
  */
-export function buildStations({ layout, rooms, game, t, scene, interactive }) {
-  const kit = createStationKit({ game, t, interactive });
+export function buildStations({ layout, rooms, game, t, scene, interactive, services = {} }) {
+  const kit = createStationKit({ game, t, interactive, services });
 
   for (const station of layout.stations) {
     const build = stationBuilders[station.id];

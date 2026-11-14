@@ -435,6 +435,15 @@ Every threshold in §3.0 must be readable on at least one of these panels. Wall-
 **Valves:** `valve_recycler` (stuck fault, unstick with wrench), `valve_o2_tank_1`, `valve_o2_tank_2` (`valve:turn { valveId, open }`).
 
 **Tools:** `TOOL_Wrench`, `TOOL_Screwdriver`, `TOOL_SolderIron`, `TOOL_SealantGun`.
+
+> **Implemented, phase 1 (2026-11-14):**
+> - **Where:** the tools hang on the hub tool wall (`src/rooms/hub/tools.js`).
+> - **Grab:** **grip button** in XR, **G** on desktop (`src/vr/Grab.js`). Prototype ray grab up to 3 m; direct grab is still the target.
+> - **Holster:** release within 0.25 m of a hip ring to holster (`src/vr/Holsters.js`).
+> - **Back to the wall:** release within 0.35 m of its hook.
+> - **Drop:** anywhere else it falls (kinematic) and returns to the wall after 10 real s.
+> - **Config:** `src/data/balance/hub.json` (`tools`, `components` = §6.1 table, `holster`, `toolWall`).
+> - **Still pending (phase 2):** using a tool on a broken component (`repair:*`, Electronics system).
 - One tool per hand, plus **2 hip holsters**. Holsters are sockets attached to the body, not to the head, so they are not a head-locked HUD.
 - A tool released outside a socket falls to the floor. If it lands outside the navigable floor, it returns to the tool wall after 10 real s.
 
@@ -460,7 +469,7 @@ Located on the east wall of the Sala central · Herramientas (hub). The phase is
 
 | Mission | Teaches |
 | :-- | :-- |
-| T1 | Grab a tool, holster it, drop it, recover it |
+| T1 | Grab a tool, holster it, drop it, recover it — **implemented** (live checklist on the board) |
 | T2 | Practice breaker + relay reset lever |
 | T3 | Swap a practice filter (socket) |
 | T4 | Seal a practice leak with the sealant gun |

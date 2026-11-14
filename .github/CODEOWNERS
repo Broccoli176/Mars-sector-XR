@@ -46,3 +46,7 @@
 /scripts/fetch-radlab.js            @Broccoli176
 /src/systems/Radiation.js           @Broccoli176
 /tests/radiation.test.js            @Broccoli176
+
+# --- Persona A: hub tools ---
+/src/data/balance/hub.json          @Broccoli176
+/tests/tools.test.js                @Broccoli176

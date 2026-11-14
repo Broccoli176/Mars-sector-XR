@@ -7,9 +7,11 @@ const DEFAULT_RAY_LENGTH = 5;
 const SNAP_ANGLE = THREE.MathUtils.degToRad(30);
 const STICK_THRESHOLD = 0.7;
 const STICK_RESET = 0.3;
+const GRAB_RANGE = 3; // m — prototype ray grab (direct grab is the spec target)
 
 /**
- * Quest controllers: ray + trigger to press buttons or teleport onto floors, thumbstick snap turn.
+ * Quest controllers: ray + trigger to press buttons or teleport onto floors, grip button to grab/release
+ * tools (src/vr/Grab.js), thumbstick snap turn.
  * Prototype note: physical controls are pressed with the ray; direct grab comes later (AGENTS.md §2).
  */
 export class XRControls {
@@ -29,6 +31,8 @@ export class XRControls {
     this.leftGrip = null;
     /** @type {(grip: THREE.Object3D) => void} */
     this.onLeftGrip = () => {};
+    /** @type {import('./Grab.js').Grab | null} set by main.js */
+    this.grab = null;
 
     this.reticle = new THREE.Mesh(
       new THREE.RingGeometry(0.12, 0.16, 32).rotateX(-Math.PI / 2),
@@ -74,6 +78,8 @@ export class XRControls {
         controller.userData.inputSource = null;
       });
       controller.addEventListener('selectstart', () => this.#select(controller));
+      controller.addEventListener('squeezestart', () => this.#squeeze(controller, grip, 'xr' + i));
+      controller.addEventListener('squeezeend', () => this.grab?.release('xr' + i));
       dolly.add(controller);
 
       const grip = renderer.xr.getControllerGrip(i);
@@ -91,6 +97,14 @@ export class XRControls {
     this.raycaster.setFromXRController(/** @type {any} */ (controller));
     const hit = this.interaction.pick(this.raycaster);
     this.interaction.activate(hit, (p) => this.locomotion.teleport(p));
+  }
+
+  /** Grip button: grab the grabbable object under the ray. @param {THREE.Object3D} controller @param {THREE.Object3D} grip @param {string} handId */
+  #squeeze(controller, grip, handId) {
+    if (!this.grab) return;
+    this.raycaster.setFromXRController(/** @type {any} */ (controller));
+    const hit = this.interaction.pick(this.raycaster);
+    if (hit?.kind === 'grabbable' && hit.distance <= GRAB_RANGE) this.grab.grab(hit.object, grip, handId);
   }
 
   update() {

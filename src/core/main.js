@@ -13,6 +13,8 @@ import { XRControls } from '../vr/XRControls.js';
 import { DesktopControls } from '../vr/DesktopControls.js';
 import { KeyboardLocomotion } from '../vr/KeyboardLocomotion.js';
 import { buildCollider } from '../vr/Collision.js';
+import { Grab } from '../vr/Grab.js';
+import { Holsters } from '../vr/Holsters.js';
 
 // Dev-only: `?iwer` installs Meta's Immersive Web Emulation Runtime (Quest 3) without the browser
 // extension. Must run before VRButton checks session support. Lazy-loaded: not in the main bundle.
@@ -78,9 +80,17 @@ const porthole = buildPorthole(scene, () => game.sim, {
   width: ws1 - ws0,
   height: wy1 - wy0 - 0.04,
 });
+// Hand-held objects (tools) and the two hip holsters (spec §9.3). Created before the stations so
+// room builders can use them through kit.services.
+const locomotion = new Locomotion(renderer, dolly, camera);
+const grab = new Grab(scene);
+const holsters = new Holsters(scene, locomotion, gameData.balance.holster);
 /** @type {THREE.Object3D[]} */
 const interactive = [];
-const stations = buildStations({ layout, rooms: basement.rooms, game, t, scene, interactive });
+const stations = buildStations({
+  layout, rooms: basement.rooms, game, t, scene, interactive,
+  services: { scene, grab, holsters, floors: basement.floors },
+});
 
 // Interaction and locomotion
 // Furniture blocks the teleport ray and the keyboard body (top-down AABBs).
@@ -92,13 +102,14 @@ for (const solid of stations.solids) {
   if (_bounds.max.y > 0.3) collider.addBox({ x0: _bounds.min.x, x1: _bounds.max.x, z0: _bounds.min.z, z1: _bounds.max.z });
 }
 const interaction = new Interaction(interactive, basement.floors, [...basement.walls, ...stations.solids]);
-const locomotion = new Locomotion(renderer, dolly, camera);
 const xr = new XRControls(renderer, dolly, interaction, locomotion);
 const desktop = new DesktopControls(renderer.domElement, renderer, dolly, camera, interaction, locomotion);
+xr.grab = grab; // grip button
+desktop.grab = grab; // G key (dev)
 const keyboard = new KeyboardLocomotion(renderer, camera, dolly, locomotion, collider);
 if (devParams.has('iwer') || devParams.has('debug')) {
   // Do not expose the THREE namespace here: referencing it as a value defeats tree-shaking.
-  /** @type {any} */ (window).__marte = { renderer, camera, dolly, game, Vector3: THREE.Vector3 };
+  /** @type {any} */ (window).__marte = { renderer, camera, dolly, game, grab, holsters, Vector3: THREE.Vector3 };
 }
 
 // Wrist biomonitor on the left controller (physical device, not a head-locked HUD).
@@ -163,6 +174,7 @@ renderer.setAnimationLoop((timestamp) => {
   keyboard.update(dt);
   desktop.update();
   xr.update();
+  holsters.update();
   stations.animate(dt);
   porthole.update(dt);
 

@@ -24,13 +24,14 @@ Plano y coordenadas de las salas: `docs/FLOOR_PLAN.md`.
 | Números de balance | `src/data/balance/hydro.json` (comida, agua) | `src/data/balance/{energy,telecom}.json` (energía, circuitos, soporte vital, térmica, telecom) |
 | Sistemas de simulación | `src/systems/Food.js` (+ futuros de Personal / entrenamiento) | `src/systems/{PowerGrid,LifeSupport,Telecom}.js` |
 | Datos reales (NASA/CSA) | `src/data/real/{radlab,csa_food}.json`, `scripts/fetch-radlab.js`, `src/systems/Radiation.js` | (futuro) `src/data/real/space_weather.json` si se materializa DONKI |
-| Tests | `tests/hydro.test.js`, `tests/radiation.test.js` | `tests/power.test.js`, `tests/telecom.test.js` |
+| Herramientas (Sala central) | `src/rooms/hub/{tools,toolRules}.js`, `src/data/balance/hub.json` (herramientas + tabla de componentes §6.1) | Fase 2 (reparar componentes de sus salas): coordinar. Se acerca la herramienta a un componente y se mantiene; necesita el sistema Electronics y `repair:*` |
+| Tests | `tests/hydro.test.js`, `tests/radiation.test.js`, `tests/tools.test.js` | `tests/power.test.js`, `tests/telecom.test.js` |
 
 > **Trabaja solo en tus archivos.** Si necesitas algo en un archivo del otro, pídeselo por chat o abre un PR pequeño y espera su revisión.
 
 ### Archivos COMPARTIDOS (tocar solo con PR pequeño y aviso previo)
 
-- **Código base:** `src/core/`, `src/vr/`, `src/utils/`, `src/objects/`.
+- **Código base:** `src/core/`, `src/vr/` (incluye `Grab.js` y `Holsters.js`: agarre y fundas, usados por todas las salas), `src/utils/`, `src/objects/`.
 - **Mundo e interfaz:** `src/world/Basement.js`, `src/world/textures.js`, `src/ui/Panel.js`, `src/ui/StationKit.js`, `src/ui/Stations.js`.
 - **Sistemas centrales:** `src/systems/{Simulation,TimeManager,ResourceManager,Crew,IncidentRunner,GameState}.js`.
 - **Datos comunes:**
