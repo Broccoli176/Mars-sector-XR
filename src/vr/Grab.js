@@ -6,7 +6,8 @@ const _pos = new THREE.Vector3();
 
 /**
  * Keeps at most one object per hand. Objects opt in with
- * `userData.grab = { onGrab(handId), onRelease(worldPosition, handId) }`;
+ * `userData.grab = { onGrab(handId), onRelease(worldPosition, handId), onUse?(active, handId) }`;
+ * `onUse` makes the trigger act on the held object (e.g. the hydro hose sprays) instead of the ray.
  * the owner decides where a released object goes (socket, wall, drop…).
  * Tools are modelled with the grip at the origin and pointing along −z (like the controller).
  */
@@ -38,10 +39,23 @@ export class Grab {
     return true;
   }
 
+  /**
+   * Trigger while holding: forwards to the held object's `onUse`. Returns true if it handled it
+   * (then the caller must not use the trigger for the ray). Releasing always forwards `false`.
+   * @param {string} handId @param {boolean} active
+   */
+  use(handId, active) {
+    const onUse = this.held.get(handId)?.userData.grab.onUse;
+    if (!onUse) return false;
+    onUse(active, handId);
+    return true;
+  }
+
   /** @param {string} handId */
   release(handId) {
     const object = this.held.get(handId);
     if (!object) return;
+    object.userData.grab.onUse?.(false, handId); // never keep "using" an object that left the hand
     this.held.delete(handId);
     object.getWorldPosition(_pos);
     this.scene.attach(object);

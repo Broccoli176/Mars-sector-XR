@@ -6,7 +6,8 @@ const GRAB_RANGE = 3; // m
 
 /**
  * Development-only desktop controls (not a gameplay fallback): drag to look,
- * click to press buttons or teleport onto the floor under the cursor, G to grab/release the tool under the cursor.
+ * click to press buttons or teleport onto the floor under the cursor, G to grab/release the tool under the cursor,
+ * hold F to use the held object (e.g. spray with the hydro hose).
  * Keyboard movement lives in KeyboardLocomotion (works on desktop and in XR emulators).
  */
 export class DesktopControls {
@@ -41,6 +42,12 @@ export class DesktopControls {
     dom.addEventListener('pointermove', (e) => {
       const rect = dom.getBoundingClientRect();
       this.lastPointer.set(((e.clientX - rect.left) / rect.width) * 2 - 1, -((e.clientY - rect.top) / rect.height) * 2 + 1);
+    });
+    window.addEventListener('keydown', (e) => {
+      if (e.code === 'KeyF' && !e.repeat && !this.renderer.xr.isPresenting) this.grab?.use('desktop', true);
+    });
+    window.addEventListener('keyup', (e) => {
+      if (e.code === 'KeyF') this.grab?.use('desktop', false);
     });
     window.addEventListener('keydown', (e) => {
       if (e.code !== 'KeyG' || e.repeat || this.renderer.xr.isPresenting || !this.grab) return;

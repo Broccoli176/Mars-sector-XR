@@ -1,0 +1,26 @@
+{
+  "_about": "Curated REAL facts (static, not live) from NASA Technical Reports Server records on CELSS (Controlled Ecological Life Support System) crops. Verified 2026-11-14 on the citation pages / NTRS API abstracts. Edit by hand.",
+  "source": {
+    "institution": "NASA Technical Reports Server (NTRS)",
+    "product": "CELSS crop studies — quinoa and spirulina",
+    "url": "https://ntrs.nasa.gov/",
+    "retrievedAt": "2026-11-14"
+  },
+  "quinoa": {
+    "url": "https://ntrs.nasa.gov/citations/19940015664",
+    "citation": "Schlick, G. & Bubenheim, D. L. (1993). Quinoa: An emerging new crop with potential for CELSS. NASA TP-3422, NASA Ames Research Center.",
+    "proteinPctMin": 12,
+    "proteinPctMax": 18,
+    "note": "Considered for CELSS for its high protein (12–18 %) and lysine near FAO standards; hydroponic greenhouse trials; cultivars under 70 cm."
+  },
+  "spirulina": {
+    "urls": [
+      "https://ntrs.nasa.gov/citations/19940009624",
+      "https://ntrs.nasa.gov/citations/19890016190",
+      "https://ntrs.nasa.gov/citations/19880002871"
+    ],
+    "citation": "Tadros, M. G. (1993). Characterization of Spirulina biomass for CELSS diet potential. NASA-CR-194123; Tadros (1988) NASA-CR-185329; Oguchi et al. (1987) Food production and gas exchange system using blue-green alga (spirulina) for CELSS.",
+    "proteinPctUpTo": 70,
+    "note": "Edible alga for the crew in a CELSS; cultures evolve oxygen; total proteins up to almost 70 % of organic weight under optimum conditions."
+  }
+}

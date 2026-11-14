@@ -1,17 +1,83 @@
 {
   "food": {
     "consumptionPerHour": 104,
-    "harvestKcal": 1200,
-    "growthHoursToReady": 48,
-    "initialGrowthHours": 24,
     "spoilAfterReadyHours": 12,
     "spoilWithoutCareHours": 6,
-    "_source": "consumptionPerHour 104 kcal/h ≈ 2500 kcal/day, within the CSA crew-diet range 1900–3200 kcal/day (src/data/real/csa_food.json). Crop growth is time-compressed; the real cycle (lettuce 21–28 days) is shown in-game."
+    "trayCapacityL": 2,
+    "initialMoisture": 0.5,
+    "dryAt": 0.2,
+    "floodAt": 0.85,
+    "crops": [
+      {
+        "id": "lettuce",
+        "growthHours": 36,
+        "kcal": 700,
+        "drinkPerHour": 0.03
+      },
+      {
+        "id": "soybean",
+        "growthHours": 60,
+        "kcal": 1500,
+        "drinkPerHour": 0.03
+      },
+      {
+        "id": "quinoa",
+        "growthHours": 72,
+        "kcal": 1900,
+        "drinkPerHour": 0.025
+      },
+      {
+        "id": "tomato",
+        "growthHours": 84,
+        "kcal": 1800,
+        "drinkPerHour": 0.04
+      },
+      {
+        "id": "carrot",
+        "growthHours": 96,
+        "kcal": 2200,
+        "drinkPerHour": 0.03
+      },
+      {
+        "id": "sweet_potato",
+        "growthHours": 120,
+        "kcal": 3000,
+        "drinkPerHour": 0.035
+      }
+    ],
+    "trays": [
+      {
+        "id": "tray_1",
+        "cropId": "lettuce",
+        "growthHours": 12,
+        "moisture": 0.8
+      },
+      {
+        "id": "tray_2"
+      },
+      {
+        "id": "tray_3"
+      },
+      {
+        "id": "tray_4"
+      }
+    ],
+    "bioreactor": {
+      "growthHours": 16,
+      "initialGrowthHours": 0,
+      "kcal": 300,
+      "o2PerHour": 0.3,
+      "waterPerHour": 0.02
+    },
+    "_source": "consumptionPerHour 104 kcal/h ≈ 2500 kcal/day, within the CSA crew-diet range 1900–3200 kcal/day (src/data/real/csa_food.json). Crop times are time-compressed but keep the real order (CSA days; quinoa from NASA TP-3422). kcal grow with the wait. Moisture: a tray holds trayCapacityL litres at moisture 1; it grows only inside [dryAt, floodAt]. Spirulina (bioreactor) grows only under light (growthHours = lit hours).",
+    "hose": {
+      "flowLitersPerSecond": 0.25,
+      "rangeMeters": 1.6
+    }
   },
   "water": {
     "drinkingPerHour": 0.104,
     "recycleFraction": 0.85,
-    "hydroPerHour": 0.15,
     "hydroCondensateFraction": 0.5
   }
 }
