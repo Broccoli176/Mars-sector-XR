@@ -53,5 +53,6 @@
   "hub.ctrl.ray_presses": "Pulsaciones con el rayo en el botón de abajo: {n}",
   "hub.ctrl.legend": "En el juego: Gatillo = pulsar botones o teletransportarte (apunta al suelo) · Agarre = coger herramientas a ≤ 3 m apuntando con el rayo · Stick a los lados = girar 30°.",
   "hub.ctrl.hint": "Si los valores cambian pero el contador del rayo no sube, el fallo está en el rayo, no en el mando. ● pulsado · ○ suelto · × no existe",
-  "hub.ctrl.test_button": "Pulsa con el gatillo"
+  "hub.ctrl.test_button": "Pulsa con el gatillo",
+  "hub.sources.use.bioregen_crops": "Quinua y espirulina para soporte vital (estudios CELSS) → Hidroponía: guía y biorreactor"
 }

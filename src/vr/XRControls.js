@@ -11,7 +11,7 @@ const GRAB_RANGE = 3; // m — prototype ray grab (direct grab is the spec targe
 
 /**
  * Quest controllers: ray + trigger to press buttons or teleport onto floors, grip button to grab/release
- * tools (src/vr/Grab.js), thumbstick snap turn.
+ * tools (src/vr/Grab.js), thumbstick snap turn. While holding an object with `onUse`, the trigger uses it.
  * Prototype note: physical controls are pressed with the ray; direct grab comes later (AGENTS.md §2).
  */
 export class XRControls {
@@ -77,7 +77,11 @@ export class XRControls {
       controller.addEventListener('disconnected', () => {
         controller.userData.inputSource = null;
       });
-      controller.addEventListener('selectstart', () => this.#select(controller));
+      controller.addEventListener('selectstart', () => {
+        if (this.grab?.use('xr' + i, true)) return; // held object with onUse (hose…) takes the trigger
+        this.#select(controller);
+      });
+      controller.addEventListener('selectend', () => this.grab?.use('xr' + i, false));
       controller.addEventListener('squeezestart', () => this.#squeeze(controller, grip, 'xr' + i));
       controller.addEventListener('squeezeend', () => this.grab?.release('xr' + i));
       dolly.add(controller);

@@ -25,13 +25,13 @@ Plano y coordenadas de las salas: `docs/FLOOR_PLAN.md`.
 | Sistemas de simulación | `src/systems/Food.js` (+ futuros de Personal / entrenamiento) | `src/systems/{PowerGrid,LifeSupport,Telecom}.js` |
 | Datos reales (NASA/CSA) | `src/data/real/{radlab,csa_food,osdr_health,donki_recent}.json`, `scripts/fetch-{radlab,osdr,donki}.js`, `src/systems/Radiation.js`, `src/rooms/personal/spaceWeatherLive.js` | (futuro) `src/data/spaceWeather.json` (DONKI para incidentes). **Aviso:** DONKI ya se muestra en vivo en Personal («El Sol ahora»); se puede reutilizar `spaceWeatherLive.js` pidiéndolo. Sugerencia: Mars Trek para la ventana de Telecom |
 | Herramientas (Sala central) | `src/rooms/hub/{tools,toolRules,controllerDiag}.js`, `src/data/balance/hub.json` (herramientas + tabla de componentes §6.1) | Fase 2 (reparar componentes de sus salas): coordinar. Se acerca la herramienta a un componente y se mantiene; necesita el sistema Electronics y `repair:*` |
-| Tests | `tests/hydro.test.js`, `tests/radiation.test.js`, `tests/tools.test.js`, `tests/spaceweather.test.js`, `tests/controllers.test.js` | `tests/power.test.js`, `tests/telecom.test.js` |
+| Tests | `tests/hydro.test.js`, `tests/hydroRules.test.js`, `tests/radiation.test.js`, `tests/tools.test.js`, `tests/spaceweather.test.js`, `tests/controllers.test.js` | `tests/power.test.js`, `tests/telecom.test.js` |
 
 > **Trabaja solo en tus archivos.** Si necesitas algo en un archivo del otro, pídeselo por chat o abre un PR pequeño y espera su revisión.
 
 ### Archivos COMPARTIDOS (tocar solo con PR pequeño y aviso previo)
 
-- **Código base:** `src/core/`, `src/vr/` (incluye `Grab.js` y `Holsters.js`: agarre y fundas, usados por todas las salas), `src/utils/`, `src/objects/`.
+- **Código base:** `src/core/`, `src/vr/` (incluye `Grab.js` y `Holsters.js`: agarre, fundas y «usar lo que sostienes» con `onUse`, usados por todas las salas), `src/utils/`, `src/objects/`.
 - **Mundo e interfaz:** `src/world/Basement.js`, `src/world/textures.js`, `src/ui/Panel.js`, `src/ui/StationKit.js` (`services` = { scene, grab, holsters, floors, renderer }), `src/ui/Stations.js`.
 - **Sistemas centrales:** `src/systems/{Simulation,TimeManager,ResourceManager,Crew,IncidentRunner,GameState}.js`.
 - **Datos comunes:**

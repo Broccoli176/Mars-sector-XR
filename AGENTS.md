@@ -14,7 +14,7 @@
 
 Datos reales embebidos (sin «en vivo»), ver `docs/SIMULATION_SPEC.md` §6.5:
 - `src/data/real/radlab.json` (NASA OSDR RadLab, MSL RAD) → `systems/Radiation.js` (informativo, sin daño) y dosímetro de Personal.
-- `src/data/real/csa_food.json` (CSA) → Hidroponía.
+- `src/data/real/csa_food.json` (CSA) y `src/data/real/bioregen_crops.json` (NASA NTRS: quinua y espirulina en CELSS) → Hidroponía.
 - `src/data/real/osdr_health.json` (NASA OSDR, estudios OSD-924/343/812) → panel «Salud del astronauta» de Personal.
 - NASA DONKI **en vivo** (`src/rooms/personal/spaceWeatherLive.js`, solo presentación, nunca alimenta la simulación) → «El Sol ahora» de Personal; sin red usa el registro `src/data/real/donki_recent.json` y lo dice.
 - Todos se atribuyen en el panel «Fuentes científicas» del hub. Resumen: `docs/DATA_SOURCES.md`.
@@ -175,7 +175,7 @@ Los nombres de eventos son API pública una vez implementados: renombrarlos requ
 | `leak:started` / `leak:sealed` | `{ leakId }` | sistema correspondiente | |
 | `filter:swap` / `filter:swapped` | según diseño | intent / soporte vital | |
 | `valve:turn` | `{ valveId, open }` | interacción (intent) | |
-| `food:harvest` / `food:harvested` | según diseño | intent / hidroponía | |
+| `food:harvest` / `food:harvested` | `{ trayId? }` / `{ trayId, cropId, kcal }` | intent / hidroponía | sin `trayId` cosecha todo lo listo |
 | `antenna:align` | según diseño | intent / telecom | |
 | `incident:warning` / `incident:triggered` | `{ incidentId, etaHours? }` / `{ incidentId }` | runner de incidentes | |
 | `comms:message` | `{ channel, key, params?, day?, hour? }` | simulación/comms | |
@@ -209,7 +209,11 @@ Los tanques de O₂ de emergencia usan `valve:turn` (`valve_o2_tank_1/2`). Pendi
 - **Energía:** `power:lost`/`restored`, `power:overloadWarning`, `breaker:toggle`, `relay:resetRequest`, `relay:tripped { guided, burned }`, `relay:reset`, `component:damaged` y `system:failed` (solo `relay_main`).
 - **Tiempo:** `time:tick`, `time:dayStarted`, `time:setSpeed`, `time:speedChanged`.
 - **Partida:** `game:start`, `game:phaseChanged`, `game:over`, `game:won`.
-- **Soporte vital y comida:** `thermostat:set`, `valve:turn` (tanques O₂), `filter:swap`/`swapped`, `food:harvest`/`harvested`/`ready`/`spoiled`, `crew:damage`.
+- **Soporte vital:** `thermostat:set`, `valve:turn` (tanques O₂), `filter:swap`/`swapped`, `crew:damage`.
+- **Hidroponía (4 bandejas + biorreactor de espirulina, `src/systems/Food.js`):**
+  - Intents: `hydro:sow { trayId, cropId }` (solo bandeja vacía), `hydro:water { trayId, liters }` (manguera; resta agua del tanque) y `food:harvest { trayId? }` (`trayId: 'bioreactor'` para la espirulina).
+  - Eventos: `hydro:sown { trayId, cropId }`, `hydro:rejected { trayId, reason: 'notEmpty' | 'noWater' }`, `food:ready { trayId, cropId }`, `food:harvested { trayId, cropId, kcal }`, `food:spoiled { trayId, cropId, reason: 'unharvested' | 'noLight' | 'noWater' | 'overwatered' }`.
+- **Usar lo que sostienes (compartido, `src/vr/Grab.js`):** `userData.grab.onUse(active, handId)`. Con un objeto así en la mano, el gatillo (XR) o la tecla F (escritorio) lo usan en vez del rayo. Lo usa la manguera de Hidroponía.
 - **Incidentes y avisos:** `incident:warning`/`triggered`, `weather:changed`, `comms:message`, `hint`.
 - **Telecom:** `antenna:align` (intent); escucha `component:damaged`/`system:repaired` para `antenna_motor`.
 - **Herramientas (presentación, fase 1):**

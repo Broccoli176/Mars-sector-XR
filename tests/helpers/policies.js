@@ -10,7 +10,12 @@ export function idlePolicy(sim) {
 export function greedyPolicy(sim) {
   if (sim.power.relayTripped && !sim.power.relayBurned) sim.bus.emit('relay:resetRequest');
   if (sim.lifeSupport.filterLifeHours <= 0.25 && sim.inventory.filters > 0) sim.bus.emit('filter:swap');
-  if (sim.food.ready) sim.bus.emit('food:harvest');
+  if (sim.food.anyReady) sim.bus.emit('food:harvest');
+  // Greedy gardener: always lettuce, and floods a tray whenever it looks dry.
+  for (const tray of sim.food.trays) {
+    if (!tray.cropId) sim.bus.emit('hydro:sow', { trayId: tray.id, cropId: 'lettuce' });
+    else if (tray.moisture < 0.25) sim.bus.emit('hydro:water', { trayId: tray.id, liters: 2 });
+  }
 }
 
 /** Resets, swaps, harvests and sheds load by battery level and weather. */
@@ -18,7 +23,8 @@ export function competentPolicy(sim) {
   const { bus, power, lifeSupport, food, resources } = sim;
   if (power.relayTripped && !power.relayBurned) bus.emit('relay:resetRequest');
   if (lifeSupport.filterLifeHours <= 0.25 && sim.inventory.filters > 0) bus.emit('filter:swap');
-  if (food.ready) bus.emit('food:harvest');
+  if (food.anyReady) bus.emit('food:harvest');
+  tendTrays(sim);
   if (resources.value('oxygen') < 20) {
     for (const [valveId, used] of Object.entries(lifeSupport.o2TanksUsed)) {
       if (!used) {
@@ -52,4 +58,25 @@ export function runSession(sim, policy, maxTicks = sim.time.totalTicks + 1) {
     sim.step();
   }
   return sim.game.result;
+}
+
+/**
+ * Competent gardener: sows the crop with the best kcal per hour that can still be harvested before the end
+ * (day 8 06:00), and waters each tray back to ≈ 0.6 when it drops below 0.4 during lit hours.
+ * @param {any} sim
+ */
+function tendTrays(sim) {
+  const { food, bus, time } = sim;
+  const clock = time.clock();
+  const hoursLeft = (8 - clock.day) * 24 + (6 - clock.hourFloat);
+  for (const tray of food.trays) {
+    if (!tray.cropId) {
+      const fits = Object.values(food.crops)
+        .filter((/** @type {any} */ c) => c.growthHours * 1.25 < hoursLeft)
+        .sort((/** @type {any} */ a, /** @type {any} */ b) => b.kcal / b.growthHours - a.kcal / a.growthHours)[0];
+      if (fits) bus.emit('hydro:sow', { trayId: tray.id, cropId: fits.id });
+    } else if (tray.moisture < 0.4 && food.lightsScheduled) {
+      bus.emit('hydro:water', { trayId: tray.id, liters: (0.6 - tray.moisture) * food.cfg.trayCapacityL });
+    }
+  }
 }

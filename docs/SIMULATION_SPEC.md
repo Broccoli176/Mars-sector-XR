@@ -118,7 +118,7 @@ Generation: clear day ≈ **31.2 kWh** (12.0 RTG + 19.2 solar); storm day ≈ **
 - The everything-on day costs ≈ −13.6 kWh, matching this table.
 - **Idle** player: `powerLoss` at day 1, 15:00.
 - **Greedy** player (everything on, resets relay, harvests): `powerLoss` at day 3, 23:54.
-- **Competent** policy (sheds telecom/lighting, thermostat 16 °C in storm, harvests on time): survives, but **with ≈ 2 health**. The battery hits 0 on day 5–6, hydro is cut and the crop is lost, so food runs out at day 6.
+- **Competent** policy (sheds telecom/lighting, thermostat 16 °C in storm, sows/waters/harvests the 4 trays): survives with 100 health. The battery hits 0 on day 5–6, but the trays already sown carry the food.
 - Balance is tight. Candidate levers if playtests agree: battery start, or making hydro cheaper.
 
 **That gap is the core trade-off:** the player can run everything on a clear day only by spending battery, and must shed `hydro`/`telecom` (and maybe lower the thermostat) during the 36 h storm. At night with an empty battery the RTG (0.5 kW) cannot carry the full `lifeSupport` draw (0.8 kW), so a drained battery is genuinely dangerous.
@@ -203,13 +203,17 @@ Without recycling, total use ≈ 0.30 L/h, ≈ 50 L per run, which loses. With r
 | :-- | :-- |
 | Start | **10 000** kcal (20 ration packs × 500) |
 | Consumption | −104 kcal/h (2 500/day), automatic |
-| Growth | Advances only while `hydro` is served **and** water > 0. 48 h of growth ⇒ crop ready |
-| Initial growth | 24 h ⇒ first harvest ready on day 2, 06:00 |
-| Harvest | `food:harvest` intent at the hydro rack: +1 200 kcal, growth resets to 0 |
-| Spoilage (D18) | A ready crop **not harvested within 12 h spoils**. A growing crop **without light or water for 6 continuous hours dies**. Both ⇒ `food:spoiled`, growth resets to 0 |
+| Trays | **4 trays**, sown by the player (`hydro:sow`) with one of 6 crops. Values in `balance/hydro.json` → `food.crops` (compressed time, real order): lettuce 36 h / 700 kcal · soybean 60 h / 1 500 · quinoa 72 h / 1 900 · tomato 84 h / 1 800 · carrot 96 h / 2 200 · sweet potato 120 h / 3 000 |
+| Moisture | 0–1 per tray (`trayCapacityL` = 2 L at 1). It dries by `crop.drinkPerHour` (0.025–0.04/h) **only while the lights are on**. Half of that water returns as condensate (`hydroCondensateFraction`) |
+| Watering | `hydro:water { trayId, liters }` from the hose (0.25 L/s while the trigger is held and aimed at a tray, range 1.6 m). The liters leave the tank at once; moisture is capped at 1 (the excess spills) |
+| Growth | Advances only while `hydro` is served **and** moisture is inside **[0.20, 0.85]** |
+| Initial state | Tray 1: lettuce at 12 h with moisture 0.8 ⇒ first harvest ready on day 2, 06:00 without watering. Trays 2–4 empty |
+| Harvest | `food:harvest { trayId }`: + that crop's kcal, the tray becomes **empty** (sow again) |
+| Spoilage (D18) | A ready crop **not harvested within 12 h spoils**. A growing crop **without light (`noLight`), dry (`noWater`) or flooded (`overwatered`) for 6 continuous hours dies**. Lights are off 22:00–06:00, so a tray flooded at night does not drain and rots. All ⇒ `food:spoiled`, the tray empties |
+| Spirulina bioreactor | No watering. Grows only under light: ready after **16 lit hours** ⇒ +300 kcal (`food:harvest { trayId: 'bioreactor' }`, the cycle restarts). While lit: **+0.3 % O₂/h** and −0.02 L/h of water. Waits without spoiling when ready |
 | At 0 | **−2 health/h** (§4) |
 
-Without hydro, rations run out on day 5, 06:00 and starvation kills around day 7, 08:00. With 3 timely harvests (days 2, 4, 6) food lasts until ≈ day 6, 16:40 and the player survives with ≈ 25 health if nothing else hurts. **Hydro is required.**
+Without hydro, rations run out on day 5, 06:00 and starvation kills around day 7, 08:00. **Hydro is required.** `npm run sim`, competent policy (sows the best kcal/h crop that still fits, waters back to 0.6 below 0.4, harvests): food bottoms at ≈ 3 800 kcal on day 4 and it survives with 100 health; the tank ends at ≈ 19 L (warning at 15). The greedy gardener (only lettuce, floods dry trays) still loses by power.
 
 ### 3.7 Spares (`spares`)
 Start **3**. Up to **5** failures can require a spare (4 scripted + `relay_main` if it burns from 3 trips or the CME). At least two must be worked around or left unfixed. That is intentional.
