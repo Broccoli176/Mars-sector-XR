@@ -20,6 +20,10 @@ export class PowerGrid {
     /** Fraction of clean-panel output that still reaches the cells (1 = clean). */
     this.dustFactor = dust?.initialFactor ?? 1;
     this.lastDustPct = Math.round((1 - this.dustFactor) * 100);
+    /** Sun tracker (src/systems/SolarTracker.js), set by Simulation; null ⇒ fixed panels at full output. @type {any} */
+    this.tracker = null;
+    /** Whether the tracker motor got power last tick. */
+    this.trackerPowered = true;
     this.circuits = circuits;
     this.resources = resources;
     this.bus = bus;
@@ -55,7 +59,10 @@ export class PowerGrid {
   updateDust(dtHours) {
     const d = this.dustCfg;
     if (!d) return;
-    const loss = this.stormActive ? d.stormLossPerHour * dtHours : (d.calmLossPerSol / 24) * dtHours;
+    const stowed = this.tracker?.mode === 'stow';
+    const loss = this.stormActive
+      ? d.stormLossPerHour * dtHours * (stowed ? this.tracker.cfg.stowDustFactor : 1)
+      : (d.calmLossPerSol / 24) * dtHours;
     this.#setDust(this.dustFactor - loss);
   }
 
@@ -135,7 +142,8 @@ export class PowerGrid {
   /** @param {{ hourFloat: number }} clock */
   generation(clock) {
     const daylight = clock.hourFloat >= this.cfg.solarStartHour && clock.hourFloat < this.cfg.solarEndHour;
-    const solar = daylight ? this.cfg.solarKw * this.dustFactor * (this.stormActive ? this.cfg.stormSolarFactor : 1) : 0;
+    const aim = this.tracker ? this.tracker.factor(clock.hourFloat) : 1;
+    const solar = daylight ? this.cfg.solarKw * aim * this.dustFactor * (this.stormActive ? this.cfg.stormSolarFactor : 1) : 0;
     return this.cfg.rtgKw + solar;
   }
 
@@ -144,9 +152,10 @@ export class PowerGrid {
    * @param {Record<string, number>} requests kW wanted per circuit (before breakers)
    * @param {{ hourFloat: number }} clock
    * @param {number} tick
+   * @param {number} [extraKw] load outside the breaker circuits (sun-tracker motor)
    */
-  resolve(requests, clock, tick) {
-    let total = 0;
+  resolve(requests, clock, tick, extraKw = 0) {
+    let total = extraKw;
     for (const id of this.order) {
       const kw = this.breakers[id] && this.relayClosed ? requests[id] ?? 0 : 0;
       this.demand[id] = kw;
@@ -190,6 +199,10 @@ export class PowerGrid {
         }
       }
     }
+
+    // Tracker motor: runs on the main bus (no breaker) whenever the relay is closed and there is energy.
+    this.trackerPowered = this.relayClosed && (battery > EPSILON || gen - servedLoad >= extraKw - EPSILON);
+    if (this.trackerPowered) servedLoad += extraKw;
 
     for (const id of this.order) {
       if (served[id] !== this.served[id]) {

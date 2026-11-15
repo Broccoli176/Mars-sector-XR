@@ -27,7 +27,7 @@
   "hint.filter.swap": "El filtro de CO₂ se agota. Cámbialo en el depurador de la sala Energía y oxígeno.",
   "hint.o2tank.opened": "Tanque de O₂ abierto: +{boost} %.",
   "hint.o2tank.empty": "Ese tanque ya está vacío.",
-  "solar.title": "CAMPO SOLAR (18 paneles) · por la ventana",
+  "solar.title": "CAMPO SOLAR · 18 paneles con seguidor",
   "solar.now": "Generación solar ahora: {kw} kW (máx. {max} kW)",
   "solar.sun": "Sol: los paneles cargan las baterías de la base.",
   "solar.storm": "Tormenta de polvo: el polvo tapa los paneles (×{factor}).",
@@ -37,5 +37,18 @@
   "solar.rover.away": "de expedición",
   "solar.dust": "Polvo en los paneles: {pct} % · producción ×{factor}",
   "solar.clean": "LIMPIAR PANELES",
-  "solar.clean_hint": "Escudo electrodinámico (NASA): {kwh} kWh por limpieza"
+  "solar.clean_hint": "Escudo electrodinámico (NASA): {kwh} kWh por limpieza",
+  "solar.btn.east": "◀ ESTE",
+  "solar.btn.west": "OESTE ▶",
+  "solar.btn.auto": "AUTO",
+  "solar.btn.stow": "PROTEGER",
+  "solar.mode.manual": "Modo MANUAL: gira los paneles con ◀ ▶",
+  "solar.mode.auto": "Modo AUTO: los paneles siguen al Sol",
+  "solar.mode.stow": "PROTEGIDOS: paneles de canto (no producen)",
+  "solar.angle": "Paneles: {panel} · Sol: {sun} · aprovechas {pct} %",
+  "solar.sun_down": "bajo el horizonte",
+  "solar.edge_on": "de canto",
+  "solar.dir.east": "E",
+  "solar.dir.west": "O",
+  "solar.auto_cost": "El motor del seguidor gasta {kw} kW de día"
 }

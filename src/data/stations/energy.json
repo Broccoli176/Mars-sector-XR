@@ -10,14 +10,14 @@
     "id": "ls_gauges",
     "room": "room_energy",
     "wall": "east",
-    "along": 7,
+    "along": 5.3,
     "y": 1.45
   },
   {
     "id": "ls_scrubber",
     "room": "room_energy",
     "wall": "south",
-    "along": 11.6,
+    "along": 11.3,
     "y": 1.4
   },
   {
@@ -39,6 +39,6 @@
     "room": "room_energy",
     "wall": "east",
     "along": 8.5,
-    "y": 0.82
+    "y": 0.95
   }
 ]

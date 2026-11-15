@@ -65,6 +65,11 @@ export class Game {
     bus.on('comms:linkRestored', () => push(t('ui.log.link_restored')));
     bus.on('solar:cleaned', (e) => push(t(`ui.log.solar_cleaned.${e.by}`, { pct: Math.round(e.gained * 100) })));
     bus.on('solar:rejected', (e) => push(t(`ui.log.solar_rejected.${e.reason}`), 'warning'));
+    let trackerMode = 'manual';
+    bus.on('solar:tracker', (e) => {
+      if (e.mode !== trackerMode) push(t(`ui.log.solar_tracker.${e.mode}`));
+      trackerMode = e.mode;
+    });
     bus.on('power:overloadWarning', (e) =>
       push(t('ui.log.overload', { demand: e.demandKw.toFixed(1), limit: e.limitKw.toFixed(1) }), 'warning'));
     bus.on('relay:tripped', (e) => push(t(e.burned ? 'ui.log.relay_burned' : 'ui.log.relay_tripped'), 'critical'));

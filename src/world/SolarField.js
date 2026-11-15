@@ -4,7 +4,8 @@ import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 /**
  * Window in the Energía room looking out at the base solar field (3 rows × 6 panels), with the rover
  * charging pad. Reacts to the simulation: panels shine by day (same hours as PowerGrid solar), go dark at
- * night and get a dust layer during storms; the rover is parked outside while it is docked.
+ * night and get a dust layer during storms; the rover is parked outside while it is docked. The panels turn
+ * east–west with the sun tracker (sim.solarTracker.angleDeg; local x is the N–S axis, +angle tilts west).
  * Budget: unlit materials with baked vertex colours (no extra lights), instanced panels, ≈ 9 draw calls.
  */
 
@@ -138,12 +139,15 @@ export function buildSolarField(scene, getSim, win) {
   const panels = new THREE.InstancedMesh(panelGeo, panelMat, PANELS);
   const legs = new THREE.InstancedMesh(legGeo, legMat, PANELS);
   const tmp = new THREE.Object3D();
+  /** @type {[number, number][]} panel positions (x, z) */
+  const slots = [];
   let i = 0;
   for (const z of [-10, -13.5, -17]) {
     for (let k = 0; k < 6; k++) {
       const x = -7.5 + k * 3;
+      slots.push([x, z]);
       tmp.position.set(x, 0.95, z);
-      tmp.rotation.set(0.45, 0, 0); // tilted, facing back towards the base/sun
+      tmp.rotation.set(0, 0, 0); // flat; turned by the sun tracker in update()
       tmp.scale.setScalar(1);
       tmp.updateMatrix();
       panels.setMatrixAt(i, tmp.matrix);
@@ -212,6 +216,21 @@ export function buildSolarField(scene, getSim, win) {
   });
 
   const tint = new THREE.Color();
+  let shownAngle = NaN;
+  /** Tilt every panel (and its dust layer) about the N–S axis. @param {number} deg */
+  const tiltPanels = (deg) => {
+    const rad = THREE.MathUtils.degToRad(deg);
+    slots.forEach(([x, z], j) => {
+      tmp.position.set(x, 0.95, z);
+      tmp.rotation.set(rad, 0, 0);
+      tmp.scale.setScalar(1);
+      tmp.updateMatrix();
+      panels.setMatrixAt(j, tmp.matrix);
+      dustLayer.setMatrixAt(j, tmp.matrix);
+    });
+    panels.instanceMatrix.needsUpdate = true;
+    dustLayer.instanceMatrix.needsUpdate = true;
+  };
   return {
     root,
     rover,
@@ -229,7 +248,17 @@ export function buildSolarField(scene, getSim, win) {
       /** @type {THREE.MeshBasicMaterial} */ (props.material).color.setScalar(look.ground);
       roverMat.color.setScalar(Math.max(0.25, look.ground));
       /** @type {THREE.MeshBasicMaterial} */ (dustLayer.material).opacity = 0.55 * look.dust;
-      sun.visible = look.daylight && !look.dust;
+      // Panels follow the tracker angle (only rebuilt when it changes).
+      const angle = sim.solarTracker?.angleDeg ?? 0;
+      if (!(Math.abs(angle - shownAngle) <= 0.05)) { // also true on the first frame (shownAngle NaN)
+        shownAngle = angle;
+        tiltPanels(angle);
+      }
+      // The window faces east: the morning sun climbs in view, after noon it is behind the base.
+      const hour = sim.time.clock().hourFloat;
+      const elevation = 90 - Math.abs((hour - 12) * 15);
+      sun.position.y = 0.5 + Math.max(0, elevation) * 0.2;
+      sun.visible = look.daylight && !look.dust && hour < 12.5;
       stars.visible = !look.daylight && !look.dust;
       rover.visible = Boolean(sim.rover?.docked);
       dust.visible = look.dust > 0;
