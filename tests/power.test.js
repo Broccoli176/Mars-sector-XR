@@ -43,6 +43,7 @@ describe('PowerGrid', () => {
     const run = (/** @type {string[]} */ off) => {
       const sim = newSim({ events: [], balance: { lifeSupport: { initialFilterFraction: 1 } } });
       for (const id of off) sim.bus.emit('breaker:toggle', { circuitId: id, on: false });
+      sim.bus.emit('solar:auto', { on: true }); // the budget assumes the sun tracker in AUTO (spec §2.6)
       sim.bus.emit('game:start');
       const start = sim.resources.value('power');
       runTicks(sim, 1440);

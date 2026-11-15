@@ -233,7 +233,11 @@ Los tanques de O₂ de emergencia usan `valve:turn` (`valve_o2_tank_1/2`). Pendi
 - **Enlace con la Tierra (`src/systems/Comms.js`):**
   - Intent `comms:send { channel, key, params? }` (lo emiten IncidentRunner y el parte diario).
   - Eventos `comms:message { channel, key, params, day, hour, minute, sentDay, sentHour, sentMinute, delayMin }` (llega tras el retraso de luz real), `comms:linkLost { reason: 'signal' | 'conjunction' }`, `comms:linkRestored {}`.
-- **Polvo en paneles (`PowerGrid`):** intent `solar:clean {}`; eventos `solar:dustChanged { dustFactor }`, `solar:cleaned { by: 'shield' | 'devil', gained, kwh }`, `solar:rejected { reason: 'noDust' | 'storm' | 'relay' | 'battery' }`. Evento de guion `dustDevil`.
+- **Polvo en paneles (`PowerGrid`):** intent `solar:clean {}`; eventos `solar:dustChanged { dustFactor }`, `solar:cleaned { by: 'shield' | 'devil', gained, kwh }`, `solar:rejected { reason: 'noDust' | 'storm' | 'relay' | 'battery' | 'tracker' }`. Evento de guion `dustDevil`.
+- **Seguidor solar (`src/systems/SolarTracker.js`, consola bajo la ventana de Energía):**
+  - Intents: `solar:turn { dir: -1 | 1 }` (manual, ±10°, límite ±60°), `solar:auto { on }` (sigue al Sol; motor 0,05 kW de día) y `solar:stow { on }` (PROTEGER: de canto, sin producción, ×0,25 de polvo en tormenta).
+  - Evento: `solar:tracker { mode: 'manual' | 'auto' | 'stow', angleDeg, targetDeg }`.
+  - La producción solar = pico × coseno(ángulo Sol − ángulo panel) × polvo × tormenta (spec §2.6). `SolarField` gira los 18 paneles con `sim.solarTracker.angleDeg`.
 - **Tormenta solar (`Radiation`):** `spaceWeather:alert { kind: 'sep', etaHours }` y `spaceWeather:impact { kind: 'sep', durationHours }` (IncidentRunner, evento `sep`); intent `crew:shelter { inside }` (presentación, según la posición de la cabeza en Personal); `crew:damage { cause: 'radiation' }` fuera del refugio en lo peor de la tormenta.
 - **Telecom:** `antenna:align`, `antenna:turnLeft`, `antenna:turnRight` (intents); escucha `component:damaged`/`system:repaired` para `antenna_motor`.
 - **Herramientas (presentación, fase 1):**

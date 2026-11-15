@@ -1,7 +1,7 @@
 {
   "power": {
     "rtgKw": 0.5,
-    "solarKw": 1.6,
+    "solarKw": 1.7,
     "solarStartHour": 6,
     "solarEndHour": 18,
     "stormSolarFactor": 0.2,
@@ -73,5 +73,15 @@
     "cleanKwh": 0.3,
     "cleanRecovery": 0.9,
     "devilRecovery": 0.6
+  },
+  "tracker": {
+    "_about": "Single-axis east-west sun tracker (cosine law). maxDeg ±60 like real single-axis trackers. autoKw (motor), slew, stowDustFactor are game balance.",
+    "initialDeg": 0,
+    "maxDeg": 60,
+    "stepDeg": 10,
+    "slewDegPerMin": 2,
+    "stowDeg": 90,
+    "autoKw": 0.05,
+    "stowDustFactor": 0.25
   }
 }

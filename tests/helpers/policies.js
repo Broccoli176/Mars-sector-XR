@@ -38,6 +38,12 @@ export function competentPolicy(sim) {
   // Solar storm: stay in the Personal shelter while the real rate is dangerous.
   const shelter = Boolean(sim.radiation?.shelterNeeded);
   if (sim.radiation && sim.radiation.sheltered !== shelter) bus.emit('crew:shelter', { inside: shelter });
+  // Sun tracker: AUTO normally, panels stowed edge-on while a dust storm blows.
+  const tracker = sim.solarTracker;
+  if (tracker) {
+    const want = power.stormActive ? 'stow' : 'auto';
+    if (tracker.mode !== want) bus.emit(want === 'stow' ? 'solar:stow' : 'solar:auto', { on: true });
+  }
   // Clean the panels once the storm is over and enough dust has settled.
   if (!power.stormActive && power.dustFactor < 0.9 && resources.value('power') > 2) bus.emit('solar:clean');
 

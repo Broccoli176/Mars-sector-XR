@@ -123,6 +123,7 @@ Each mission has `stepN` keys for multi-step hints (e.g. `tutorial.t3.step2` = "
 | `comms.sep.*`, `hint.sep.*`, `personal.sep.*`, `personal.shelter.*` | `strings/es/common.json`, `personal.json` | Solar particle event: alert from Earth, shelter sign, storm dosimeter |
 | `ui.telecom.earth_delay` / `in_transit` / `held` / `conjunction` / `rover_delay` | `strings/es/telecom.json` | Earth link panel (light-time delay, queue) |
 | `ui.log.comms_sent`, `ui.log.link_*`, `ui.log.solar_*`, `solar.dust` / `solar.clean*` | `strings/es/common.json`, `energy.json` | Log lines for delayed messages, link loss, panel cleaning; dust on the solar label |
+| `solar.btn.*`, `solar.mode.*`, `solar.angle`, `solar.auto_cost`, `solar.dir.*`, `ui.log.solar_tracker.*`, `hint.solar.auto` | `strings/es/energy.json`, `common.json` | Solar console buttons, tracker mode/angle lines, tracker log lines, day-1 AUTO hint |
 | `rover.*` | `strings/es/control.json` | Rover console: screens, buttons, link/battery/mode/cargo, rejections, stops, sites, hints, NASA facts. `rover.photo.*` / `rover.cam.photo_title` / `rover.cam.latest_title`: real NASA image captions, credit line, gallery counter, «vista simulada» label |
 | `solar.*`, `ui.circuit.repairBay` | `strings/es/energy.json` | «Campo solar» label under the Energía window; breaker «Taller · Rover» |
 | `hub.ctrl.*` | `strings/es/hub.json` | «Prueba de mandos» panel: session line, per-hand buttons/stick/events, ray test button, legend of what each control does |

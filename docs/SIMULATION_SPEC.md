@@ -79,12 +79,12 @@ Systems receive `dtHours = 1/60` per tick. Rates below are **per in-game hour**.
 | Battery start | 30 kWh (50 %) |
 | Warn / critical | 18 kWh (30 %) / 6 kWh (10 %) |
 | RTG (constant) | **0.5 kW** |
-| Solar mast | **1.6 kW** from 06:00 to 18:00, 0 at night |
+| Solar field | **1.7 kW** peak from 06:00 to 18:00 × the sun-tracker cosine factor (§2.6), 0 at night. AUTO tracking all day ≈ 20 kWh − 0.6 kWh motor ≈ the old flat 19.2 kWh; panels left flat at 0° ≈ 13 kWh |
 | Dust storm factor on solar | × 0.2 |
 | Dust on the panels (§2.5) | solar × `dustFactor` (1 = clean) |
 | Bus limit | 3.0 kW total demand; above it for 5 in-game minutes the main relay trips |
 
-Generation: clear day ≈ **31.2 kWh** (12.0 RTG + 19.2 solar); storm day ≈ **15.8 kWh**.
+Generation: clear day ≈ **31.2 kWh** (12.0 RTG + ≈ 19.5 solar with the tracker in AUTO, net of its motor); storm day ≈ **15.8 kWh**. The §2.3 budget assumes AUTO (tests/power.test.js).
 
 ### 2.2 Circuits
 
@@ -142,6 +142,19 @@ Generation: clear day ≈ **31.2 kWh** (12.0 RTG + 19.2 solar); storm day ≈ **
 | Dust devil | scripted `dustDevil` event (day 6 13:00): recovers 60 % of the lost output | Real phenomenon (Spirit/Opportunity); amount is game balance |
 
 Events: `solar:dustChanged { dustFactor }` (when the dust % changes by 1), `solar:cleaned { by: 'shield' | 'devil', gained, kwh }`, `solar:rejected { reason }`. Honest note: at the real calm rate a 7-day run loses only ≈ 2 %; the storm is what makes dust matter.
+
+### 2.6 Sun tracker (implemented, `src/systems/SolarTracker.js`, `balance.tracker` in `energy.json`)
+
+| Item | Value |
+| :-- | :-- |
+| Rule | Single east–west axis, cosine law: solar × `max(0, cos(h − θ))`, sun hour angle `h = (hour − 12) × 15°` (06:00 = 90° E), panel angle θ (negative = east). Simplified: no air mass, no season |
+| Range / speed | ±60° (real single-axis trackers), moves at 2°/game minute; starts flat at 0° in MANUAL |
+| MANUAL | `solar:turn { dir: -1 \| 1 }` (◀ ESTE / OESTE ▶ on the console): target ± 10°. Free |
+| AUTO | `solar:auto { on }`: target follows `h` (clamped ±60°), parks at 60° E at night. Motor draws **0.05 kW** in daylight on the main bus (no breaker; counts for the bus limit). Without power (relay open, or battery 0 and no spare generation) it freezes and emits `solar:rejected { reason: 'tracker' }` |
+| PROTEGER (stow) | `solar:stow { on }`: panels edge-on (90°), output 0; storm dust settles × 0.25. Leaving stow ⇒ MANUAL |
+| Events | `solar:tracker { mode, angleDeg, targetDeg }` on every mode change or manual step |
+
+Teaching trade-off: AUTO gives ≈ +50 % solar energy for a small constant power cost; stowing in a storm gives up the storm's 20 % output to keep the panels clean for after. A day-1 07:00 hint points to AUTO. Balance and motor numbers are game values.
 
 ---
 
