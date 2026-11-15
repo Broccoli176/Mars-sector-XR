@@ -247,6 +247,7 @@ Start **3**. Up to **5** failures can require a spare (4 scripted + `relay_main`
 | Energy | Battery 2 000 Wh. −4 Wh/m driving, −0.3 Wh/° turning, −100 Wh per sample. −60 W load, +110 W MMRTG. At 0 ⇒ `stranded` until the MMRTG refills 10 % |
 | Dock | Within 6 m of the base and not moving ⇒ docked: delivers cargo and charges at 0.4 kW through the `repairBay` circuit (priority 6, «Taller · Rover»). It starts docked and full, so an idle rover changes nothing |
 | Sites | 2 rock cores (science counter) and 2 landing-debris sites (+1 `spares` each when delivered). Sample = 1 game hour within 8 m |
+| NavCam images (presentation only) | Within 8 m of a site the NAVCAM shows its real NASA image (`src/data/real/rover_photos.json`); docked, the latest real Perseverance NavCam frame; otherwise a drawn view labelled «vista simulada». Snapshots, never presented as live |
 
 ## 4) Player health (`health`)
 

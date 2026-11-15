@@ -1,10 +1,12 @@
 // Rover console in the Sala de control (Perseverance-class rover, src/systems/Rover.js).
 // Three canvas screens (MAPA, NAVCAM, ESTADO) + six desk buttons. Presentation only: emits rover:command.
-// The NavCam is drawn in perspective on a canvas (no second 3D render: cheap on Quest).
+// The NavCam is drawn in perspective on a canvas (no second 3D render: cheap on Quest). At a site with a
+// real NASA photo (src/data/real/rover_photos.json) it shows that photo instead, credited and dated.
 import * as THREE from 'three';
 import { COLORS, BUTTON } from '../../ui/StationKit.js';
 import { Panel } from '../../ui/Panel.js';
 import { Button } from '../../objects/Button.js';
+import { photoForRover, photoRect, photosReceived } from './roverPhotos.js';
 
 const FOV_HALF = (35 * Math.PI) / 180;
 
@@ -69,8 +71,30 @@ export function buildRoverConsole(g, station, kit) {
   let noticeTtl = 0;
   /** The simulation (and its bus) is replaced on restart: (re)subscribe when it changes. */
   let wiredBus = /** @type {any} */ (null);
+  // ---- Real NASA photos (dated snapshots in public/images/rover/, loaded on demand) ----
+  const photoData = game.data.real?.rover_photos ?? null;
+  /** @type {Map<string, HTMLImageElement>} */
+  const images = new Map();
+  const imageFor = (/** @type {string} */ file) => {
+    let img = images.get(file);
+    if (!img && typeof Image !== 'undefined') {
+      img = new Image();
+      img.src = `${import.meta.env?.BASE_URL ?? './'}images/rover/${file}`;
+      images.set(file, img);
+    }
+    return img ?? null;
+  };
+  // Not live: the Mars 2020 raw-images API does not allow browser (CORS) requests, so the latest NavCam
+  // frame is a dated snapshot refreshed with `npm run data:roverphotos`.
+
   const wire = (/** @type {any} */ bus) => {
     wiredBus = bus;
+    bus.on('rover:sampled', (/** @type {any} */ e) => {
+      const site = cfg.sites.find((/** @type {any} */ s) => s.id === e.siteId);
+      if (site && photoData?.photos.some((/** @type {any} */ p) => p.siteId === e.siteId)) {
+        game.intent('hint', { key: 'rover.photo.received', params: { site: t(site.nameKey) } });
+      }
+    });
     bus.on('rover:rejected', (/** @type {any} */ e) => {
       notice = `rover.reject.${e.reason}`;
       noticeTtl = 12;
@@ -91,7 +115,12 @@ export function buildRoverConsole(g, station, kit) {
     const link = s.resources.value('signal') >= cfg.minSignal;
     const key = `${r.x.toFixed(1)}|${r.y.toFixed(1)}|${r.heading.toFixed(3)}|${r.visited.size}|${r.mode}|${link}`;
     map.renderCustom(key, (ctx, W, H) => drawMap(ctx, W, H, r, cfg, t));
-    cam.renderCustom(`${key}|${r.lastStop}|${link ? 0 : frame % 4}`, (ctx, W, H) => drawNavCam(ctx, W, H, r, cfg, t, link, frame));
+    const shown = photoForRover(r, photoData, cfg);
+    const img = shown ? imageFor(shown.photo.file) : null;
+    const ready = Boolean(img && img.complete && img.naturalWidth > 0);
+    const photo = ready && shown ? { ...shown, img: /** @type {HTMLImageElement} */ (img) } : null;
+    const photoKey = photo ? photo.photo.file + (photo.kind === 'site' ? photo.siteId : '') : '-';
+    cam.renderCustom(`${key}|${r.lastStop}|${link ? 0 : frame % 4}|${photoKey}`, (ctx, W, H) => drawNavCam(ctx, W, H, r, cfg, t, link, frame, photo));
 
     const reach = r.siteInReach();
     const cores = r.cargo.filter((/** @type {any} */ c) => c.kind === 'core').length;
@@ -111,6 +140,11 @@ export function buildRoverConsole(g, station, kit) {
     if (notice && noticeTtl > 0) {
       noticeTtl--;
       lines.push({ text: t(notice), color: COLORS.critical, size: 0.8 });
+    }
+    if (photoData) {
+      const g = photosReceived(r.visited, photoData.photos);
+      lines.push({ text: t('rover.photo.gallery', { got: g.got, total: g.total }), color: COLORS.info, size: 0.75 });
+      lines.push({ text: t('rover.photo.snapshot', { sol: photoData.latest.sol, date: photoData.source.retrievedAt }), color: COLORS.dim, size: 0.66 });
     }
     lines.push({ text: t('rover.help'), color: COLORS.dim, size: 0.66 });
     if (real) lines.push({ text: t('rover.fact', { speed: real.topSpeedMPerHour, w: real.mmrtgWattsAtLaunch, tubes: real.sampleTubes }), color: COLORS.dim, size: 0.62 });
@@ -189,7 +223,13 @@ function drawMap(
 function drawNavCam(
   /** @type {CanvasRenderingContext2D} */ ctx, /** @type {number} */ W, /** @type {number} */ H,
   /** @type {any} */ r, /** @type {any} */ cfg, /** @type {Function} */ t, /** @type {boolean} */ link, /** @type {number} */ frame,
+  /** @type {any} */ photo = null,
 ) {
+  if (photo) {
+    drawRealPhoto(ctx, W, H, photo, cfg, t);
+    if (!link) drawNoLink(ctx, W, H, frame, t);
+    return;
+  }
   const horizon = H * 0.42;
   const sky = ctx.createLinearGradient(0, 0, 0, horizon);
   sky.addColorStop(0, '#b98a62');
@@ -248,20 +288,80 @@ function drawNavCam(
   ctx.textAlign = 'left';
   ctx.font = `bold ${Math.round(H * 0.06)}px system-ui, sans-serif`;
   ctx.fillText(t('rover.cam.title', { deg: Math.round((r.heading * 180) / Math.PI) }), W * 0.02, H * 0.075);
+  ctx.fillStyle = COLORS.dim;
+  ctx.textAlign = 'right';
+  ctx.font = `${Math.round(H * 0.04)}px system-ui, sans-serif`;
+  ctx.fillText(t('rover.cam.simulated'), W * 0.98, H * 0.07);
+  ctx.font = `bold ${Math.round(H * 0.06)}px system-ui, sans-serif`;
   if (r.lastStop === 'obstacle') {
     ctx.fillStyle = 'rgba(255,107,92,0.9)';
     ctx.textAlign = 'center';
     ctx.fillText(t('rover.cam.hazard'), W / 2, H * 0.94);
   }
-  if (!link) {
-    // Lost link: frozen noisy feed.
-    for (let i = 0; i < 400; i++) {
-      ctx.fillStyle = (i + frame) % 2 ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.5)';
-      ctx.fillRect(Math.random() * W, Math.random() * H, 3, 3);
-    }
-    ctx.fillStyle = COLORS.critical;
-    ctx.textAlign = 'center';
-    ctx.font = `bold ${Math.round(H * 0.09)}px system-ui, sans-serif`;
-    ctx.fillText(t('rover.cam.nolink'), W / 2, H / 2);
+  if (!link) drawNoLink(ctx, W, H, frame, t);
+}
+
+/** Lost link: frozen noisy feed. */
+function drawNoLink(/** @type {CanvasRenderingContext2D} */ ctx, /** @type {number} */ W, /** @type {number} */ H, /** @type {number} */ frame, /** @type {Function} */ t) {
+  for (let i = 0; i < 400; i++) {
+    ctx.fillStyle = (i + frame) % 2 ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.5)';
+    ctx.fillRect(Math.random() * W, Math.random() * H, 3, 3);
   }
+  ctx.fillStyle = COLORS.critical;
+  ctx.textAlign = 'center';
+  ctx.font = `bold ${Math.round(H * 0.09)}px system-ui, sans-serif`;
+  ctx.fillText(t('rover.cam.nolink'), W / 2, H / 2);
+}
+
+/** Real NASA photo filling the NavCam, with «FOTO REAL · NASA», caption and credit (archive, not live). */
+function drawRealPhoto(
+  /** @type {CanvasRenderingContext2D} */ ctx, /** @type {number} */ W, /** @type {number} */ H,
+  /** @type {any} */ photo, /** @type {any} */ cfg, /** @type {Function} */ t,
+) {
+  const p = photo.photo;
+  ctx.fillStyle = '#000000';
+  ctx.fillRect(0, 0, W, H);
+  const rc = photoRect(photo.img.naturalWidth, photo.img.naturalHeight, W, H, p.crop ?? null);
+  ctx.drawImage(photo.img, rc.sx, rc.sy, rc.sw, rc.sh, rc.dx, rc.dy, rc.dw, rc.dh);
+  ctx.fillStyle = 'rgba(0,0,0,0.6)';
+  ctx.fillRect(0, 0, W, H * 0.1);
+  ctx.fillStyle = COLORS.title;
+  ctx.textAlign = 'left';
+  ctx.font = `bold ${Math.round(H * 0.055)}px system-ui, sans-serif`;
+  if (photo.kind === 'site') {
+    const site = cfg.sites.find((/** @type {any} */ s) => s.id === photo.siteId);
+    ctx.fillText(t('rover.cam.photo_title', { site: t(site.nameKey) }), W * 0.02, H * 0.07);
+  } else {
+    ctx.fillText(t('rover.cam.latest_title', { sol: p.sol }), W * 0.02, H * 0.07);
+  }
+  const caption = photo.kind === 'site' ? t(p.captionKey) : t('rover.photo.latest', { camera: p.camera, date: String(p.dateTakenUtc).slice(0, 10) });
+  ctx.fillStyle = 'rgba(0,0,0,0.65)';
+  ctx.fillRect(0, H * 0.8, W, H * 0.2);
+  ctx.fillStyle = '#ffffff';
+  ctx.font = `${Math.round(H * 0.042)}px system-ui, sans-serif`;
+  wrapText(ctx, caption, W * 0.02, H * 0.86, W * 0.96, H * 0.05, 2);
+  ctx.fillStyle = COLORS.dim;
+  ctx.font = `${Math.round(H * 0.034)}px system-ui, sans-serif`;
+  const date = p.date ?? String(p.dateTakenUtc).slice(0, 10);
+  ctx.fillText(t('rover.photo.credit', { credit: p.credit, date, id: p.pia ?? p.camera }), W * 0.02, H * 0.975, W * 0.96);
+}
+
+/** Simple word wrap for the caption strip. */
+function wrapText(
+  /** @type {CanvasRenderingContext2D} */ ctx, /** @type {string} */ text, /** @type {number} */ x, /** @type {number} */ y,
+  /** @type {number} */ maxW, /** @type {number} */ lineH, /** @type {number} */ maxLines,
+) {
+  let line = '';
+  let n = 0;
+  for (const w of text.split(' ')) {
+    const test = line ? `${line} ${w}` : w;
+    if (ctx.measureText(test).width > maxW && line) {
+      ctx.fillText(line, x, y + n * lineH);
+      line = w;
+      if (++n >= maxLines) return;
+    } else {
+      line = test;
+    }
+  }
+  if (line) ctx.fillText(line, x, y + n * lineH);
 }

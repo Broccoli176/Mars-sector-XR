@@ -16,7 +16,8 @@
     "sim": "node scripts/simulate.js",
     "data:radlab": "node scripts/fetch-radlab.js",
     "data:osdr": "node scripts/fetch-osdr.js",
-    "data:donki": "node scripts/fetch-donki.js"
+    "data:donki": "node scripts/fetch-donki.js",
+    "data:roverphotos": "node scripts/fetch-rover-photos.js"
   },
   "dependencies": {
     "mitt": "3.0.1",
