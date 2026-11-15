@@ -1,0 +1,18 @@
+{
+  "_about": "REAL measured rate (curated, not live). Dust obscuration of solar cells on the Mars surface.",
+  "source": {
+    "institution": "NASA Glenn Research Center",
+    "product": "Mars Pathfinder Materials Adherence Experiment (MAE): Landis & Jenkins, J. Geophys. Res. 105 (E1), 2000, doi:10.1029/1999JE001029",
+    "url": "https://ntrs.nasa.gov/citations/20020031145",
+    "retrievedAt": "2026-11-14"
+  },
+  "measured": {
+    "maeObscurationPerSol": 0.0028,
+    "landerArrayLossPerSol": 0.0029,
+    "note": "About 0.28 % of solar-cell output lost per sol to settling dust during the first weeks on the surface; the lander arrays lost ~0.29 %/sol."
+  },
+  "cleaning": {
+    "electrodynamicDustShield": "NASA Kennedy Space Center technology: electric fields lift dust off panels without moving parts (https://technology.nasa.gov/patent/KSC-TOPS-99).",
+    "dustDevils": "Dust devils cleaned the panels of the Spirit and Opportunity rovers several times (NASA/JPL)."
+  }
+}

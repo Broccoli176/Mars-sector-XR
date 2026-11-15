@@ -9,8 +9,11 @@ const CIRCUITS = ['lifeSupport', 'heating', 'lighting', 'telecom', 'hydro', 'rep
 export const builders = {
   /** Label under the solar-field window (src/world/SolarField.js): live solar generation. */
   energy_solar_view(g, _station, kit) {
-    const { t, sim } = kit;
-    const panel = kit.addPanel(g, 1.0, 0.26);
+    const { t, sim, game } = kit;
+    const panel = kit.addPanel(g, 1.0, 0.3);
+    // Electrodynamic dust shield (NASA KSC): costs battery, cleans most of the settled dust ('solar:clean').
+    const clean = kit.addButton(g, { width: 0.34, height: 0.08, label: t('solar.clean'), color: BUTTON.action,
+      onSelect: () => game.intent('solar:clean') }, 0.72, -0.05);
     kit.onRefresh(() => {
       const s = sim();
       const clock = s.time.clock();
@@ -21,8 +24,12 @@ export const builders = {
       panel.renderLines(t('solar.title'), [
         { text: t('solar.now', { kw: solar.toFixed(2), max: cfg.solarKw.toFixed(1) }), color: !day ? COLORS.dim : s.power.stormActive ? COLORS.warning : COLORS.nominal, size: 0.95 },
         { text: t(state, { factor: cfg.stormSolarFactor }), size: 0.8 },
+        { text: t('solar.dust', { pct: Math.round((1 - s.power.dustFactor) * 100), factor: s.power.dustFactor.toFixed(2) }), color: s.power.dustFactor < 0.8 ? COLORS.warning : COLORS.text, size: 0.8 },
+        { text: t('solar.clean_hint', { kwh: s.power.dustCfg?.cleanKwh ?? 0 }), color: COLORS.dim, size: 0.7 },
         { text: t('solar.rover', { state: t(s.rover?.docked ? 'solar.rover.docked' : 'solar.rover.away') }), color: COLORS.dim, size: 0.75 },
       ]);
+      const dirty = s.power.dustCfg && s.power.dustFactor < s.power.dustCfg.cleanMinFactor;
+      clean.setState(t('solar.clean'), !dirty || s.power.stormActive ? BUTTON.off : s.power.dustFactor < 0.85 ? BUTTON.warn : BUTTON.action);
     });
   },
 

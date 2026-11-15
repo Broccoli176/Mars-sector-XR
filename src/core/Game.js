@@ -56,11 +56,15 @@ export class Game {
     const push = (/** @type {string} */ text, kind = 'info') => this.#push(text, kind, sim);
 
     bus.on('hint', (e) => push(t(e.key, e.params), 'hint'));
-    bus.on('comms:message', (e) => push(t(e.key, e.params), 'comms'));
-    bus.on('game:phaseChanged', (e) => {
-      if (e.to === 'playing') push(t('comms.daily.d1'), 'comms');
+    // Mission messages arrive through Comms after the real Earth–Mars light time (src/systems/Comms.js).
+    bus.on('comms:message', (e) => {
+      const sent = e.sentHour !== undefined ? ` ${t('ui.log.comms_sent', { time: formatClock(e.sentHour, e.sentMinute ?? 0), min: e.delayMin })}` : '';
+      push(`${t(e.key, e.params)}${sent}`, 'comms');
     });
-    bus.on('time:dayStarted', (e) => push(t(`comms.daily.d${e.day}`), 'comms'));
+    bus.on('comms:linkLost', (e) => push(t(`ui.log.link_lost.${e.reason}`), 'warning'));
+    bus.on('comms:linkRestored', () => push(t('ui.log.link_restored')));
+    bus.on('solar:cleaned', (e) => push(t(`ui.log.solar_cleaned.${e.by}`, { pct: Math.round(e.gained * 100) })));
+    bus.on('solar:rejected', (e) => push(t(`ui.log.solar_rejected.${e.reason}`), 'warning'));
     bus.on('power:overloadWarning', (e) =>
       push(t('ui.log.overload', { demand: e.demandKw.toFixed(1), limit: e.limitKw.toFixed(1) }), 'warning'));
     bus.on('relay:tripped', (e) => push(t(e.burned ? 'ui.log.relay_burned' : 'ui.log.relay_tripped'), 'critical'));

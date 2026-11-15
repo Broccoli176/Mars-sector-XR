@@ -62,5 +62,16 @@
     "setpointMin": 16,
     "setpointMax": 22,
     "hysteresis": 1
+  },
+  "dust": {
+    "_source": "calmLossPerSol: Mars Pathfinder MAE measured 0.28 %/sol of dust obscuration (Landis & Jenkins 2000); see src/data/real/solar_dust.json. stormLossPerHour, cleanRecovery and devilRecovery are game balance.",
+    "initialFactor": 1,
+    "calmLossPerSol": 0.0028,
+    "stormLossPerHour": 0.008,
+    "minFactor": 0.4,
+    "cleanMinFactor": 0.99,
+    "cleanKwh": 0.3,
+    "cleanRecovery": 0.9,
+    "devilRecovery": 0.6
   }
 }

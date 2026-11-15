@@ -8,14 +8,22 @@
 //
 // Usage:  npm run data:radlab            (default day 2023-01-01)
 //         npm run data:radlab -- 2023-06-15
+//         npm run data:radlab:sep           (= 2024-05-20 --days 3 --out radlab_sep: the May 2024 solar storm)
 import { writeFileSync, mkdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
 const API = 'https://visualization.osdr.nasa.gov/radlab/api/';
-const day = process.argv[2] ?? '2023-01-01';
-if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) throw new Error(`Date must be YYYY-MM-DD, got "${day}"`);
+const args = process.argv.slice(2);
+const flag = (/** @type {string} */ name, /** @type {string} */ fallback) => {
+  const i = args.indexOf(name);
+  return i >= 0 ? args[i + 1] : fallback;
+};
+const day = args.find((a) => /^\d{4}-\d{2}-\d{2}$/.test(a)) ?? '2023-01-01';
+const days = Number(flag('--days', '1'));
+const outName = flag('--out', 'radlab');
+if (!/^[a-z_]+$/.test(outName)) throw new Error(`--out must be a simple name, got "${outName}"`);
 const next = new Date(`${day}T00:00:00Z`);
-next.setUTCDate(next.getUTCDate() + 1);
+next.setUTCDate(next.getUTCDate() + days);
 const dayEnd = next.toISOString().slice(0, 10);
 
 /** Builds a RadLab key-value query (operators encoded as the docs require). */
@@ -73,6 +81,7 @@ const out = {
     retrievedAt: new Date().toISOString().slice(0, 10),
   },
   day,
+  days,
   units: { rate: 'µGy/h (absorbed dose rate)' },
   mars: {
     label: 'Mars surface, Gale crater — RAD on the Curiosity rover (MSL)',
@@ -86,7 +95,28 @@ const out = {
     : null,
 };
 
-const target = fileURLToPath(new URL('../src/data/real/radlab.json', import.meta.url));
+// Solar particle event onset: first sample above 3× the median of the first 3 hours (multi-day records only).
+if (days > 1) {
+  const t0 = Date.parse(`${mars[0].t}Z`);
+  const early = mars.filter((r) => Date.parse(`${r.t}Z`) - t0 < 3 * 3600e3).map((r) => r.uGyPerHour).sort((a, b) => a - b);
+  const background = early[Math.floor(early.length / 2)];
+  const onset = mars.find((r) => r.uGyPerHour > 3 * background);
+  const peak = mars.reduce((a, b) => (b.uGyPerHour > a.uGyPerHour ? b : a));
+  // Event dose above background, integrated sample by sample (µGy).
+  let excess = 0;
+  for (let i = 1; i < mars.length; i++) {
+    const dtH = (Date.parse(`${mars[i].t}Z`) - Date.parse(`${mars[i - 1].t}Z`)) / 3600e3;
+    excess += Math.max(0, mars[i - 1].uGyPerHour - background) * dtH;
+  }
+  /** @type {any} */ (out).event = {
+    backgroundUGyPerHour: round(background),
+    onsetUtc: onset?.t ?? null,
+    peakUtc: peak.t,
+    peakUGyPerHour: round(peak.uGyPerHour),
+    excessDoseUGy: round(excess),
+  };
+}
+const target = fileURLToPath(new URL(`../src/data/real/${outName}.json`, import.meta.url));
 mkdirSync(fileURLToPath(new URL('../src/data/real/', import.meta.url)), { recursive: true });
 writeFileSync(target, JSON.stringify(out, null, 2) + '\n');
 console.log(`Wrote ${target}`);

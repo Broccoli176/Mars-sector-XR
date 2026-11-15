@@ -34,5 +34,8 @@
   "solar.night": "Noche: los paneles no generan; solo queda el RTG.",
   "solar.rover": "Rover: {state}",
   "solar.rover.docked": "en su plataforma de carga (fuera, junto a los paneles)",
-  "solar.rover.away": "de expedición"
+  "solar.rover.away": "de expedición",
+  "solar.dust": "Polvo en los paneles: {pct} % · producción ×{factor}",
+  "solar.clean": "LIMPIAR PANELES",
+  "solar.clean_hint": "Escudo electrodinámico (NASA): {kwh} kWh por limpieza"
 }
