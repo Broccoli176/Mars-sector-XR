@@ -48,29 +48,30 @@ describe('Hydroponics trays', () => {
   it('a dry tray dies of thirst, a flooded one rots, and one without power dies of darkness', () => {
     const dry = newSim({ events: [] });
     const dryEvents = collect(dry, 'food:spoiled');
+    const careHours = dry.balance.food.spoilWithoutCareHours;
     dry.food.tray('tray_1').moisture = 0.1;
     dry.bus.emit('game:start');
-    runTicks(dry, 6 * 60);
+    runTicks(dry, careHours * 60);
     expect(dryEvents[0]).toMatchObject({ trayId: 'tray_1', reason: 'noWater' });
 
     const flooded = newSim({ events: [] });
     const floodEvents = collect(flooded, 'food:spoiled');
     flooded.bus.emit('hydro:water', { trayId: 'tray_1', liters: 2 });
     flooded.bus.emit('game:start');
-    // A slow drinker stays above floodAt (0.85) for the whole 6 h rot clock.
-    flooded.food.crops.lettuce.drinkPerHour = 0.01;
-    runTicks(flooded, 6 * 60);
+    // A slow drinker stays above floodAt (0.95) for the whole rot clock.
+    flooded.food.crops.lettuce.drinkPerHour = 0.002;
+    runTicks(flooded, careHours * 60);
     expect(floodEvents[0]).toMatchObject({ trayId: 'tray_1', reason: 'overwatered' });
 
     const dark = newSim({ events: [] });
     const darkEvents = collect(dark, 'food:spoiled');
     dark.bus.emit('breaker:toggle', { circuitId: 'hydro', on: false });
     dark.bus.emit('game:start');
-    runTicks(dark, 6 * 60);
+    runTicks(dark, careHours * 60);
     expect(darkEvents[0]).toMatchObject({ trayId: 'tray_1', reason: 'noLight' });
   });
 
-  it('harvest adds that crop\'s kcal and leaves the tray empty for the next sowing', () => {
+  it('harvest sends the crop raw to the pantry (no kcal yet) and leaves the tray empty', () => {
     const sim = newSim({ events: [] });
     const harvested = collect(sim, 'food:harvested');
     const tray = sim.food.tray('tray_1');
@@ -80,7 +81,8 @@ describe('Hydroponics trays', () => {
     expect(tray.ready).toBe(true);
     const food = sim.resources.value('food');
     sim.bus.emit('food:harvest', { trayId: 'tray_1' });
-    expect(sim.resources.value('food')).toBeCloseTo(food + 700);
+    expect(sim.resources.value('food')).toBeCloseTo(food);
+    expect(sim.kitchen.pantry).toEqual([{ itemId: 'lettuce', kind: 'fresh', kcal: 700, ageHours: 0 }]);
     expect(harvested[0]).toEqual({ trayId: 'tray_1', cropId: 'lettuce', kcal: 700 });
     expect(tray.cropId).toBeNull();
   });
@@ -93,7 +95,8 @@ describe('Hydroponics trays', () => {
     expect(sim.food.bioreactor.o2Total).toBeCloseTo(0.3 * 16, 1);
     const food = sim.resources.value('food');
     sim.bus.emit('food:harvest', { trayId: 'bioreactor' });
-    expect(sim.resources.value('food')).toBeCloseTo(food + 300);
+    expect(sim.resources.value('food')).toBeCloseTo(food);
+    expect(sim.kitchen.pantry[0]).toMatchObject({ itemId: 'spirulina', kind: 'protein', kcal: 300 });
     expect(sim.food.bioreactor.ready).toBe(false);
 
     const dark = newSim({ events: [] });
@@ -101,5 +104,46 @@ describe('Hydroponics trays', () => {
     dark.bus.emit('game:start');
     runTicks(dark, 16 * 60);
     expect(dark.food.bioreactor.growthHours).toBe(0);
+  });
+
+  it('the nutrient solution runs down with growth; when low it slows the plants but never kills them', () => {
+    const sim = newSim({ events: [], balance: { food: { nutrients: { initial: 0.05 } } } });
+    const low = collect(sim, 'hydro:nutrientsLow');
+    const spoiled = collect(sim, 'food:spoiled');
+    const tray = sim.food.tray('tray_1');
+    sim.bus.emit('game:start');
+    runTicks(sim, 4 * 60);
+    expect(low).toHaveLength(1);
+    expect(sim.food.growthFactor).toBe(0.5);
+    expect(tray.growthHours).toBeCloseTo(12 + 4 * 0.5, 1);
+    expect(spoiled).toHaveLength(0);
+
+    const fed = collect(sim, 'hydro:fed');
+    sim.bus.emit('hydro:feed');
+    expect(fed[0].cartridgesLeft).toBe(3);
+    expect(sim.food.growthFactor).toBe(1);
+  });
+
+  it('feeding is rejected when the tank is full or there are no cartridges', () => {
+    const sim = newSim({ events: [], balance: { food: { nutrients: { initial: 1, cartridges: 1 } } } });
+    const rejected = collect(sim, 'hydro:rejected');
+    sim.bus.emit('hydro:feed');
+    expect(rejected[0]).toEqual({ reason: 'full' });
+    sim.food.nutrients = 0.1;
+    sim.bus.emit('hydro:feed');
+    sim.food.nutrients = 0.1;
+    sim.bus.emit('hydro:feed');
+    expect(rejected[1]).toEqual({ reason: 'noCartridge' });
+  });
+
+  it('healthy lit trays photosynthesise: less CO₂ than a base with the hydro lights off', () => {
+    const run = (/** @type {boolean} */ on) => {
+      const sim = newSim({ events: [], balance: { lifeSupport: { initialFilterFraction: 0 } } });
+      if (!on) sim.bus.emit('breaker:toggle', { circuitId: 'hydro', on: false });
+      sim.bus.emit('game:start');
+      runTicks(sim, 3 * 60);
+      return sim.resources.value('co2');
+    };
+    expect(run(true)).toBeLessThan(run(false));
   });
 });

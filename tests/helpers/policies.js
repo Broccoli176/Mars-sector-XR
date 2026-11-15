@@ -1,5 +1,6 @@
 // Scripted player policies for headless runs (tests + scripts/simulate.js).
 // They act only through bus intents, like the VR presentation does.
+import { bestRecipe } from '../../src/rooms/hydro/kitchenRules.js';
 
 /** @param {import('../../src/systems/Simulation.js').Simulation} sim */
 export function idlePolicy(sim) {
@@ -10,7 +11,10 @@ export function idlePolicy(sim) {
 export function greedyPolicy(sim) {
   if (sim.power.relayTripped && !sim.power.relayBurned) sim.bus.emit('relay:resetRequest');
   if (sim.lifeSupport.filterLifeHours <= 0.25 && sim.inventory.filters > 0) sim.bus.emit('filter:swap');
-  if (sim.food.anyReady) sim.bus.emit('food:harvest');
+  if (sim.food.anyReady) {
+    sim.bus.emit('food:harvest');
+    sim.bus.emit('kitchen:eat'); // eats the harvest raw, never processes
+  }
   // Greedy gardener: always lettuce, and floods a tray whenever it looks dry.
   for (const tray of sim.food.trays) {
     if (!tray.cropId) sim.bus.emit('hydro:sow', { trayId: tray.id, cropId: 'lettuce' });
@@ -25,6 +29,7 @@ export function competentPolicy(sim) {
   if (lifeSupport.filterLifeHours <= 0.25 && sim.inventory.filters > 0) bus.emit('filter:swap');
   if (food.anyReady) bus.emit('food:harvest');
   tendTrays(sim);
+  cook(sim);
   repairReceiver(sim);
   if (resources.value('oxygen') < 20) {
     for (const [valveId, used] of Object.entries(lifeSupport.o2TanksUsed)) {
@@ -82,6 +87,9 @@ function tendTrays(sim) {
   const { food, bus, time } = sim;
   const clock = time.clock();
   const hoursLeft = (8 - clock.day) * 24 + (6 - clock.hourFloat);
+  // Top up the nutrient solution before it slows the plants down.
+  const nut = food.cfg.nutrients;
+  if (nut && food.nutrients < nut.lowAt + 0.05 && food.cartridges > 0) bus.emit('hydro:feed');
   for (const tray of food.trays) {
     if (!tray.cropId) {
       const fits = Object.values(food.crops)
@@ -92,6 +100,23 @@ function tendTrays(sim) {
       bus.emit('hydro:water', { trayId: tray.id, liters: (0.6 - tray.moisture) * food.cfg.trayCapacityL });
     }
   }
+}
+
+/**
+ * Competent cook: processes the best recipe while there is battery to spare, and eats raw whatever
+ * is about to spoil and cannot be processed.
+ * @param {any} sim
+ */
+function cook(sim) {
+  const kitchen = sim.kitchen;
+  if (!kitchen || kitchen.pantry.length === 0) return;
+  const best = bestRecipe(kitchen);
+  if (best && !kitchen.busy && sim.power.served.hydro && sim.resources.value('power') > 5) {
+    sim.bus.emit('kitchen:auto'); // the one-button path the player uses
+    return;
+  }
+  const oldest = kitchen.pantry[0];
+  if (oldest.ageHours >= kitchen.cfg.rawShelfHours - 1) sim.bus.emit('kitchen:eat');
 }
 
 /**

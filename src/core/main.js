@@ -84,11 +84,12 @@ const porthole = buildPorthole(scene, () => game.sim, {
 });
 // Energía window onto the solar field: the wall tagged view "solar" (exterior lies to its +x side).
 const solarWall = layout.walls.find((/** @type {any} */ w) => w.view === 'solar');
-const [ss0, ss1, sy0, sy1] = solarWall.windows[0];
+const [ss0, ss1, sy0, sy1, sRadius = 0] = solarWall.windows[0];
 const solarField = buildSolarField(scene, () => game.sim, {
   center: [solarWall.from[0], (sy0 + sy1) / 2, (ss0 + ss1) / 2],
   width: ss1 - ss0,
   height: sy1 - sy0 - 0.04,
+  radius: sRadius,
   outward: [1, 0],
 }, { camera, dolly });
 // Hand-held objects (tools) and the two hip holsters (spec §9.3). Created before the stations so

@@ -11,6 +11,31 @@ export function moistureState(moisture, cfg) {
   return 'ok';
 }
 
+/**
+ * Growth stage shown by the plant model. @param {number} growth 0..1
+ * @returns {'sprout' | 'young' | 'mature'}
+ */
+export function plantStage(growth) {
+  if (growth < 0.15) return 'sprout';
+  if (growth < 0.7) return 'young';
+  return 'mature';
+}
+
+/**
+ * What the player should do next, most urgent first (the wall guide lights this step).
+ * @param {{ trays: { cropId: string | null, moisture: number, ready: boolean }[], bioreactor: { ready: boolean } }} food
+ * @param {{ pantry: unknown[], busy: boolean, best: () => string | null } | null} kitchen
+ * @param {{ dryAt: number, floodAt: number }} cfg
+ * @returns {'water' | 'harvest' | 'sow' | 'cook' | 'wait'}
+ */
+export function currentStep(food, kitchen, cfg) {
+  if (food.trays.some((t) => t.cropId && !t.ready && t.moisture < cfg.dryAt)) return 'water';
+  if (food.bioreactor.ready || food.trays.some((t) => t.ready)) return 'harvest';
+  if (food.trays.some((t) => !t.cropId)) return 'sow';
+  if (kitchen && !kitchen.busy && kitchen.pantry.length > 0 && kitchen.best()) return 'cook';
+  return 'wait';
+}
+
 /** Next seed in the list (wraps around). @param {string[]} ids @param {string} current */
 export function nextSeed(ids, current) {
   const i = ids.indexOf(current);

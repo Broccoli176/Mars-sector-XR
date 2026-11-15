@@ -11,7 +11,7 @@ const EPS = 1e-6;
 /**
  * Rations + hydroponics (SIMULATION_SPEC §3.6): 4 sowable trays watered by hand (moisture band),
  * plus a spirulina bioreactor that only needs light. Owns no resource: it adds rates/deltas through
- * the ResourceManager (food, water, oxygen).
+ * the ResourceManager (food consumption, water, oxygen). Harvests become raw pantry lots (Kitchen.js).
  */
 export class Food {
   /**
@@ -42,10 +42,16 @@ export class Food {
     this.bioreactor = { growthHours: bio.initialGrowthHours ?? 0, ready: false, o2Total: 0 };
     this.lightsScheduled = false;
     this.lightsOn = false;
+    // Shared nutrient solution (0..1): feeds every channel; low level slows growth, never kills.
+    const nut = this.cfg.nutrients;
+    this.nutrients = nut?.initial ?? 1;
+    this.cartridges = nut?.cartridges ?? 0;
+    this.nutrientsLow = false;
 
     bus.on('food:harvest', (/** @type {any} */ e) => this.harvest(e?.trayId));
     bus.on('hydro:sow', (/** @type {any} */ e) => this.sow(e?.trayId, e?.cropId));
     bus.on('hydro:water', (/** @type {any} */ e) => this.waterTray(e?.trayId, Number(e?.liters) || 0));
+    bus.on('hydro:feed', () => this.feed());
   }
 
   /** @param {string} id */
@@ -91,6 +97,30 @@ export class Food {
     tray.moisture = Math.min(1, tray.moisture + used / this.cfg.trayCapacityL);
   }
 
+  /** Adds one nutrient cartridge to the shared solution. */
+  feed() {
+    const nut = this.cfg.nutrients;
+    if (!nut) return;
+    if (this.cartridges <= 0) {
+      this.bus.emit('hydro:rejected', { reason: 'noCartridge' });
+      return;
+    }
+    if (this.nutrients > 1 - nut.perCartridge / 2) {
+      this.bus.emit('hydro:rejected', { reason: 'full' });
+      return;
+    }
+    this.cartridges--;
+    this.nutrients = Math.min(1, this.nutrients + nut.perCartridge);
+    this.nutrientsLow = this.nutrients < nut.lowAt;
+    this.bus.emit('hydro:fed', { level: this.nutrients, cartridgesLeft: this.cartridges });
+  }
+
+  /** Growth speed from the nutrient level: 1 normally, slowFactor when the solution is depleted. */
+  get growthFactor() {
+    const nut = this.cfg.nutrients;
+    return nut && this.nutrients < nut.lowAt ? nut.slowFactor : 1;
+  }
+
   /** @param {string} [trayId] omitted ⇒ harvest everything ready */
   harvest(trayId) {
     if (trayId === undefined) {
@@ -109,14 +139,13 @@ export class Food {
   /** @param {Tray} tray */
   #harvestTray(tray) {
     const crop = this.crops[/** @type {string} */ (tray.cropId)];
-    this.resources.add('food', crop.kcal);
+    // The produce goes raw to the pantry (src/systems/Kitchen.js listens to food:harvested); no kcal yet.
     this.bus.emit('food:harvested', { trayId: tray.id, cropId: crop.id, kcal: crop.kcal });
     this.#empty(tray);
   }
 
   #harvestBio() {
     const { kcal } = this.cfg.bioreactor;
-    this.resources.add('food', kcal);
     this.bioreactor.ready = false;
     this.bioreactor.growthHours = 0;
     this.bus.emit('food:harvested', { trayId: 'bioreactor', cropId: 'spirulina', kcal });
@@ -143,6 +172,9 @@ export class Food {
     const circuitUp = served.hydro;
     this.lightsOn = circuitUp && this.lightsScheduled;
 
+    const nut = cfg.nutrients;
+    const photo = cfg.photosynthesis;
+    const growthFactor = this.growthFactor;
     for (const tray of this.trays) {
       if (!tray.cropId) continue;
       const crop = this.crops[tray.cropId];
@@ -165,12 +197,25 @@ export class Food {
         continue;
       }
       tray.neglectHours = 0;
-      tray.growthHours += dtHours;
+      tray.growthHours += dtHours * growthFactor;
+      if (this.lightsOn) {
+        // A healthy plant under light takes up nutrients and photosynthesises (CO₂ in, O₂ out).
+        if (nut) this.nutrients = Math.max(0, this.nutrients - nut.usePerTrayHour * dtHours);
+        if (photo) {
+          rm.addRate('co2', -photo.co2PerTrayHour);
+          rm.addRate('oxygen', photo.o2PerTrayHour);
+        }
+      }
       if (tray.growthHours >= crop.growthHours - EPS) {
         tray.ready = true;
         tray.readyHours = 0;
         this.bus.emit('food:ready', { trayId: tray.id, cropId: tray.cropId });
       }
+    }
+
+    if (nut && !this.nutrientsLow && this.nutrients < nut.lowAt) {
+      this.nutrientsLow = true;
+      this.bus.emit('hydro:nutrientsLow', {});
     }
 
     // Spirulina photobioreactor: grows and releases O₂ only under light; it waits (no spoilage) when ready.

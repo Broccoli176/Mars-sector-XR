@@ -10,7 +10,7 @@
     "id": "personal_bunk",
     "room": "room_personal",
     "wall": "south",
-    "along": -8.5,
+    "along": -5.5,
     "y": 0.5
   },
   {
@@ -31,7 +31,7 @@
     "id": "personal_health",
     "room": "room_personal",
     "wall": "north",
-    "along": -7.3,
+    "along": -5.5,
     "y": 1.5
   }
 ]

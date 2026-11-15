@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { Panel } from '../ui/Panel.js';
 import { createWallTexture, createFloorTexture, createCeilingTexture } from './textures.js';
+import { roundedRingGeometry } from './roundedRect.js';
 
 const PANEL_WIDTH = 2; // m covered by one wall texture repeat (kit wall panel, ASSET_CREATION_WORKFLOW)
 const TILE = 2; // m covered by one floor/ceiling texture repeat
@@ -116,7 +117,8 @@ export function buildBasement(layout, t) {
   }
 
   // Walls with openings: door gaps [s, e, height] (+ lintel and yellow frame) and
-  // windows [s, e, sillY, topY] (wall kept below and above). Coordinates along the wall axis.
+  // windows [s, e, sillY, topY, radius?] (wall kept below and above; radius > 0 rounds the corners).
+  // Coordinates along the wall axis.
   for (const wall of layout.walls) {
     const [ax, az] = wall.from;
     const [bx, bz] = wall.to;
@@ -126,7 +128,7 @@ export function buildBasement(layout, t) {
     const fixed = alongX ? az : ax;
     const openings = [
       ...(wall.gaps ?? []).map(([s0, s1, h]) => ({ s0, s1, y0: 0, y1: h, door: true })),
-      ...(wall.windows ?? []).map(([s0, s1, y0, y1]) => ({ s0, s1, y0, y1, door: false })),
+      ...(wall.windows ?? []).map(([s0, s1, y0, y1, radius = 0]) => ({ s0, s1, y0, y1, radius, door: false })),
     ].sort((p, q) => p.s0 - q.s0);
 
     /** @param {number} s @param {number} e @param {number} y0 @param {number} y1 */
@@ -145,6 +147,15 @@ export function buildBasement(layout, t) {
       segment(o.s0, o.s1, 0, o.y0); // below a window
       segment(o.s0, o.s1, o.y1, H); // lintel / above a window
       cursor = o.s1;
+      if (!o.door && o.radius > 0) {
+        // Rounded window: fill the four corners of the rectangular cut with wall (same merged mesh).
+        const w = o.s1 - o.s0;
+        const h = o.y1 - o.y0;
+        const fill = roundedRingGeometry({ w, h, r: 0 }, { w, h, r: o.radius }, thickness);
+        if (alongX) fill.translate((o.s0 + o.s1) / 2, (o.y0 + o.y1) / 2, fixed);
+        else fill.rotateY(-Math.PI / 2).translate(fixed, (o.y0 + o.y1) / 2, (o.s0 + o.s1) / 2);
+        wallGeos.push(applyWorldUVs(fill, PANEL_WIDTH, H));
+      }
       if (!o.door) continue;
 
       const fw = DOOR_FRAME.width;

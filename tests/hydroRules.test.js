@@ -1,6 +1,6 @@
 // OWNER: Persona A (Personal · Hidro · Hub) — see docs/COLLABORATION.md
 import { describe, it, expect } from 'vitest';
-import { moistureState, nextSeed, soilColor, moistureBar, createWaterBatcher } from '../src/rooms/hydro/hydroRules.js';
+import { moistureState, nextSeed, soilColor, moistureBar, createWaterBatcher, plantStage, currentStep } from '../src/rooms/hydro/hydroRules.js';
 import { gameData } from '../src/data/index.js';
 
 const cfg = { dryAt: 0.2, floodAt: 0.85 };
@@ -44,5 +44,28 @@ describe('hydro presentation rules', () => {
     const nasa = gameData.real.bioregen_crops;
     expect(nasa.quinoa.url).toMatch(/^https:\/\/ntrs\.nasa\.gov\/citations\//);
     for (const u of nasa.spirulina.urls) expect(u).toMatch(/^https:\/\/ntrs\.nasa\.gov\/citations\//);
+  });
+});
+
+describe('wall guide and plant stages', () => {
+  const band = { dryAt: 0.12, floodAt: 0.95 };
+  const tray = (/** @type {any} */ o = {}) => ({ cropId: 'lettuce', moisture: 0.5, ready: false, ...o });
+  const food = (/** @type {any[]} */ trays, bioReady = false) => ({ trays, bioreactor: { ready: bioReady } });
+  const kitchen = (/** @type {any} */ o = {}) => ({ pantry: [], busy: false, best: () => null, ...o });
+
+  it('plants go sprout → young → mature', () => {
+    expect(plantStage(0)).toBe('sprout');
+    expect(plantStage(0.4)).toBe('young');
+    expect(plantStage(0.9)).toBe('mature');
+  });
+
+  it('lights the most urgent step first: water, then harvest, sow, cook, wait', () => {
+    expect(currentStep(food([tray({ moisture: 0.05 }), tray({ ready: true })]), kitchen(), band)).toBe('water');
+    expect(currentStep(food([tray({ ready: true }), tray({ cropId: null })]), kitchen(), band)).toBe('harvest');
+    expect(currentStep(food([tray()], true), kitchen(), band)).toBe('harvest');
+    expect(currentStep(food([tray(), tray({ cropId: null })]), kitchen(), band)).toBe('sow');
+    expect(currentStep(food([tray()]), kitchen({ pantry: [1, 2], best: () => 'bar_energy' }), band)).toBe('cook');
+    expect(currentStep(food([tray()]), kitchen({ pantry: [1, 2], best: () => 'bar_energy', busy: true }), band)).toBe('wait');
+    expect(currentStep(food([tray()]), null, band)).toBe('wait');
   });
 });

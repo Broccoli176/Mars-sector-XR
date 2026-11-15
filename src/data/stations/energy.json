@@ -3,49 +3,49 @@
     "id": "breakers",
     "room": "room_energy",
     "wall": "north",
-    "along": 10,
+    "along": 10.6,
     "y": 1.6
   },
   {
     "id": "ls_gauges",
     "room": "room_energy",
-    "wall": "east",
-    "along": 5.3,
+    "wall": "north",
+    "along": 13.4,
     "y": 1.45
   },
   {
     "id": "ls_scrubber",
     "room": "room_energy",
     "wall": "south",
-    "along": 11.3,
+    "along": 11.4,
     "y": 1.4
   },
   {
     "id": "ls_o2tanks",
     "room": "room_energy",
     "wall": "south",
-    "along": 9.2,
+    "along": 9.1,
     "y": 1.45
   },
   {
     "id": "ls_thermostat",
     "room": "room_energy",
     "wall": "west",
-    "along": 8.6,
+    "along": 8.4,
     "y": 1.4
   },
   {
     "id": "energy_solar_view",
     "room": "room_energy",
     "wall": "east",
-    "along": 8.5,
+    "along": 7,
     "y": 0.95
   },
   {
     "id": "energy_rover2",
     "room": "room_energy",
     "wall": "south",
-    "along": 12.3,
+    "along": 13.9,
     "y": 1.4
   }
 ]

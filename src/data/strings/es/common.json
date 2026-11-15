@@ -52,7 +52,7 @@
   "ui.log.relay_burned": "Relé principal QUEMADO por disparos repetidos.",
   "ui.log.relay_reset": "Relé rearmado.",
   "ui.log.food_ready": "Cosecha lista en Hidroponía.",
-  "ui.log.food_harvested": "Cosecha recogida: +{kcal} kcal.",
+  "ui.log.food_harvested": "Cosecha a la despensa: {kcal} kcal en crudo.",
   "ui.log.food_spoiled.unharvested": "Cosecha perdida: no se recogió a tiempo.",
   "ui.log.food_spoiled.noLight": "Cultivo muerto: demasiadas horas sin energía.",
   "ui.log.food_spoiled.noWater": "Cultivo muerto: demasiadas horas sin agua.",
@@ -90,5 +90,18 @@
   "ui.log.solar_tracker.stow": "Paneles protegidos de canto: menos polvo, pero no producen.",
   "ui.log.solar_tracker.manual": "Seguidor solar en MANUAL.",
   "ui.log.solar_rejected.tracker": "El seguidor solar no tiene energía: rearma el relé.",
-  "hint.solar.manual": "Usa ◀ IZQUIERDA y DERECHA ▶ bajo la ventana para ajustar la inclinación de los paneles. Al inicio apuntan hacia la ventana; PROTEGER los pone de canto durante una tormenta."
+  "hint.solar.manual": "Usa ◀ IZQUIERDA y DERECHA ▶ bajo la ventana para ajustar la inclinación de los paneles. Al inicio apuntan hacia la ventana; PROTEGER los pone de canto durante una tormenta.",
+  "ui.log.kitchen_done": "{name} lista: +{kcal} kcal.",
+  "ui.log.kitchen_eaten": "Comida en crudo: +{kcal} kcal.",
+  "ui.log.kitchen_spoiled": "Se ha estropeado {name} en la despensa (−{kcal} kcal).",
+  "ui.log.kitchen_rejected.missing": "Procesador: faltan ingredientes.",
+  "ui.log.kitchen_rejected.busy": "Procesador: ya está trabajando.",
+  "ui.log.kitchen_rejected.noPower": "Procesador: sin energía en Hidroponía.",
+  "ui.log.kitchen_rejected.empty": "La despensa está vacía.",
+  "ui.log.hydro_fed": "Nutrientes añadidos. Cartuchos: {count}.",
+  "ui.log.hydro_nutrients_low": "Hidroponía: faltan nutrientes, las plantas crecen lento.",
+  "ui.log.hydro_rejected.noCartridge": "No quedan cartuchos de nutrientes.",
+  "ui.log.hydro_rejected.full": "El depósito de nutrientes ya está lleno.",
+  "ui.btn.info": "Info",
+  "ui.btn.close": "Cerrar"
 }
