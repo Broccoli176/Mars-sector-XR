@@ -484,14 +484,14 @@ Ver **`AGENTS.md` §4.2** para el contrato de eventos y payloads (baseline + pro
 | Item | Value |
 | :-- | :-- |
 | Ceiling height | 2.6 m |
-| Layout | **Hub and spokes** (v2, 2026-11-14). Sala central · Herramientas (hub, 6 × 5 m) in the middle. North hall → Telecom (5 × 4) and Sala de control (6 × 6, rover console). West corridor → Personal (5 × 4, spawn + main PC/time controls). South hall → Hidroponía · Agricultura (5 × 4) and Energía y oxígeno (6 × 5) |
+| Layout | **Hub and spokes** (v2, 2026-11-14). Sala central · Herramientas (hub, 6 × 5 m) in the middle. North hall → Telecom (5 × 4) and Sala de control (6 × 6, spawn, main PC/time controls, bio panel, rover console). West corridor → Personal (5 × 4, crew quarters + radiation shelter). South hall → Hidroponía · Agricultura (5 × 4) and Energía y oxígeno (6 × 5) |
 | Corridors | 1.8 m wide, straight (L-shaped where the sketch was diagonal); emissive fixtures + conduits, no point lights |
 | Layout | Coordinates, doors, panel walls and teleport anchors: **`docs/FLOOR_PLAN.md`** (authoritative) |
 | Doorways | 0.8 × 2.0 m clear opening |
 | Teleport | only onto `COL_Floor_*` meshes; 1–2 named teleport anchors per room plus free floor targeting |
 | Reference space | `local-floor`; standing default, seated toggle adds +0.4 m eye-height offset |
 | Turning | snap 30° default; smooth turn optional, with vignette |
-| Start / restart | Player spawns in Personal in front of the main PC (−9.65, −0.5), facing north; the time lever is beside it. "Iniciar turno" exists on the main PC and on the training board in the Sala central. After game over, the same PC shows the summary and restart control |
+| Start / restart | Player spawns in the Sala de control in front of the main PC (9, −5.5), facing east; the time lever is beside it. "Iniciar turno" exists on the main PC and on the training board in the Sala central. After game over, the same PC shows the summary and restart control |
 | Window | Telecom panoramic window with a 3D exterior (dunes, rocks, dish antenna following `alignment`, sun/stars, dust). No extra dynamic lights: baked vertex shading tinted by time of day/storm. Plus periscope feed on main PC |
 | Device | **Meta Quest 3**, Quest Browser (D15) |
 | XR settings | 72 Hz default (90 Hz only if measured stable); `setFoveation(1.0)` to start (measure text legibility); `framebufferScaleFactor` 1.0 |
@@ -502,12 +502,12 @@ Ver **`AGENTS.md` §4.2** para el contrato de eventos y payloads (baseline + pro
 
 | Room | Panels / interactables |
 | :-- | :-- |
-| Sala de control | Rover map/NavCam console with driving controls; adjacent `rover_vitals` panel shows disconnected telemetry placeholders; east-wall `rover_minigame` is a local 5 × 5 practice game with its own energy and no connection to the simulated rover |
+| Sala de control | Main PC (pages: Estado, Energía, Comms, Resumen; "Iniciar turno" / "Continuar"), time lever, bio panel (biomonitor mirror); rover map/NavCam console with driving controls; `rover_vitals` panel with disconnected telemetry placeholders; south-wall `rover_minigame`, a local 5 × 5 practice game with no connection to the simulated rover |
 | Energía y oxígeno | Breaker wall (6 breakers + relay reset lever + demand meter kW vs 3.0 limit); O₂, CO₂ and pressure gauges; thermostat dial; filter socket; `valve_o2_tank_1`, `valve_o2_tank_2`; electrolyzer |
 | Hidroponía · Agricultura | Water tank gauge; kcal counter + ration locker; crop lights (growing / ready / spoiling); harvest rack; `valve_recycler` |
 | Telecomunicaciones | N: window + console (signal/alignment/azimuth/motor panel and left/right turn controls). W: communications distribution panel with uplink/signal status. Pending: message printer |
-| Sala central · Herramientas (hub) | **Training bench** (§9.4), bio panel (biomonitor mirror), tool wall, spares counter, component status board |
-| Personal | Main PC (pages: Estado, Energía, Comms, Resumen; "Iniciar turno" / "Continuar"), time lever, bunk, locker, dosimeter, «El Sol ahora» and «Salud del astronauta» panels |
+| Sala central · Herramientas (hub) | **Training bench** (§9.4), tool wall, spares counter, component status board |
+| Personal | Bunk + water-tank radiation shelter, locker, dosimeter, «El Sol ahora» and «Salud del astronauta» panels |
 | Corridors | Emergency lights, hull seal panels (leak points), alarm beacons |
 | Wrist | Biomonitor on the non-dominant hand |
 

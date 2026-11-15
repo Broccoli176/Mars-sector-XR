@@ -104,7 +104,7 @@
     ],
     "input": "Quest 3 controllers; 2 hip holsters for tools",
     "ui": "diegetic panels, gauges, indicator lights; no head-locked HUD",
-    "environment": "hub-and-spokes: Sala central / Herramientas hub with bio panel; north hall to Telecom (panoramic window) and Control room (rover map console, disconnected vitals panel and local practice minigame); west corridor to Personal (spawn, main PC and time controls); south hall to Hydro / Agriculture and Energy & Oxygen (breakers + life support)",
+    "environment": "hub-and-spokes: Sala central / Herramientas hub; north hall to Telecom (panoramic window) and Control room (spawn, main PC, time controls, bio panel, rover map console, disconnected vitals panel and local practice minigame); west corridor to Personal (crew quarters, dosimeter, radiation shelter); south hall to Hydro / Agriculture and Energy & Oxygen (breakers + life support)",
     "floorPlan": "docs/FLOOR_PLAN.md"
   },
   "resources": [

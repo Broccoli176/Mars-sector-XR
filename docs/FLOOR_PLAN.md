@@ -19,13 +19,13 @@
    ┌────────[VENTANA]──┐                                   ┌──────────────────┐ z=-8.5
    │     TELECOM       │                                   │  SALA DE CONTROL │
    │      5 × 4        ├┤ ├═══════ north hall ════════┤ ├──┤      6 × 6       │
-   │ (servidor W)      │          10 × 1.8 m              │ (rover control)  │
+   │ (servidor W)      │          10 × 1.8 m              │ (spawn, PC, rover)│
    └───────────────────┘              ║                    └──────────────────┘ z=-2.5
  z=-7.5…-3.5                   north connector
  ┌──────────────────┐                ║
  │    PERSONAL      │          ┌─────╨──────┐ z=-2.5
  │      5 × 4       ├┤ ├═ west ═┤ ├  HUB /  │
- │ (spawn, PC/tiempo)│corridor │HERRAMIENTAS│
+ │ (crew, refugio)  │ corridor │HERRAMIENTAS│
  └──────────────────┘          │   6 × 5    │
  z=-2…2                        └─────╥──────┘ z=2.5
                                south connector
@@ -63,16 +63,16 @@ Panel centres at 1.2–1.5 m height.
 
 | Room | Wall → elements |
 | :-- | :-- |
-| Sala de control | **N:** rover map/NavCam console (`rover_console`, x ≈ 8) and disconnected vitals panel (`rover_vitals`, x ≈ 10.05; no telemetry connection). **E**, opposite the entrance: local rover-practice minigame (`rover_minigame`) with a 5 × 5 navigation board and directional buttons; it does not control the simulated rover. Settings panel and log terminal pending |
+| Sala de control | **E**, opposite the entrance: main PC (`main_pc`, z ≈ −5.5; monitoring + "Iniciar turno"/"Continuar") + time lever (`time_lever`, z ≈ −3.75). **S:** bio panel (`bio_panel`, x ≈ 7.0) and local rover-practice minigame (`rover_minigame`, x ≈ 9.6; 5 × 5 board, does not control the simulated rover). **N:** rover map/NavCam console (`rover_console`, x ≈ 8) and disconnected vitals panel (`rover_vitals`, x ≈ 10.05; no telemetry connection). Settings panel and log terminal pending |
 | Energía y oxígeno | Laid out as a flow. **N (distribution):** breaker wall (6 breakers + relay reset + demand meter). **E (generation):** O₂/CO₂/pressure/temperature gauges (`ls_gauges`, along 5.3); window onto the solar field (z 7.7–9.3, sill 1.1 m, top 2.1 m; `view: "solar"`) with the rover charging pad outside; **solar console** under it (`energy_solar_view`, along 8.5): desk (top 0.78 m) with 5 push buttons ◀ ESTE · AUTO · OESTE ▶ · PROTEGER · LIMPIAR, production strip on the desk and the «Campo solar» info panel on the wall at z ≈ 6.75. **S (life support):** CO₂ scrubber (along 11.3) with filter socket; 2 emergency O₂ tanks + electrolyzer (along 9.2). **W (climate, by the door):** thermostat |
 | Hidroponía · Agricultura | **W:** bench with **4 trays** (`hydro_racks`): soil coloured by moisture, procedural plant per crop, panel per tray (crop, growth, moisture bar), «Semilla ▶» and «Sembrar/Cosechar» buttons on the front lip. **N:** crop guide (`hydro_cropguide`, x ≈ −9.05), water tank + recycler (`hydro_water`, x ≈ −7.5), **hose reel** with a grabbable nozzle (`hydro_hose`, x ≈ −5.6). **S:** rations + kcal (`hydro_food`, x ≈ −7.5), **spirulina bioreactor** (`hydro_bioreactor`, x ≈ −5.9) |
 | Telecomunicaciones | **N:** panoramic window (opening x −8.4…−6.6, y 1.1…2.1; 3D Mars diorama `src/world/Porthole.js`) with the operator console under it (signal/alignment panel and left/right antenna controls) and the antenna motor unit. **W:** communications distribution panel with uplink/signal status and data ports, replacing the former airlock hatch at the same station position |
-| Sala central · Herramientas | **E:** training bench + mission board (`PANEL_TrainingBoard`, "Iniciar turno", live checklist for mission T1) and biomonitor mirror (`bio_panel`, along 1.5). **N:** "Fuentes científicas" board (`hub_sources`, real-data attribution, x ≈ −1.95) and «Prueba de mandos» controller diagnostics (`hub_controllers`, x ≈ 1.95: live per-hand buttons/axes, select/squeeze counters, ray test button). **S:** tool wall with 4 grabbable tools (`hub_toolwall`, x ≈ 1.95) and spares locker with live counters (`hub_spares`, x ≈ −1.95). **W:** component status board (`hub_status`, z ≈ −1.6) and **electronics bench** (`hub_electronics`, z ≈ 1.35: receiver board on the bench, oscilloscope + instructions on the wall, grabbable multimeter, parts bin) |
-| Personal | **N:** main PC (`main_pc`, x ≈ −9.65; "Iniciar turno"/"Continuar") + time lever (`time_lever`, x ≈ −8.5) + «Salud del astronauta» (`personal_health`, x ≈ −7.3, NASA OSDR). **W:** locker (`personal_locker`, z ≈ −1.25), dosimeter with real Mars-surface radiation (`personal_dosimeter`, NASA OSDR RadLab / MSL RAD) and «El Sol ahora» (`personal_spaceweather`, z ≈ 1.25, NASA DONKI live). **S:** bunk |
+| Sala central · Herramientas | **E:** training bench + mission board (`PANEL_TrainingBoard`, "Iniciar turno", live checklist for mission T1). **N:** "Fuentes científicas" board (`hub_sources`, real-data attribution, x ≈ −1.95) and «Prueba de mandos» controller diagnostics (`hub_controllers`, x ≈ 1.95: live per-hand buttons/axes, select/squeeze counters, ray test button). **S:** tool wall with 4 grabbable tools (`hub_toolwall`, x ≈ 1.95) and spares locker with live counters (`hub_spares`, x ≈ −1.95). **W:** component status board (`hub_status`, z ≈ −1.6) and **electronics bench** (`hub_electronics`, z ≈ 1.35: receiver board on the bench, oscilloscope + instructions on the wall, grabbable multimeter, parts bin) |
+| Personal | **N:** «Salud del astronauta» (`personal_health`, x ≈ −7.3, NASA OSDR). **W:** locker (`personal_locker`, z ≈ −1.25), dosimeter with real Mars-surface radiation (`personal_dosimeter`, NASA OSDR RadLab / MSL RAD) and «El Sol ahora» (`personal_spaceweather`, z ≈ 1.25, NASA DONKI live). **S:** bunk with the water-tank radiation shelter wall. The whole room is the storm shelter (spec §6.5) |
 
 ## 5) Teleport, spawn and flow
 
-- **Spawn:** Personal, in front of the main PC at (−9.65, −0.5), facing north. The time lever is beside the PC; the training bench is in the Sala central (hub).
+- **Spawn:** Sala de control, in front of the main PC at (9, −5.5), facing east. The time lever is beside the PC; the training bench is in the Sala central (hub).
 - Teleport works on any floor (`COL_Floor_*`, merged). There are no fixed anchors yet.
 - Typical routes from the hub: Control ≈ 13 m, Telecom ≈ 11 m, Energy ≈ 14 m, Hydro ≈ 12 m, Personal ≈ 7 m.
 - Keyboard collision (`src/vr/Collision.js`) uses the same walls, the door frames and the solid furniture, with door assist.
@@ -85,7 +85,7 @@ Panel centres at 1.2–1.5 m height.
 | Water, crop, recycler | Hidroponía · Agricultura |
 | Signal / link lost, antenna | Telecom console |
 | Leaks | at the leaking seal (positions to be defined for the new layout) |
-| Health | biomonitor (wrist) + bio panel in Sala central |
+| Health | biomonitor (wrist) + bio panel in Control |
 | Door beacons | above each door, mirroring the room's worst alarm |
 
 ## 7) Rendering
