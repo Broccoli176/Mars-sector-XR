@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { ROVER_WORLD_ORIGIN, SAMPLES_DATA } from '../src/world/RoverWorld.js';
+import { gameData } from '../src/data/index.js';
 
 describe('Rover Open World & First-Person Exploration System', () => {
   it('places open world sufficiently far from the base to remain out of sight', () => {
@@ -13,9 +14,10 @@ describe('Rover Open World & First-Person Exploration System', () => {
     expect(samples.length).toBeGreaterThanOrEqual(4);
     for (const s of samples) {
       expect(s.id).toBeDefined();
-      expect(s.name).toBeDefined();
-      expect(s.composition).toBeDefined();
-      expect(s.analysis).toBeDefined();
+      for (const key of [s.nameKey, s.siteKey, s.compositionKey, s.analysisKey]) {
+        expect(gameData.stringsByLang.es[key], key).toBeTypeOf('string');
+        expect(gameData.stringsByLang.en[key], key).toBeTypeOf('string');
+      }
       expect(s.coords).toBeDefined();
       expect(typeof s.coords.x).toBe('number');
       expect(typeof s.coords.y).toBe('number');

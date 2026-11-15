@@ -3,35 +3,35 @@
     "id": "personal_dosimeter",
     "room": "room_personal",
     "wall": "west",
-    "along": 0,
+    "along": -0.2,
     "y": 1.45
   },
   {
     "id": "personal_bunk",
     "room": "room_personal",
     "wall": "south",
-    "along": -5.5,
-    "y": 0.5
+    "along": -6.5,
+    "y": 0
   },
   {
     "id": "personal_locker",
     "room": "room_personal",
     "wall": "west",
-    "along": -1.25,
+    "along": -1.45,
     "y": 1
   },
   {
     "id": "personal_spaceweather",
     "room": "room_personal",
-    "wall": "west",
-    "along": 1.25,
+    "wall": "north",
+    "along": -4.35,
     "y": 1.45
   },
   {
     "id": "personal_health",
     "room": "room_personal",
     "wall": "north",
-    "along": -5.5,
+    "along": -6.65,
     "y": 1.5
   }
 ]

@@ -5,6 +5,7 @@ import { COLORS, startButtonState } from '../../ui/StationKit.js';
 import { buildToolWall } from './tools.js';
 import { buildElectronicsBench } from './electronics.js';
 import { buildSparesLocker } from './spares.js';
+import { buildHullLeak } from './leak.js';
 import { createT1, isT1Done } from './toolRules.js';
 import { Panel } from '../../ui/Panel.js';
 import { describeInputSource, createInputCounters, handLines } from './controllerDiag.js';
@@ -82,6 +83,11 @@ export const builders = {
    * In-world attribution of real data. Lists every src/data/real/*.json that declares a `source`
    * (institution, product, retrievedAt), so new datasets appear here automatically.
    */
+  /** Hull leak on the north wall (scripted D5): crack + vapour, sealed with the sealant gun. */
+  hull_leak_hub(g, _station, kit) {
+    buildHullLeak(g, 'hull_seal_hub', kit);
+  },
+
   hub_sources(g, _station, kit) {
     const { t } = kit;
     const panel = kit.addPanel(g, 1.15, 0.78);

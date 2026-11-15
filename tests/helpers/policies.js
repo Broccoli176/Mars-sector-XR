@@ -35,6 +35,7 @@ export function competentPolicy(sim) {
   tendTrays(sim);
   cook(sim);
   repairReceiver(sim);
+  repairWithTools(sim);
   if (resources.value('oxygen') < 20) {
     for (const [valveId, used] of Object.entries(lifeSupport.o2TanksUsed)) {
       if (!used) {
@@ -141,5 +142,20 @@ function repairReceiver(sim) {
     if (s.partId) sim.bus.emit('electronics:remove', { slotId: s.id });
     sim.bus.emit('electronics:insert', { slotId: s.id, partId, reversed: false });
     sim.bus.emit('electronics:heat', { slotId: s.id });
+  }
+}
+
+/**
+ * Hand-tool repairs: take the right tool and hold it on every broken part (headless: the whole hold at once).
+ * @param {any} sim
+ */
+function repairWithTools(sim) {
+  const r = sim.repairs;
+  if (!r) return;
+  for (const target of [...r.broken]) {
+    const c = r.componentOf(target);
+    if (!c) continue;
+    if (!sim.tools.has(c.toolId)) sim.bus.emit('item:grab', { itemId: c.toolId, hand: 'right' });
+    sim.bus.emit('repair:work', { componentId: target, seconds: r.holdSeconds(target) });
   }
 }

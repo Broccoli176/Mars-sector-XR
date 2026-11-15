@@ -42,6 +42,23 @@ export class LifeSupport {
       }
     });
     bus.on('valve:turn', (e) => this.#onValve(e));
+    // Scripted faults (IncidentRunner) and hand-tool repairs (Repairs).
+    bus.on('component:damaged', (e) => {
+      if (e?.componentId === 'scrubber_fan') this.scrubberFanBroken = true;
+      if (e?.componentId === 'pump_thermal') this.pumpThermalBroken = true;
+      if (e?.componentId === 'valve_recycler') this.recyclerStuck = true;
+    });
+    bus.on('system:repaired', (e) => {
+      if (e?.partId === 'scrubber_fan') this.scrubberFanBroken = false;
+      if (e?.partId === 'pump_thermal') this.pumpThermalBroken = false;
+      if (e?.partId === 'valve_recycler') this.recyclerStuck = false;
+    });
+    bus.on('leak:started', (e) => {
+      if (e?.leakId && !this.leaks.includes(e.leakId)) this.leaks.push(e.leakId);
+    });
+    bus.on('leak:sealed', (e) => {
+      this.leaks = this.leaks.filter((id) => id !== e?.leakId);
+    });
     bus.on('filter:swap', () => this.#onFilterSwap());
   }
 

@@ -8,10 +8,10 @@ import { Panel } from '../../ui/Panel.js';
 import { font, wrapLines, ellipsize } from '../../ui/theme.js';
 import { Button } from '../../objects/Button.js';
 import { photoForRover, photoRect, photosReceived } from './roverPhotos.js';
-import { MARS, cssColor, skyFactor } from '../../world/marsLook.js';
+import { MARS, cssColor, skyFactor, marsLook } from '../../world/marsLook.js';
 
 /** Mid-morning Mars sky (marsLook at ≈ 10:00) for the simulated NavCam. */
-const NAVCAM_SKY = /** @type {[number, number, number]} */ ([0.78, 0.6, 0.45]);
+const NAVCAM_SKY = /** @type {[number, number, number]} */ (marsLook(12, false, { solarStartHour: 6, solarEndHour: 18 }).sky); // noon sky of the shared Mars look
 /** @param {[number, number, number]} a @param {[number, number, number]} b */
 const mul = (a, b) => /** @type {[number, number, number]} */ ([a[0] * b[0], a[1] * b[1], a[2] * b[2]]);
 

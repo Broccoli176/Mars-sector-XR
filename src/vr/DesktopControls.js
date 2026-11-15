@@ -38,6 +38,8 @@ export class DesktopControls {
     this.hand = new THREE.Group();
     this.hand.position.set(0.22, -0.2, -0.45);
     camera.add(this.hand);
+    /** False while the start menu is open: mouse and keys do nothing in the world. */
+    this.enabled = true;
     /** Last pointer position in normalized device coordinates (for G). */
     this.lastPointer = new THREE.Vector2(0, 0);
 
@@ -46,6 +48,7 @@ export class DesktopControls {
       this.lastPointer.set(((e.clientX - rect.left) / rect.width) * 2 - 1, -((e.clientY - rect.top) / rect.height) * 2 + 1);
     });
     window.addEventListener('keydown', (e) => {
+      if (!this.enabled) return;
       if (e.code === 'KeyF' && !e.repeat && !this.renderer.xr.isPresenting) this.grab?.use('desktop', true);
       // R flips the held object (in XR you turn your wrist).
       if (e.code === 'KeyR' && !e.repeat && !this.renderer.xr.isPresenting) this.grab?.held.get('desktop')?.rotateY(Math.PI);
@@ -56,7 +59,7 @@ export class DesktopControls {
       if (e.code === 'KeyF') this.grab?.use('desktop', false);
     });
     window.addEventListener('keydown', (e) => {
-      if (e.code !== 'KeyG' || e.repeat || this.renderer.xr.isPresenting || !this.grab) return;
+      if (!this.enabled || e.code !== 'KeyG' || e.repeat || this.renderer.xr.isPresenting || !this.grab) return;
       if (this.grab.isHolding('desktop')) {
         this.grab.release('desktop');
         return;
@@ -67,6 +70,7 @@ export class DesktopControls {
     });
 
     dom.addEventListener('pointerdown', (e) => {
+      if (!this.enabled) return;
       this.drag = { x: e.clientX, y: e.clientY, moved: false };
     });
     window.addEventListener('pointermove', (e) => {

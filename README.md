@@ -31,18 +31,27 @@ npm run sim        # informe de balance: jugador inactivo / codicioso / competen
 npm run build && npm run preview
 ```
 
+### Menú inicial
+
+Al abrir el juego sale un menú con el resumen de la misión (sobrevivir 7 días, unos 42 minutos a 1×, cómo se pierde y las crisis de los días 1, 2, 4 y 6) y dos opciones:
+
+- **Realidad virtual:** entra con el visor Meta Quest o con la extensión [Meta Immersive Web Emulator](https://chromewebstore.google.com/detail/immersive-web-emulator/cgffilbpcibhmcfbgggfhfolhkfbhmik) (actívala en la página con su botón de la barra). Si el navegador no tiene ninguno, el menú lo dice y ofrece **«Usar emulador integrado (Quest 3)»**, que no necesita instalar nada.
+- **Navegador:** ratón y teclado, sin VR.
+
+Al salir de VR se vuelve al menú. En modo navegador, el botón **«Menú»** de la ayuda (arriba a la izquierda) también lo abre.
+
 ### Controles
 
 | Dónde | Cómo |
 | :-- | :-- |
-| Quest 3 | Botón «ENTER VR». Apunta con el rayo y aprieta el gatillo para pulsar botones o teletransportarte al suelo (aparece un aro azul). Stick: giro de 30°. Biomonitor en la muñeca izquierda |
+| Quest 3 | Menú inicial → «Realidad virtual». Apunta con el rayo y aprieta el gatillo para pulsar botones o teletransportarte al suelo (aparece un aro azul). Stick: giro de 30°. Biomonitor en la muñeca izquierda |
 | Teclado (escritorio **y** dentro de VR en el emulador) | **W/S** (o ↑/↓) avanzar/retroceder hacia donde miras · **A/D** lateral · **Q/E** (o ←/→) girar: continuo en escritorio, saltos de 30° en VR. No atraviesa paredes: solo cruza por las puertas |
 | Ratón (solo escritorio, desarrollo) | Arrastra para mirar, clic para pulsar o teletransportarte. **G**: coger o soltar la herramienta bajo el cursor (mira hacia abajo y pulsa G para enfundarla en la cadera) |
 | Agarre en VR | **Botón de agarre (grip)** del mando: coger o soltar herramientas. Suéltala junto al anillo de la cadera para enfundarla, o junto a su silueta en la pared para colgarla |
 
 **Immersive Web Emulator:** haz clic una vez en la página para darle el foco al teclado; si no, las teclas van al panel del emulador. Los mandos se ven con el modelo real del Quest (se descarga de la CDN de WebXR input profiles; sin conexión aparece una caja gris).
 
-**Sin extensión:** abre `http://localhost:5173/?iwer`. Usa el runtime de emulación de Meta (IWER, Quest 3) y basta con pulsar «ENTER VR».
+**Sin extensión:** en el menú, «Realidad virtual» → «Usar emulador integrado (Quest 3)». Usa el runtime de emulación de Meta (IWER). También sirve `?iwer`, que lo instala al cargar.
 
 Apareces en la **Sala de control**, frente al ordenador principal y los controles de tiempo, ambos en la pared norte. Pulsa «Iniciar turno» para empezar. En la misma sala están el biomonitor (pared sur), la consola del rover (mapa y conducción, pared este) y un panel de telemetría del rover, con datos de la simulación y datos reales de Perseverance (pared norte). **Personal** es la habitación de la tripulación y el refugio contra la radiación. Los breakers y el relé están en **Energía y oxígeno** (al sur, pasando por la Sala central). A las 09:00 del día 1 salta el relé: rearma desde allí.
 
@@ -50,6 +59,7 @@ Parámetros de desarrollo (combinables con `&`):
 - `?view=x,z,grados`: coloca al jugador.
 - `?ff=ticks`: adelanta la simulación al iniciar turno (p. ej. `?ff=545` llega a la derrota por energía del jugador inactivo).
 - `?iwer`: activa el Quest 3 emulado sin extensión.
+- `?mode=browser`: salta el menú inicial y entra en modo navegador (también lo salta `?view=`).
 - `?debug`: expone `window.__marte` para inspeccionar desde la consola.
 
 ### Datos reales (NASA / CSA)

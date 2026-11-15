@@ -3,6 +3,7 @@
 // Placement: src/data/stations/telecom.json. The window and Mars diorama: src/world/Porthole.js
 import * as THREE from 'three';
 import { COLORS, BUTTON, statusColor } from '../../ui/StationKit.js';
+import { addRepairPoint } from '../../ui/RepairPoint.js';
 import { Button } from '../../objects/Button.js';
 import { addInfo } from '../../ui/InfoSheet.js';
 
@@ -38,6 +39,8 @@ export const builders = {
 
     // Antenna motor unit + cable mast beside the window.
     kit.addBox(g, 0.28, 0.28, 0.18, -1.05, 0.05, 0.1, '#4f5b66');
+    // The wrench frees the jammed motor (Repairs, D7).
+    addRepairPoint(g, kit, { targetId: 'antenna_motor', x: -1.05, y: 0.05, z: 0.12, size: 0.3, labelY: 0.3 });
     kit.addBox(g, 0.04, 0.8, 0.04, -1.05, 0.5, 0.08, '#85909c');
 
     kit.onRefresh(() => {

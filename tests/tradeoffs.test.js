@@ -90,7 +90,8 @@ describe('tools carried (hand or belt) decide which repairs are possible', () =>
     const sim = newSim({ events: [] });
     expect(sim.tools.toolFor('relay_main')).toBe('screwdriver');
     expect(sim.tools.toolFor('rx_psu')).toBe('solder_iron');
-    expect(sim.tools.toolFor('hull_seal')).toBeNull();
+    expect(sim.tools.toolFor('hull_seal')).toBe('sealant_gun');
+    expect(sim.tools.toolFor('pump_thermal')).toBeNull(); // not breakable in this build
   });
 
   it('the electronics bench refuses to solder without the soldering iron', () => {

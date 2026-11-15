@@ -47,5 +47,12 @@
     "wall": "west",
     "along": 1.35,
     "y": 1
+  },
+  {
+    "id": "hull_leak_hub",
+    "room": "room_hub",
+    "wall": "north",
+    "along": 3.6,
+    "y": 1.35
   }
 ]

@@ -37,8 +37,8 @@
   "personal.dosimeter.info_title": "DOSÍMETRO · DATOS Y MÉTODO",
   "personal.dosimeter.info_unit": "µGy/h (microgray por hora): mide la radiación física absorbida. El siévert (mSv) mide el daño biológico real en el cuerpo humano. Ahora fuera: {rate} µGy/h.",
   "personal.sep.short": "¡TORMENTA SOLAR!",
-  "personal.sep.go": "¡Ve a Personal! Es el refugio",
-  "personal.sep.safe": "Estás a salvo en el refugio",
+  "personal.sep.go": "¡Ve al refugio de agua de Personal!",
+  "personal.sep.safe": "Estás protegido en el refugio",
   "personal.sep.ending": "Ya pasa lo peor: puedes salir",
   "personal.sep.level": "Radiación fuera",
   "personal.sep.info_title": "TORMENTA SOLAR · DATOS",
@@ -67,7 +67,11 @@
   "personal.shelter.short": "El agua te protege",
   "personal.shelter.info_title": "¿POR QUÉ EL AGUA PROTEGE?",
   "personal.shelter.info_1": "El agua tiene mucho hidrógeno. Los núcleos ligeros frenan las partículas del Sol sin crear tanta radiación secundaria como los metales pesados.",
-  "personal.shelter.info_2": "Por eso los refugios de tormenta rodean a la tripulación de agua, comida y equipos. En el juego, toda la sala Personal cuenta como refugio.",
+  "personal.shelter.info_2": "Por eso los refugios de tormenta rodean a la tripulación de agua, comida y equipos. En el juego solo protege el rincón de la litera rodeado de depósitos de agua: entra en él.",
   "personal.shelter.info_3": "Además, la base está bajo el regolito (el manto natural de tierra y roca de Marte), que actúa como un escudo contra los rayos cósmicos.",
-  "personal.shelter.info_note": "Divulgación general: explicación cualitativa, no medida en esta base."
+  "personal.shelter.info_note": "Divulgación general: explicación cualitativa, no medida en esta base.",
+  "personal.shelter.state.idle": "Para tormentas solares",
+  "personal.shelter.state.inside": "Aquí el agua te protege",
+  "personal.shelter.state.enter": "¡TORMENTA! Entra aquí",
+  "personal.shelter.state.safe": "Estás protegido"
 }

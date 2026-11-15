@@ -36,9 +36,11 @@ export class KeyboardLocomotion {
     this.collider = collider;
     /** @type {Set<string>} */
     this.keys = new Set();
+    /** False while the start menu is open (keys ignored). */
+    this.enabled = true;
 
     window.addEventListener('keydown', (e) => {
-      if (isTyping(e)) return;
+      if (isTyping(e) || !this.enabled) return;
       const code = e.code;
       if ([...FORWARD, ...BACK, ...TURN_LEFT, ...TURN_RIGHT].includes(code)) e.preventDefault();
       if (!e.repeat && this.renderer.xr.isPresenting) {
@@ -58,7 +60,7 @@ export class KeyboardLocomotion {
 
   /** @param {number} dt */
   update(dt) {
-    if (this.keys.size === 0) return;
+    if (!this.enabled || this.keys.size === 0) return;
 
     if (!this.renderer.xr.isPresenting) {
       const turn = (this.#down(TURN_LEFT) ? 1 : 0) - (this.#down(TURN_RIGHT) ? 1 : 0);

@@ -4,5 +4,15 @@
     "shelterAboveUGyPerHour": 50,
     "unshelteredDamagePerHour": 12,
     "stormMaxHours": 48
+  },
+  "shelter": {
+    "_about": "Storm shelter alcove in Personal: only a head inside the alcove counts as sheltered (crew:shelter). Water-wall shelters are a real design (ISS crew quarters, Orion). Sizes in metres.",
+    "widthM": 2.8,
+    "depthM": 1.45,
+    "heightM": 2.05,
+    "bed": {
+      "lengthM": 1.95,
+      "widthM": 0.8
+    }
   }
 }

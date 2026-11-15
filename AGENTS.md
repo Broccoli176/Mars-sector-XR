@@ -174,9 +174,9 @@ Los nombres de eventos son API pública una vez implementados: renombrarlos requ
 | `game:phaseChanged` | `{ from, to }` | estado de juego | |
 | `game:over` / `game:won` | `{ reason }` | estado de juego | |
 | `relay:resetRequest` / `relay:tripped` / `relay:reset` | según diseño | intent / red eléctrica | |
-| `repair:hold` / `repair:progress` / `repair:rejected` | según diseño | interacción / electrónica | reparaciones temporizadas |
+| `repair:work` / `repair:progress` / `repair:rejected` | ver «Reparaciones con herramientas» (implementado) | interacción / `Repairs` | reparaciones temporizadas |
 | `component:damaged` | `{ componentId, reason }` | electrónica/eventos | |
-| `leak:started` / `leak:sealed` | `{ leakId }` | sistema correspondiente | |
+| `leak:started` / `leak:sealed` | `{ leakId }` | `IncidentRunner` / `Repairs` | implementado (fuga `hull_seal_hub`) |
 | `filter:swap` / `filter:swapped` | según diseño | intent / soporte vital | |
 | `valve:turn` | `{ valveId, open }` | interacción (intent) | |
 | `food:harvest` / `food:harvested` | `{ trayId? }` / `{ trayId, cropId, kcal }` | intent / hidroponía | sin `trayId` cosecha todo lo listo |
@@ -246,8 +246,14 @@ Los tanques de O₂ de emergencia usan `valve:turn` (`valve_o2_tank_1/2`). Pendi
   - Evento: `solar:tracker { mode: 'manual' | 'auto' | 'stow', angleDeg, targetDeg }`.
   - La producción solar = pico × coseno(azimut Sol − azimut panel) × polvo × tormenta (spec §2.6). `SolarField` muestra 12 paneles (2 filas de 6; solo visual, la producción es la misma) y los gira sobre su eje vertical con `sim.solarTracker.angleDeg`.
 - **Batería (pared de breakers):** la cabecera dice si la batería se está cargando o descargando (tasa neta de `resources.power`) y cuánto falta para llenarse o vaciarse (`batteryCharge` en `src/rooms/energy/stations.js`). El Rover 2 limpiador se eliminó.
-- **Tormenta solar (`Radiation`):** `spaceWeather:alert { kind: 'sep', etaHours }` y `spaceWeather:impact { kind: 'sep', durationHours }` (IncidentRunner, evento `sep`); intent `crew:shelter { inside }` (presentación, según la posición de la cabeza en Personal); `crew:damage { cause: 'radiation' }` fuera del refugio en lo peor de la tormenta.
+- **Tormenta solar (`Radiation`):** `spaceWeather:alert { kind: 'sep', etaHours }` y `spaceWeather:impact { kind: 'sep', durationHours }` (IncidentRunner, evento `sep`); intent `crew:shelter { inside }` (presentación: solo cuenta la cabeza dentro del rincón-refugio de Personal, con la litera y depósitos de agua en paredes y techo; tamaño en `balance/personal.json` → `shelter`, regla pura `insideAlcove` en `src/rooms/personal/shelterRules.js`; el suelo del rincón parpadea en rojo en la tormenta si estás fuera y se pone verde dentro); `crew:damage { cause: 'radiation' }` fuera del refugio en lo peor de la tormenta.
 - **Telecom:** `antenna:align`, `antenna:turnLeft`, `antenna:turnRight` (intents); escucha `component:damaged`/`system:repaired` para `antenna_motor`.
+- **Reparaciones con herramientas (`src/systems/Repairs.js`, 2026-11-15):**
+  - Averías guionizadas en `events.json`: tipo `failure { componentId }` ⇒ `component:damaged { componentId, reason: 'scripted' }`; tipo `leak { leakId }` ⇒ `leak:started { leakId }`. Calendario: D3 `scrubber_fan` (destornillador), D5 fuga `hull_seal_hub` (pistola de sellado), D7 `antenna_motor` (llave inglesa); el soldador sigue con el banco de electrónica (D2).
+  - Intent `repair:work { componentId, seconds }`: lo envía `src/rooms/hub/tools.js` por lotes de 0,25 s mientras apuntas la herramienta a la pieza (escritorio: con la mira) y mantienes gatillo/F. `componentId` es el id del componente o de la fuga.
+  - `Repairs` acumula segundos reales hasta `holdSeconds` (×1,25 con salud < 50, ×1,5 con < 25) y conserva el progreso si sueltas. Emite `repair:progress { componentId, progress }`, `repair:rejected { componentId, reason: 'notBroken' | 'paused' | 'noTool' | 'noSpare' | 'noCharge', toolId? }` y al terminar gasta `spares` (o una carga de `inventory.sealantCharges`) y emite `system:repaired { systemId, partId }` o `leak:sealed { leakId }`.
+  - `LifeSupport` reacciona a `scrubber_fan`, `pump_thermal`, `valve_recycler` y a las fugas; `Telecom` a `antenna_motor`.
+  - Presentación: `src/ui/RepairPoint.js` (`addRepairPoint`: volumen de puntería en `kit.repairTargets`, luz roja/verde y etiqueta con herramienta, rechazo y barra de progreso); fuga en `src/rooms/hub/leak.js` (grieta, vapor y espuma). Animaciones de uso en `tools.js` con reglas puras en `toolRules.js` (`toolMotion`, `TOOL_TIPS`, `TOOL_EFFECT`): la llave oscila ±35° y saca chispas, el destornillador gira, la punta del soldador se calienta y echa humo, la pistola retrocede y suelta espuma. Un único `Points` compartido para todas las partículas.
 - **Herramientas (fase 2: la simulación las consume, `src/systems/Toolbelt.js`):**
   - `item:grab { itemId, hand }`
   - `item:release { itemId }` (cae al suelo)
@@ -380,6 +386,13 @@ Parámetros de URL solo de desarrollo:
 - `?view=x,z,grados`: coloca al jugador.
 - `?ff=ticks`: adelanta la simulación al iniciar turno.
 - `?iwer`: emulación de Quest 3 con el runtime IWER de Meta, carga diferida y sin extensión.
+- `?mode=browser`: salta el menú inicial (también `?view=`).
+
+**Menú inicial** (`src/ui/StartMenu.js`, reglas puras en `src/ui/startMenuRules.js`, textos `menu.*`): capa HTML previa a la sesión (no es HUD de juego).
+- «Tu misión»: `missionBriefing(balance, events)` saca de los datos los días (`time.totalDays`), la hora de inicio, la duración a 1×, la regla de pérdida de energía y las crisis guionizadas (`events.json` relayTrip/storm/sep + `electronics.faults.scheduled`). Si cambia el guion, el menú cambia solo.
+- «Realidad virtual»: si `navigator.xr` ofrece `immersive-vr` (visor o extensión Meta Immersive Web Emulator) pide la sesión en el mismo clic con `renderer.xr.setSession()`; si no, explica cómo instalar la extensión y ofrece el emulador integrado (IWER, `src/dev/iwer.js`, cargado bajo demanda).
+- «Navegador»: muestra la ayuda y la mira y activa ratón y teclado (`DesktopControls.enabled`, `KeyboardLocomotion.enabled`; desactivados con el menú abierto).
+- Al terminar la sesión XR se vuelve al menú; el botón «Menú» de la ayuda también lo abre. Sustituye al botón «ENTER VR» de Three.js.
 - `?debug`: expone `window.__marte`.
 
 Agarre: botón de agarre (grip) del mando en XR, tecla **G** en escritorio (`src/vr/Grab.js`). Hay dos fundas en el cinturón (`src/vr/Holsters.js`): **B/Y** (tecla **H** en escritorio) guarda la herramienta en la funda de ese lado y, con la mano vacía, la saca. También se puede soltar junto al anillo: se ilumina verde cuando está a tiro. El cinturón solo gira con el cuerpo (zona muerta de 35°), no con cada mirada.

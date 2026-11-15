@@ -11,6 +11,9 @@ const entries = (globbed) => Object.entries(globbed).map(([p, mod]) => [p.split(
 
 const balance = mergeObjects(entries(import.meta.glob('./balance/*.json', { eager: true })), 'balance');
 const strings = mergeObjects(entries(import.meta.glob('./strings/es/*.json', { eager: true })), 'strings');
+// English tables: same keys (tests/i18n.test.js). Missing keys fall back to Spanish at runtime.
+const stringsEn = mergeObjects(entries(import.meta.glob('./strings/en/*.json', { eager: true })), 'strings');
+const stringsByLang = { es: strings, en: { ...strings, ...stringsEn } };
 const stations = mergeStationLists(entries(import.meta.glob('./stations/*.json', { eager: true })));
 
 const layout = { ...layoutGeometry, stations };
@@ -20,4 +23,4 @@ const real = Object.fromEntries(
   entries(import.meta.glob('./real/*.json', { eager: true })).map(([file, data]) => [file.replace(/\.json$/, ''), data]),
 );
 
-export const gameData = { resources, balance, events, layout, strings, real };
+export const gameData = { resources, balance, events, layout, strings, stringsByLang, real };

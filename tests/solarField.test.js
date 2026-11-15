@@ -18,10 +18,20 @@ describe('solar field window', () => {
     expect(fieldLook(power.solarEndHour, false, power).daylight).toBe(false);
   });
 
-  it('Martian sunsets are bluer than noon', () => {
-    const noon = fieldLook(12, false, power).sky;
-    const dusk = fieldLook(power.solarEndHour - 0.2, false, power).sky;
-    expect(dusk[2] / dusk[0]).toBeGreaterThan(noon[2] / noon[0]);
+  it('the sky always keeps a soft orange tint (noon, sunset, night, storm)', () => {
+    const skies = [
+      fieldLook(12, false, power).sky,
+      fieldLook(power.solarEndHour - 0.2, false, power).sky,
+      fieldLook(23, false, power).sky,
+      fieldLook(12, true, power).sky,
+    ];
+    for (const [r, g, b] of skies) {
+      expect(r).toBeGreaterThan(g);
+      expect(g).toBeGreaterThan(b);
+    }
+    // Sunset is a deeper orange than noon (more red relative to blue), never blue.
+    const [noon, dusk] = skies;
+    expect(dusk[0] / dusk[2]).toBeGreaterThan(noon[0] / noon[2]);
   });
 });
 

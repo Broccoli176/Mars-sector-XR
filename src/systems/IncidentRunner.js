@@ -73,6 +73,12 @@ export class IncidentRunner {
       case 'sep':
         this.bus.emit('spaceWeather:impact', { kind: 'sep', durationHours: event.durationHours });
         break;
+      case 'failure':
+        this.bus.emit('component:damaged', { componentId: event.componentId, reason: 'scripted' });
+        break;
+      case 'leak':
+        this.bus.emit('leak:started', { leakId: event.leakId });
+        break;
       case 'storm':
         this.power.stormActive = true;
         this.stormEndTick = tick + event.durationHours * this.ticksPerHour;

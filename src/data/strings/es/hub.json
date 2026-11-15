@@ -17,7 +17,7 @@
   "hub.comp.antenna_motor": "Motor de antena",
   "hub.comp.relay_main": "Relé principal",
   "hub.comp.valve_recycler": "Válvula del reciclador",
-  "hub.comp.hull_seal": "Sellos (fugas)",
+  "hub.comp.hull_seal": "Fuga en el casco",
   "hub.toolwall.title": "HERRAMIENTAS",
   "hub.status.title": "ESTADO DE COMPONENTES",
   "hub.status.ok": "OK",

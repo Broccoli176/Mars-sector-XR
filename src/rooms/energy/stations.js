@@ -7,6 +7,7 @@ import * as THREE from 'three';
 import { COLORS, BUTTON, statusColor } from '../../ui/StationKit.js';
 import { Button } from '../../objects/Button.js';
 import { addInfo } from '../../ui/InfoSheet.js';
+import { addRepairPoint } from '../../ui/RepairPoint.js';
 import { fmt } from '../../utils/strings.js';
 import { SolarTracker } from '../../systems/SolarTracker.js';
 import * as icon from './energyIcons.js';
@@ -300,6 +301,8 @@ export const builders = {
   ls_scrubber(g, station, kit) {
     const { t, game, sim } = kit;
     kit.addBox(g, 0.8, station.y - 0.4, 0.5, 0, -0.4 - (station.y - 0.4) / 2 + 0.02, 0.28, '#4d6670');
+    // Fan grille on the cabinet front: the screwdriver fixes it when the fan breaks (Repairs, D3).
+    addRepairPoint(g, kit, { targetId: 'scrubber_fan', x: 0.18, y: -0.4 - (station.y - 0.4) / 2 + 0.02, z: 0.42, size: 0.3, labelY: -0.3 });
     const panel = kit.addPanel(g, 0.62, 0.36, 0, 0.13, SHARP);
     const swap = kit.addButton(g, { width: 0.3, height: 0.09, label: t('ui.ls.swap_filter'), color: BUTTON.action,
       onSelect: () => game.intent('filter:swap') }, -0.06, -0.16);

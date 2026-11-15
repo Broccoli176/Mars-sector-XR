@@ -55,6 +55,8 @@ export function createStationKit({ game, t, interactive, services = {} }) {
   const frameFns = [];
   /** @type {THREE.Mesh[]} solid furniture: collision + teleport ray blockers */
   const solids = [];
+  /** @type {THREE.Object3D[]} invisible aim volumes of repair points (userData.repairTarget), see RepairPoint.js */
+  const repairTargets = [];
 
   // Props share one machinery texture; materials are cached per tint colour.
   const machineTexture = createMachineTexture();
@@ -83,6 +85,8 @@ export function createStationKit({ game, t, interactive, services = {} }) {
     sim: () => game.sim,
     lambert,
     solids,
+    /** Aim volumes of broken parts; the tools in hand raycast against them (src/rooms/hub/tools.js). */
+    repairTargets,
     registerButton,
     /** Scene-level helpers from main.js: { scene, grab, holsters, floors, renderer, locomotion } (renderer: read-only XR diagnostics; locomotion: head position, read-only). */
     services,

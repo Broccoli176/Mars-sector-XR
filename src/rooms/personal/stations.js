@@ -4,13 +4,18 @@
 // Panels are pictograms (personalIcons.js) for young players; each has an «Info» button that opens the
 // rigorous text with numbers and sources (src/ui/InfoSheet.js).
 // Placement: src/data/stations/personal.json · Texts: src/data/strings/es/personal.json
-import { Vector3 } from 'three';
+import {
+  Vector3, Object3D, Mesh, InstancedMesh, BoxGeometry, CylinderGeometry, PlaneGeometry,
+  MeshLambertMaterial, MeshBasicMaterial,
+} from 'three';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { COLORS } from '../../ui/StationKit.js';
 import { Panel } from '../../ui/Panel.js';
 import { fmt } from '../../utils/strings.js';
 import { addInfo } from '../../ui/InfoSheet.js';
 import { createSpaceWeatherFeed } from './spaceWeatherLive.js';
 import * as icon from './personalIcons.js';
+import { insideAlcove, TANK_RADIUS } from './shelterRules.js';
 
 /** @typedef {import('../../ui/InfoSheet.js').Line} Line */
 
@@ -22,16 +27,6 @@ export const builders = {
     const radlab = kit.game.data.real?.radlab;
     const panel = new Panel(1.2, 0.8, { pxPerMeter: 520 });
     g.add(panel.mesh);
-
-    // Storm shelter = this room. Report where the player's head is (crew:shelter); the sim decides the dose.
-    const room = kit.game.data.layout.rooms.find((/** @type {any} */ rm) => rm.id === 'room_personal');
-    const loco = kit.services.locomotion;
-    const head = new Vector3();
-    const inShelter = () => {
-      if (!loco || !room) return true;
-      loco.headWorld(head);
-      return head.x >= room.x[0] && head.x <= room.x[1] && head.z >= room.z[0] && head.z <= room.z[1];
-    };
 
     addInfo(g, kit, {
       bx: 0, by: -0.47, px: 0, py: 0, w: 1.3, h: 0.86,
@@ -66,8 +61,7 @@ export const builders = {
         panel.renderLines(t('personal.dosimeter.title'), [{ text: t('personal.dosimeter.no_data'), color: COLORS.warning }]);
         return;
       }
-      const inside = inShelter();
-      if (r.sheltered !== inside) kit.game.intent('crew:shelter', { inside });
+      const inside = r.sheltered; // reported by the shelter alcove (personal_bunk)
       if (r.stormActive) {
         const danger = r.shelterNeeded;
         const level = Math.min(1, r.rate / Math.max(1, r.stormPeak, r.rate));
@@ -92,27 +86,82 @@ export const builders = {
     });
   },
 
-  /** Bunk + water-tank shelter wall, with a pictogram sign and the «why water?» sheet. */
+  /**
+   * Storm shelter: an alcove in the corner of Personal walled with water tanks (back, both sides and roof),
+   * with the crew bunk inside, like the water-wall sleeping quarters proposed for Orion and used on the ISS.
+   * Only the alcove protects (balance/personal.json → shelter): the player's head must be inside it.
+   * It reports `crew:shelter { inside }`; the simulation decides the dose (Radiation).
+   */
   personal_bunk(g, station, kit) {
-    const { t } = kit;
-    const base = -station.y; // station-local floor height
-    kit.addBox(g, 2.0, 0.45, 0.9, 0, base + 0.225, 0.45, '#5f646b'); // frame
-    kit.addBox(g, 1.9, 0.12, 0.82, 0, base + 0.51, 0.45, '#7d6f8a'); // mattress
-    kit.addBox(g, 0.4, 0.1, 0.6, -0.7, base + 0.62, 0.45, '#c9c4bb'); // pillow
-    // Storm shelter: a wall of water tanks behind the bunk (NASA: ~10 g/cm² water-equivalent around the astronaut).
-    kit.addBox(g, 2.1, 1.3, 0.22, 0, base + 1.24, 0.11, '#3b6688');
-    const sign = new Panel(0.9, 0.34, { pxPerMeter: 520 });
-    sign.mesh.position.set(-0.15, base + 2.1, 0);
-    g.add(sign.mesh);
-    sign.renderCustom('shelter', (ctx, W, H) => {
-      icon.frame(ctx, W, H, COLORS.info);
-      icon.shield(ctx, H * 0.5, H / 2, H * 0.32, true);
-      icon.drop(ctx, H * 1.05, H * 0.55, H * 0.42, '#6fc3ff');
-      icon.text(ctx, t('personal.shelter.title'), H * 1.45, H * 0.33, { size: H * 0.24, color: COLORS.title, bold: true, maxWidth: W - H * 1.55 });
-      icon.text(ctx, t('personal.shelter.short'), H * 1.45, H * 0.68, { size: H * 0.18, color: COLORS.info, bold: true, maxWidth: W - H * 1.55 });
+    const { t, sim } = kit;
+    const cfg = kit.game.data.balance.shelter;
+    const W = cfg.widthM;
+    const D = cfg.depthM;
+    const H = cfg.heightM;
+    const R = TANK_RADIUS;
+    const base = -station.y; // station-local floor
+    // Station-local: x across the wall, +z into the room, the back wall at z = 0.
+
+    // ---- Bunk (plain materials: it must read as a bed, not as a machine) ----
+    const mat = (/** @type {string} */ color) => new MeshLambertMaterial({ color });
+    const bedX = W / 2 - 2 * R - cfg.bed.lengthM / 2 - 0.02; // against the far side tanks
+    const bedZ = 2 * R + cfg.bed.widthM / 2;
+    const frame = new Mesh(new BoxGeometry(cfg.bed.lengthM, 0.34, cfg.bed.widthM), mat('#4a5058'));
+    frame.position.set(bedX, base + 0.17, bedZ);
+    const bedTop = new Mesh(mergeGeometries([
+      new BoxGeometry(cfg.bed.lengthM - 0.06, 0.14, cfg.bed.widthM - 0.06).translate(0, 0.41, 0), // mattress
+      new BoxGeometry(cfg.bed.lengthM * 0.62, 0.05, cfg.bed.widthM - 0.02).translate(-cfg.bed.lengthM * 0.17, 0.5, 0), // blanket
+    ]), mat('#5b7fa6'));
+    bedTop.position.set(bedX, base, bedZ);
+    const pillow = new Mesh(new BoxGeometry(0.42, 0.11, cfg.bed.widthM * 0.7), mat('#ece7dd'));
+    pillow.position.set(bedX + cfg.bed.lengthM / 2 - 0.3, base + 0.54, bedZ);
+    g.add(frame, bedTop, pillow);
+    kit.solids.push(frame); // walk around the bed; you can still lean over it
+
+    // ---- Water tanks (one instanced draw call): back wall, both sides and roof ----
+    /** @type {{ x: number, y: number, z: number, axis: 'x' | 'y' | 'z', len: number }[]} */
+    const tanks = [];
+    for (let row = 0; row < 5; row++) tanks.push({ x: 0, y: base + 0.75 + row * 0.27, z: R, axis: 'x', len: W - 4 * R }); // back, above the bed
+    for (let i = 0; i < 5; i++) tanks.push({ x: W / 2 - R, y: base + H / 2, z: R + i * ((D - 2 * R) / 4), axis: 'y', len: H }); // far side
+    for (let i = 0; i < 5; i++) tanks.push({ x: -W / 2 + R, y: base + H / 2, z: R + i * ((D - 2 * R) / 4), axis: 'y', len: H }); // near side
+    for (let i = 0; i < 10; i++) tanks.push({ x: -W / 2 + R + i * ((W - 2 * R) / 9), y: base + H + R, z: D / 2, axis: 'z', len: D }); // roof
+    const tankMesh = new InstancedMesh(new CylinderGeometry(R, R, 1, 14), mat('#2f78b0'), tanks.length);
+    const tmp = new Object3D();
+    tanks.forEach((k, i) => {
+      tmp.position.set(k.x, k.y, k.z);
+      tmp.rotation.set(k.axis === 'z' ? Math.PI / 2 : 0, 0, k.axis === 'x' ? Math.PI / 2 : 0);
+      tmp.scale.set(1, k.len, 1);
+      tmp.updateMatrix();
+      tankMesh.setMatrixAt(i, tmp.matrix);
     });
-    addInfo(g, kit, {
-      bx: 0.47, by: base + 2.1, px: -0.15, py: base + 1.55, w: 1.2, h: 0.7,
+    g.add(tankMesh);
+    // Metal frame: front posts and lintel holding the roof tanks.
+    g.add(new Mesh(mergeGeometries([
+      new BoxGeometry(0.08, H + 0.3, 0.08).translate(-W / 2, base + (H + 0.3) / 2, D),
+      new BoxGeometry(0.08, H + 0.3, 0.08).translate(W / 2, base + (H + 0.3) / 2, D),
+      new BoxGeometry(W + 0.08, 0.1, 0.1).translate(0, base + H + 0.05, D),
+    ]), mat('#3a4048')));
+    // Collision for the near tank wall only (an AABB of the whole alcove would block its inside).
+    const nearWall = new Mesh(new BoxGeometry(2 * R + 0.04, H, D), new MeshBasicMaterial({ visible: false }));
+    nearWall.position.set(-W / 2 + R, base + H / 2, D / 2);
+    g.add(nearWall);
+    kit.solids.push(nearWall);
+
+    // ---- Floor pad: where you are protected (blue; green inside; pulsing red in a storm while you are out) ----
+    const padMat = new MeshBasicMaterial({ color: COLORS.info, transparent: true, opacity: 0.22, depthWrite: false, toneMapped: false });
+    const pad = new Mesh(new PlaneGeometry(W - 4 * R, D - 0.1).rotateX(-Math.PI / 2), padMat);
+    pad.position.set(0, base + 0.012, D / 2 + 0.05);
+    g.add(pad);
+
+    // ---- Sign on the lintel, facing the room, with the «why water?» sheet ----
+    const sign = new Panel(1.3, 0.3, { pxPerMeter: 640 });
+    sign.mesh.position.set(0, base + H + 0.32, D + 0.07);
+    g.add(sign.mesh);
+    const info = new Object3D();
+    info.position.z = D + 0.06;
+    g.add(info);
+    addInfo(info, kit, {
+      bx: 0.8, by: base + H + 0.32, px: 0, py: base + 1.35, w: 1.3, h: 0.8,
       title: () => t('personal.shelter.info_title'),
       lines: () => [
         { text: t('personal.shelter.info_1'), size: 0.85 },
@@ -120,6 +169,40 @@ export const builders = {
         { text: t('personal.shelter.info_3'), size: 0.85 },
         { text: t('personal.shelter.info_note'), color: COLORS.dim, size: 0.7 },
       ],
+    });
+
+    // ---- Am I inside? Head position in station-local space ----
+    const loco = kit.services.locomotion;
+    const head = new Vector3();
+    const inside = () => {
+      if (!loco) return false;
+      loco.headWorld(head);
+      g.worldToLocal(head);
+      return insideAlcove(head.x, head.z, cfg);
+    };
+
+    let pulse = 0;
+    kit.onFrame((dt) => {
+      pulse += dt;
+      const r = sim().radiation;
+      const storm = Boolean(r?.stormActive && r.shelterNeeded);
+      padMat.opacity = storm && !r.sheltered ? 0.25 + 0.25 * (0.5 + 0.5 * Math.sin(pulse * 5)) : storm ? 0.45 : 0.22;
+    });
+    kit.onRefresh(() => {
+      const r = sim().radiation;
+      const isIn = inside();
+      if (r && r.sheltered !== isIn) kit.game.intent('crew:shelter', { inside: isIn });
+      const storm = Boolean(r?.stormActive && r.shelterNeeded);
+      const state = storm ? (isIn ? 'safe' : 'enter') : isIn ? 'inside' : 'idle';
+      const color = state === 'safe' || state === 'inside' ? COLORS.nominal : state === 'enter' ? COLORS.critical : COLORS.info;
+      padMat.color.set(color);
+      sign.renderCustom(`shelter|${state}`, (ctx, w, h) => {
+        icon.frame(ctx, w, h, color);
+        icon.shield(ctx, h * 0.5, h / 2, h * 0.32, state !== 'enter');
+        icon.drop(ctx, h * 1.05, h * 0.55, h * 0.42, '#6fc3ff');
+        icon.text(ctx, t('personal.shelter.title'), h * 1.45, h * 0.32, { size: h * 0.26, color: COLORS.title, bold: true, maxWidth: w - h * 1.55 });
+        icon.text(ctx, t(`personal.shelter.state.${state}`), h * 1.45, h * 0.7, { size: h * 0.2, color, bold: true, maxWidth: w - h * 1.55 });
+      });
     });
   },
 
