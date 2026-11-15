@@ -6,6 +6,7 @@ import { Game } from './Game.js';
 import { buildBasement } from '../world/Basement.js';
 import { buildPorthole } from '../world/Porthole.js';
 import { buildSolarField } from '../world/SolarField.js';
+import { buildRoverWorld } from '../world/RoverWorld.js';
 import { buildStations, renderBio } from '../ui/Stations.js';
 import { Panel } from '../ui/Panel.js';
 import { Interaction } from '../vr/Interaction.js';
@@ -95,11 +96,12 @@ const solarField = buildSolarField(scene, () => game.sim, {
 const locomotion = new Locomotion(renderer, dolly, camera);
 const grab = new Grab(scene);
 const holsters = new Holsters(scene, locomotion, gameData.balance.holster);
+const roverWorld = buildRoverWorld(scene, game, camera, dolly, layout);
 /** @type {THREE.Object3D[]} */
 const interactive = [];
 const stations = buildStations({
   layout, rooms: basement.rooms, game, t, scene, interactive,
-  services: { scene, grab, holsters, floors: basement.floors, renderer },
+  services: { scene, grab, holsters, floors: basement.floors, renderer, roverWorld },
 });
 
 // Interaction and locomotion
@@ -184,13 +186,14 @@ renderer.setAnimationLoop((timestamp) => {
     fastForwardTicks = 0;
   }
   game.sim.advance(dt);
-  keyboard.update(dt);
+  if (!roverWorld.isFPV) keyboard.update(dt);
   desktop.update();
   xr.update();
   holsters.update();
   stations.animate(dt);
   porthole.update(dt);
   solarField.update(dt);
+  roverWorld.update(dt);
 
   refreshTimer += dt;
   if (refreshTimer >= PANEL_REFRESH_SECONDS) {

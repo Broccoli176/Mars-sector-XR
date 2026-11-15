@@ -48,15 +48,23 @@ export function buildRoverConsole(g, station, kit) {
   // Desk buttons, lying on the desk (pressed from above with the ray + trigger, or a click).
   /** @type {[string, string, number, number][]} */
   const LAYOUT = [
-    ['forward', 'rover.btn.forward', -0.62, 0.3],
-    ['back', 'rover.btn.back', -0.62, 0.56],
-    ['left', 'rover.btn.left', -0.86, 0.43],
+    ['forward', 'rover.btn.forward', -0.65, 0.3],
+    ['back', 'rover.btn.back', -0.65, 0.56],
+    ['left', 'rover.btn.left', -0.92, 0.43],
     ['right', 'rover.btn.right', -0.38, 0.43],
     ['stop', 'rover.btn.stop', -0.05, 0.43],
-    ['sample', 'rover.btn.sample', 0.3, 0.43],
+    ['sample', 'rover.btn.sample', 0.28, 0.43],
+    ['fpv', 'rover.btn.fpv', 0.62, 0.43],
   ];
   const buttons = LAYOUT.map(([cmd, key, x, z]) => {
-    const b = new Button({ width: 0.2, height: 0.09, label: t(key), color: BUTTON.info, onSelect: () => game.intent('rover:command', { cmd }) });
+    const isFpv = cmd === 'fpv';
+    const b = new Button({
+      width: isFpv ? 0.26 : 0.2,
+      height: 0.09,
+      label: t(key),
+      color: isFpv ? '#8b5cf6' : BUTTON.info,
+      onSelect: () => game.intent(isFpv ? 'rover:fpv' : 'rover:command', isFpv ? {} : { cmd }),
+    });
     const holder = new THREE.Group();
     holder.position.set(x, deskTop + 0.005, z);
     holder.rotation.x = -Math.PI / 2;
@@ -151,6 +159,10 @@ export function buildRoverConsole(g, station, kit) {
     status.renderLines(t('rover.title'), lines, { border: link ? COLORS.border : COLORS.critical });
 
     for (const { cmd, key, b } of buttons) {
+      if (cmd === 'fpv') {
+        b.setState(t(key), link ? '#8b5cf6' : BUTTON.off);
+        continue;
+      }
       let usable = link && !r.stranded;
       if (cmd === 'sample') usable = usable && Boolean(reach) && r.mode !== 'coring';
       if ((cmd === 'forward' || cmd === 'left' || cmd === 'right') && r.stuck) usable = false;

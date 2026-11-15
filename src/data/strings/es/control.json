@@ -47,6 +47,7 @@
   "rover.btn.right": "30° ►",
   "rover.btn.stop": "■ PARAR",
   "rover.btn.sample": "⛏ MUESTRA",
+  "rover.btn.fpv": "🚀 FPV MODO",
   "rover.link.ok": "Enlace: OK (señal {pct} %)",
   "rover.link.none": "SIN ENLACE (señal {pct} % < 20 %): revisa Telecom",
   "rover.battery": "Batería: {pct} % ({wh} Wh)",
