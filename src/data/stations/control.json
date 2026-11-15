@@ -2,8 +2,8 @@
   {
     "id": "rover_console",
     "room": "room_control",
-    "wall": "north",
-    "along": 8,
+    "wall": "east",
+    "along": -5.5,
     "y": 1.45
   },
   {
@@ -11,13 +11,6 @@
     "room": "room_control",
     "wall": "north",
     "along": 10.05,
-    "y": 1.45
-  },
-  {
-    "id": "rover_minigame",
-    "room": "room_control",
-    "wall": "east",
-    "along": -5.5,
     "y": 1.45
   }
 ]

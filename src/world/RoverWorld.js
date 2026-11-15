@@ -7,6 +7,16 @@ import * as THREE from 'three';
  */
 export const ROVER_WORLD_ORIGIN = new THREE.Vector3(500, 0, 500);
 
+/** @param {number} heading @returns {number} Three.js yaw for a rover model whose front is +Z. */
+export function roverModelYaw(heading) {
+  return Math.PI - heading;
+}
+
+/** @param {number} heading @returns {number} Three.js yaw for a camera whose view direction is -Z. */
+export function roverCameraYaw(heading) {
+  return -heading;
+}
+
 /**
  * Geological scientific data for samples found in the open world.
  */
@@ -625,16 +635,16 @@ export function buildRoverWorld(scene, game, camera, dolly, layout) {
       const worldZ = -r.y;
       const terrainY = getTerrainHeight(worldX, worldZ);
       roverGroup.position.set(worldX, terrainY, worldZ);
-      roverGroup.rotation.y = r.heading;
+      roverGroup.rotation.y = roverModelYaw(r.heading);
 
       // Mastcam camera world transform
       fpvCamAnchor.getWorldPosition(roverCamera.position);
-      roverCamera.rotation.copy(roverGroup.rotation);
+      roverCamera.rotation.set(0, roverCameraYaw(r.heading), 0);
 
       // In FPV mode, move dolly to rover camera
       if (isFPV) {
         dolly.position.copy(roverCamera.position);
-        dolly.rotation.y = r.heading;
+        dolly.rotation.y = roverCameraYaw(r.heading);
 
         // Update HUD
         const batElem = document.getElementById('rover-hud-bat');

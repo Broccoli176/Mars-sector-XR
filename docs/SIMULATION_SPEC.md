@@ -489,7 +489,7 @@ Ver **`AGENTS.md` §4.2** para el contrato de eventos y payloads (baseline + pro
 
 | Room | Panels / interactables |
 | :-- | :-- |
-| Sala de control | Rover map/NavCam console with driving controls; adjacent `rover_vitals` panel shows disconnected telemetry placeholders; east-wall `rover_minigame` is a local 5 × 5 practice game with its own energy and no connection to the simulated rover |
+| Sala de control | Rover map/NavCam console with driving controls; adjacent `rover_vitals` panel shows disconnected telemetry placeholders |
 | Energía y oxígeno | Breaker wall (6 breakers + relay reset lever + demand meter kW vs 3.0 limit); O₂, CO₂ and pressure gauges; thermostat dial; filter socket; `valve_o2_tank_1`, `valve_o2_tank_2`; electrolyzer |
 | Hidroponía · Agricultura | Water tank gauge; kcal counter + ration locker; crop lights (growing / ready / spoiling); harvest rack; `valve_recycler` |
 | Telecomunicaciones | N: window + console (signal/alignment/azimuth/motor panel and left/right turn controls). W: communications distribution panel with uplink/signal status. Pending: message printer |

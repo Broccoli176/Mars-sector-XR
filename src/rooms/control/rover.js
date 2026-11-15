@@ -27,7 +27,7 @@ export function projectToCam(rover, px, py) {
 }
 
 /**
- * @param {THREE.Group} g station group (north wall of the Sala de control)
+ * @param {THREE.Group} g station group (east wall of the Sala de control)
  * @param {any} station
  * @param {import('../../ui/StationKit.js').StationKit} kit
  */
@@ -35,15 +35,39 @@ export function buildRoverConsole(g, station, kit) {
   const { t, game, sim } = kit;
   const cfg = game.data.balance.rover;
   const deskTop = 0.78 - station.y;
-  kit.addBox(g, 2.5, 0.06, 0.7, 0, deskTop - 0.03, 0.38, '#5d666f');
-  kit.addBox(g, 2.5, 0.72, 0.6, 0, deskTop - 0.42, 0.38, '#4b535b');
+  kit.addBox(g, 2.5, 0.06, 0.7, 0, deskTop - 0.03, 0.38, '#34414d');
+  kit.addBox(g, 2.5, 0.72, 0.6, 0, deskTop - 0.42, 0.38, '#222d38');
+
+  kit.addBox(g, 2.62, 1.02, 0.12, 0, 0.12, -0.12, '#1b2733');
+  kit.addBox(g, 0.22, 0.34, 0.1, 0, -0.53, -0.08, '#263643');
+  const bezelMaterial = new THREE.MeshLambertMaterial({ color: '#101820' });
+  const addBezel = (x, y, width, height) => {
+    const bezel = new THREE.Mesh(new THREE.BoxGeometry(width + 0.05, height + 0.05, 0.06), bezelMaterial);
+    bezel.position.set(x, y, 0.015);
+    g.add(bezel);
+  };
+  addBezel(-0.8, 0.12, 0.86, 0.62);
+  addBezel(0.1, 0.12, 0.86, 0.62);
+  addBezel(0.9, 0.12, 0.66, 0.72);
+
+  const accentMaterial = new THREE.MeshBasicMaterial({ color: '#26cce6' });
+  const addAccent = (width, height, x, y) => {
+    const accent = new THREE.Mesh(new THREE.BoxGeometry(width, height, 0.012), accentMaterial);
+    accent.position.set(x, y, 0.052);
+    g.add(accent);
+  };
+  addAccent(2.44, 0.018, 0, 0.61);
+  addAccent(2.44, 0.018, 0, -0.37);
+  addAccent(0.018, 0.94, -1.29, 0.12);
+  addAccent(0.018, 0.94, 1.29, 0.12);
 
   const map = new Panel(0.86, 0.62, { pxPerMeter: 900 });
-  map.mesh.position.set(-0.8, 0.12, 0.01);
+  map.mesh.position.set(-0.8, 0.12, 0.055);
   const cam = new Panel(0.86, 0.62, { pxPerMeter: 900 });
-  cam.mesh.position.set(0.1, 0.12, 0.01);
+  cam.mesh.position.set(0.1, 0.12, 0.055);
   g.add(map.mesh, cam.mesh);
   const status = kit.addPanel(g, 0.66, 0.72, 0.9, 0.12);
+  status.mesh.position.z = 0.055;
 
   // Desk buttons, lying on the desk (pressed from above with the ray + trigger, or a click).
   /** @type {[string, string, number, number][]} */

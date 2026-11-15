@@ -1,8 +1,7 @@
 // OWNER: teammate (Telecom · Control · Energy) — see docs/COLLABORATION.md
-// Sala de control: rover console (./rover.js), disconnected vitals panel and local practice minigame.
+// Sala de control: rover console (./rover.js) and disconnected vitals panel.
 import { COLORS } from '../../ui/StationKit.js';
 import { buildRoverConsole } from './rover.js';
-import { buildRoverMinigame } from './roverMinigame.js';
 
 /** @type {Record<string, (g: import('three').Group, station: any, kit: import('../../ui/StationKit.js').StationKit) => void>} */
 export const builders = {
@@ -22,9 +21,5 @@ export const builders = {
       { text: t('rover.vitals.integrity'), size: 0.85 },
       { text: t('rover.vitals.note'), color: COLORS.dim, size: 0.72 },
     ], { border: COLORS.warning });
-  },
-
-  rover_minigame(g, _station, kit) {
-    buildRoverMinigame(g, kit);
   },
 };
