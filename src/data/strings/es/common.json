@@ -97,5 +97,11 @@
   "ui.log.kitchen_rejected.missing": "Procesador: faltan ingredientes.",
   "ui.log.kitchen_rejected.busy": "Procesador: ya está trabajando.",
   "ui.log.kitchen_rejected.noPower": "Procesador: sin energía en Hidroponía.",
-  "ui.log.kitchen_rejected.empty": "La despensa está vacía."
+  "ui.log.kitchen_rejected.empty": "La despensa está vacía.",
+  "ui.log.hydro_fed": "Nutrientes añadidos. Cartuchos: {count}.",
+  "ui.log.hydro_nutrients_low": "Hidroponía: faltan nutrientes, las plantas crecen lento.",
+  "ui.log.hydro_rejected.noCartridge": "No quedan cartuchos de nutrientes.",
+  "ui.log.hydro_rejected.full": "El depósito de nutrientes ya está lleno.",
+  "ui.btn.info": "Info",
+  "ui.btn.close": "Cerrar"
 }

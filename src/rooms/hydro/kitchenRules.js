@@ -26,19 +26,18 @@ export function freshnessLines(pantry, shelfHours) {
   return [...groups.values()];
 }
 
-/**
- * Recipe that yields the most kcal with the current pantry, or null if none can be made.
- * @param {{ recipes: { id: string }[], previewKcal: (id: string) => number }} kitchen
- */
+/** Recipe that yields the most kcal with the current pantry, or null. @param {{ best: () => string | null }} kitchen */
 export function bestRecipe(kitchen) {
-  let best = null;
-  let bestKcal = 0;
-  for (const r of kitchen.recipes) {
-    const kcal = kitchen.previewKcal(r.id);
-    if (kcal > bestKcal) {
-      best = r.id;
-      bestKcal = kcal;
-    }
-  }
-  return best;
+  return kitchen.best();
+}
+
+/**
+ * Freshness of the oldest lot as a traffic light.
+ * @param {number} hoursLeft @param {number} shelfHours
+ * @returns {'fresh' | 'soon' | 'urgent'}
+ */
+export function freshnessLevel(hoursLeft, shelfHours) {
+  if (hoursLeft < shelfHours / 6) return 'urgent';
+  if (hoursLeft < shelfHours / 3) return 'soon';
+  return 'fresh';
 }

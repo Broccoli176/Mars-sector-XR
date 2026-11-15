@@ -87,6 +87,9 @@ function tendTrays(sim) {
   const { food, bus, time } = sim;
   const clock = time.clock();
   const hoursLeft = (8 - clock.day) * 24 + (6 - clock.hourFloat);
+  // Top up the nutrient solution before it slows the plants down.
+  const nut = food.cfg.nutrients;
+  if (nut && food.nutrients < nut.lowAt + 0.05 && food.cartridges > 0) bus.emit('hydro:feed');
   for (const tray of food.trays) {
     if (!tray.cropId) {
       const fits = Object.values(food.crops)
@@ -109,8 +112,7 @@ function cook(sim) {
   if (!kitchen || kitchen.pantry.length === 0) return;
   const best = bestRecipe(kitchen);
   if (best && !kitchen.busy && sim.power.served.hydro && sim.resources.value('power') > 5) {
-    if (kitchen.selected !== best) sim.bus.emit('kitchen:select', { recipeId: best });
-    sim.bus.emit('kitchen:process');
+    sim.bus.emit('kitchen:auto'); // the one-button path the player uses
     return;
   }
   const oldest = kitchen.pantry[0];

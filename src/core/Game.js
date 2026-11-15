@@ -77,6 +77,11 @@ export class Game {
     bus.on('food:ready', () => push(t('ui.log.food_ready'), 'warning'));
     bus.on('food:harvested', (e) => push(t('ui.log.food_harvested', { kcal: e.kcal })));
     bus.on('food:spoiled', (e) => push(t(`ui.log.food_spoiled.${e.reason}`), 'critical'));
+    bus.on('hydro:fed', (e) => push(t('ui.log.hydro_fed', { count: e.cartridgesLeft })));
+    bus.on('hydro:nutrientsLow', () => push(t('ui.log.hydro_nutrients_low'), 'warning'));
+    bus.on('hydro:rejected', (e) => {
+      if (!e.trayId) push(t(`ui.log.hydro_rejected.${e.reason}`), 'warning');
+    });
     bus.on('kitchen:done', (e) => push(t('ui.log.kitchen_done', { name: t(`real.recipe.${e.recipeId}`), kcal: e.kcal })));
     bus.on('kitchen:eaten', (e) => push(t('ui.log.kitchen_eaten', { kcal: e.kcal })));
     bus.on('kitchen:spoiled', (e) => push(t('ui.log.kitchen_spoiled', { name: t(`real.crop.${e.itemId}`), kcal: e.kcal }), 'warning'));

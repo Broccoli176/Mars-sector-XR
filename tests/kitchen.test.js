@@ -66,6 +66,22 @@ describe('Kitchen: pantry + food processor', () => {
     expect(rejected[1]).toEqual({ recipeId: 'bar_single', reason: 'busy' });
   });
 
+  it('one-button cooking picks the recipe with the most kcal, and rejects when nothing can be made', () => {
+    const sim = withPantry(['soybean', 'quinoa', 'carrot']);
+    const started = collect(sim, 'kitchen:started');
+    sim.bus.emit('kitchen:auto');
+    expect(started[0]).toMatchObject({ recipeId: 'bar_energy' });
+
+    const lone = withPantry(['lettuce']);
+    const rejected = collect(lone, 'kitchen:rejected');
+    lone.bus.emit('kitchen:auto');
+    expect(rejected[0]).toMatchObject({ reason: 'missing' });
+    const none = withPantry([]);
+    const r2 = collect(none, 'kitchen:rejected');
+    none.bus.emit('kitchen:auto');
+    expect(r2[0]).toMatchObject({ reason: 'empty' });
+  });
+
   it('pauses without power on the hydro circuit and keeps its progress', () => {
     const sim = withPantry(['soybean', 'carrot']);
     sim.bus.emit('kitchen:process');

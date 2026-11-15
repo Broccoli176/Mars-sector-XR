@@ -1,24 +1,31 @@
 // OWNER: Persona A (Personal · Hidro · Hub) — see docs/COLLABORATION.md
-// Hidroponía · Agricultura: 4 sowable trays (+ watering hose minigame), spirulina bioreactor, water tank,
-// rations and the crop guide. Real facts: src/data/real/csa_food.json (CSA) + bioregen_crops.json (NASA NTRS).
-// South extension (kitchen): pantry of raw harvest, food processor and bar dispenser.
-// The simulation (src/systems/Food.js, src/systems/Kitchen.js) owns trays/pantry; this file only reads it and
-// emits intents: hydro:sow, hydro:water, food:harvest, kitchen:select, kitchen:process, kitchen:eat.
+// Hidroponía · Agricultura. Soilless growing bench (4 NFT channels with rockwool cubes, LED grow lights,
+// seed kiosk), watering hose, water + nutrient tanks, spirulina bioreactor, wall guide, and the kitchen
+// (pantry, one-button food processor, bar dispenser).
+// Panels are pictograms (hydroIcons.js) so young players can read them; every station has an «Info» button
+// that opens a text sheet with the rigorous version. Real facts: src/data/real/csa_food.json (CSA) +
+// bioregen_crops.json (NASA NTRS).
+// The simulation (src/systems/Food.js, src/systems/Kitchen.js) owns the state; this file only reads it and
+// emits intents: hydro:sow, hydro:water, hydro:feed, food:harvest, kitchen:auto, kitchen:eat.
 // Placement: src/data/stations/hydro.json
 import * as THREE from 'three';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { COLORS, BUTTON, statusColor } from '../../ui/StationKit.js';
 import { Panel } from '../../ui/Panel.js';
-import { moistureState, nextSeed, soilColor, moistureBar, createWaterBatcher } from './hydroRules.js';
-import { cropGeometry } from './plants.js';
-import { nextRecipe, freshnessLines } from './kitchenRules.js';
+import { moistureState, nextSeed, plantStage, currentStep, createWaterBatcher } from './hydroRules.js';
+import { cropGeometry, paint } from './plants.js';
+import { freshnessLines, freshnessLevel } from './kitchenRules.js';
+import * as icon from './hydroIcons.js';
+import { addInfo } from '../../ui/InfoSheet.js';
 
 const KCAL_PER_DAY = 2500;
 const TRAY_XS = [-1.2, -0.4, 0.4, 1.2];
 const TRAY_W = 0.7;
 const TRAY_D = 0.42;
 const TRAY_Z = 0.32;
+const GAUGE_H = 0.18; // m, sight tube that shows the water level of a channel
 
-/** Shared between the trays (hose targets) and the hose station. Presentation-only. */
+/** Shared between the bench (hose targets, chosen seed) and the hose station. Presentation-only. */
 const hydroState = {
   /** @type {THREE.Mesh[]} invisible aim volumes, userData.trayId */
   targets: [],
@@ -26,40 +33,124 @@ const hydroState = {
   watering: null,
 };
 
+/** One material for all static, vertex-coloured props of the room. */
+const STATIC_MATERIAL = new THREE.MeshLambertMaterial({ vertexColors: true });
+const pbox = (/** @type {number} */ w, /** @type {number} */ h, /** @type {number} */ d, /** @type {number} */ x, /** @type {number} */ y, /** @type {number} */ z, /** @type {string} */ color) =>
+  paint(new THREE.BoxGeometry(w, h, d).translate(x, y, z), color);
+const pcyl = (/** @type {number} */ r, /** @type {number} */ len, /** @type {number} */ x, /** @type {number} */ y, /** @type {number} */ z, /** @type {string} */ color, alongX = false) => {
+  const geo = new THREE.CylinderGeometry(r, r, len, 10);
+  if (alongX) geo.rotateZ(Math.PI / 2);
+  return paint(geo.translate(x, y, z), color);
+};
+/** Merges painted parts into one static mesh (1 draw call). @param {THREE.Object3D} g @param {THREE.BufferGeometry[]} parts */
+function addStatic(g, parts) {
+  const mesh = new THREE.Mesh(mergeGeometries(parts), STATIC_MATERIAL);
+  g.add(mesh);
+  return mesh;
+}
+
+const FRESH_COLORS = { fresh: COLORS.nominal, soon: COLORS.warning, urgent: COLORS.critical };
+
+/** Crate colour per raw item in the pantry. */
+const CROP_COLORS = /** @type {Record<string, string>} */ ({
+  lettuce: '#5fbf4a', tomato: '#d9472b', soybean: '#c9b25a', quinoa: '#d8c89a',
+  carrot: '#e8862a', sweet_potato: '#9a4f6a', spirulina: '#2f8f6f',
+});
+
+/** Wrapper colour per recipe (bars in the dispenser + panel). */
+const RECIPE_COLORS = /** @type {Record<string, string>} */ ({
+  bar_energy: '#e0a030', bar_protein: '#4fa3d8', ration_fresh: '#6fcf5a', bar_single: '#c8b48a',
+});
+
 /** @type {Record<string, (g: THREE.Group, station: any, kit: import('../../ui/StationKit.js').StationKit) => void>} */
 export const builders = {
-  /** Bench with 4 trays: soil (moisture colour), crop plant, panel, seed + sow/harvest buttons. */
+  /**
+   * Growing bench: 4 soilless channels (rockwool cubes, water sight tube with the good zone in green),
+   * nutrient pipes, LED grow lights, one pictogram panel + one action button per channel, and the seed kiosk.
+   */
   hydro_racks(g, station, kit) {
     const { t, game, sim } = kit;
     const cfg = game.data.balance.food;
     const cropIds = cfg.crops.map((/** @type {any} */ c) => c.id);
+    const hours = cfg.crops.map((/** @type {any} */ c) => c.growthHours);
+    const kcals = cfg.crops.map((/** @type {any} */ c) => c.kcal);
+    const floorY = -station.y;
     const benchTop = 0.9 - station.y;
+    const plantY = benchTop + 0.135;
+    const gaugeY = benchTop + 0.1;
+    const ledY = benchTop + 1.5;
     kit.addBox(g, 3.2, 0.9, 0.55, 0, 0.45 - station.y, TRAY_Z, '#5b5f52');
 
-    // Soil of the 4 trays: one instanced mesh, colour per instance (1 draw call).
-    const soil = new THREE.InstancedMesh(new THREE.BoxGeometry(TRAY_W - 0.06, 0.05, TRAY_D - 0.04), new THREE.MeshLambertMaterial(), 4);
-    const rims = new THREE.InstancedMesh(new THREE.BoxGeometry(TRAY_W, 0.07, TRAY_D), kit.lambert('#c9d1d9'), 4);
+    // ---- Static hardware: channels, rockwool cubes, sight-tube plates, pipes, pump, light fixture (1 draw call) ----
+    /** @type {THREE.BufferGeometry[]} */
+    const parts = [];
+    for (const x of TRAY_XS) {
+      parts.push(pbox(TRAY_W, 0.09, TRAY_D, x, benchTop + 0.045, TRAY_Z, '#e8edf0'));
+      parts.push(pbox(TRAY_W - 0.06, 0.012, TRAY_D - 0.06, x, benchTop + 0.096, TRAY_Z, '#c4ccd2'));
+      for (const dz of [-0.1, 0.1]) {
+        for (const dx of [-0.2, 0, 0.2]) parts.push(pbox(0.075, 0.04, 0.075, x + dx, benchTop + 0.115, TRAY_Z + dz, '#b9a36a'));
+      }
+      // Sight tube back plate + the good zone in green.
+      const gx = x - 0.31;
+      parts.push(pbox(0.05, GAUGE_H + 0.02, 0.008, gx, gaugeY + GAUGE_H / 2, TRAY_Z + 0.17, '#20272e'));
+      parts.push(pbox(0.05, GAUGE_H * (cfg.floodAt - cfg.dryAt), 0.006, gx, gaugeY + (GAUGE_H * (cfg.dryAt + cfg.floodAt)) / 2, TRAY_Z + 0.176, '#2f8f4f'));
+      // Feed stub from the manifold into the channel.
+      parts.push(pcyl(0.012, 0.1, x, benchTop + 0.14, TRAY_Z - 0.2, '#6fae7a'));
+    }
+    parts.push(pcyl(0.02, 3.2, 0, benchTop + 0.19, TRAY_Z - 0.2, '#6fae7a', true)); // nutrient manifold
+    parts.push(pcyl(0.022, 0.9, -1.64, floorY + 0.45, TRAY_Z + 0.1, '#6fae7a')); // return to the pump
+    parts.push(pbox(0.24, 0.26, 0.3, -1.78, floorY + 0.13, TRAY_Z + 0.1, '#3f5a6a')); // pump
+    parts.push(pbox(0.04, 1.5, 0.04, -1.58, benchTop + 0.75, TRAY_Z - 0.2, '#4a525a'));
+    parts.push(pbox(0.04, 1.5, 0.04, 1.58, benchTop + 0.75, TRAY_Z - 0.2, '#4a525a'));
+    parts.push(pbox(3.2, 0.05, 0.32, 0, ledY, TRAY_Z - 0.06, '#3a4048')); // light housing
+    addStatic(g, parts);
+
+    // ---- LED grow lights: pink (red + blue LEDs) when lit, dark at night or without power ----
+    const ledMat = new THREE.MeshBasicMaterial({ color: '#2a1a2a', toneMapped: false });
+    const leds = new THREE.Mesh(new THREE.BoxGeometry(3.0, 0.012, 0.24), ledMat);
+    leds.position.set(0, ledY - 0.03, TRAY_Z - 0.06);
+    g.add(leds);
+
+    // ---- Water level in each sight tube (instanced, colour per state) ----
+    const level = new THREE.InstancedMesh(
+      new THREE.CylinderGeometry(0.013, 0.013, GAUGE_H, 8).translate(0, GAUGE_H / 2, 0),
+      new THREE.MeshBasicMaterial({ toneMapped: false }),
+      4,
+    );
     const tmp = new THREE.Object3D();
     const color = new THREE.Color();
     TRAY_XS.forEach((x, i) => {
-      tmp.position.set(x, benchTop + 0.035, TRAY_Z);
+      tmp.position.set(x - 0.31, gaugeY, TRAY_Z + 0.19);
       tmp.updateMatrix();
-      rims.setMatrixAt(i, tmp.matrix);
-      tmp.position.y = benchTop + 0.05;
-      tmp.updateMatrix();
-      soil.setMatrixAt(i, tmp.matrix);
-      soil.setColorAt(i, color.setRGB(0.4, 0.3, 0.2));
+      level.setMatrixAt(i, tmp.matrix);
+      level.setColorAt(i, color.set('#6fc3ff'));
     });
-    g.add(rims, soil);
+    g.add(level);
 
+    // ---- Seed kiosk (one seed choice for the whole bench) ----
+    const KIOSK_X = -2.02;
+    let seed = cropIds[0];
+    const kiosk = new Panel(0.46, 0.46, { pxPerMeter: 560 });
+    kiosk.mesh.position.set(KIOSK_X, 0.1, 0.01);
+    g.add(kiosk.mesh);
+    kit.addButton(g, { width: 0.3, height: 0.08, label: t('hydro.btn.seed'), color: BUTTON.info, onSelect: () => {
+      seed = nextSeed(cropIds, seed);
+    } }, KIOSK_X, -0.2);
+    const dots = (/** @type {number[]} */ all, /** @type {number} */ v) => {
+      const min = Math.min(...all);
+      const max = Math.max(...all);
+      return 1 + Math.round((4 * (v - min)) / Math.max(1, max - min));
+    };
+
+    // ---- Channels: plant, hose target, panel, action button ----
     const trays = TRAY_XS.map((x, i) => {
       const trayId = cfg.trays[i].id;
       const material = new THREE.MeshLambertMaterial({ vertexColors: true });
-      const plant = new THREE.Mesh(cropGeometry('lettuce'), material);
-      plant.position.set(x, benchTop + 0.075, TRAY_Z);
+      const plant = new THREE.Mesh(cropGeometry('lettuce', 'sprout'), material);
+      plant.position.set(x, plantY, TRAY_Z);
       plant.visible = false;
       g.add(plant);
-      // Invisible aim volume for the hose (soil + plant), never in the ray-interactive list.
+      // Invisible aim volume for the hose (channel + plant), never in the ray-interactive list.
       const target = new THREE.Mesh(new THREE.BoxGeometry(TRAY_W, 0.5, TRAY_D), new THREE.MeshBasicMaterial());
       target.position.set(x, benchTop + 0.25, TRAY_Z);
       target.visible = false;
@@ -71,86 +162,146 @@ export const builders = {
       panel.mesh.position.set(x, 0.42, 0.01);
       g.add(panel.mesh);
 
-      const view = { trayId, seed: cropIds[0], plant, material, panel, lastCrop: '', lastScale: -1 };
-      const seedBtn = kit.addButton(g, { width: 0.32, height: 0.08, label: '', onSelect: () => {
-        const tray = sim().food.tray(trayId);
-        if (tray && !tray.cropId) view.seed = nextSeed(cropIds, view.seed);
-      } }, x - 0.17, benchTop - 0.1);
-      const actionBtn = kit.addButton(g, { width: 0.3, height: 0.08, label: '', onSelect: () => {
+      const actionBtn = kit.addButton(g, { width: 0.34, height: 0.09, label: '', onSelect: () => {
         const tray = sim().food.tray(trayId);
         if (!tray) return;
-        if (!tray.cropId) game.intent('hydro:sow', { trayId, cropId: view.seed });
+        if (!tray.cropId) game.intent('hydro:sow', { trayId, cropId: seed });
         else if (tray.ready) game.intent('food:harvest', { trayId });
-      } }, x + 0.17, benchTop - 0.1);
-      // Buttons on the front lip of the bench.
-      for (const b of [seedBtn, actionBtn]) b.mesh.parent?.position.setZ(TRAY_Z + 0.29);
-      return { ...view, seedBtn, actionBtn, index: i };
+      } }, x, benchTop - 0.1);
+      actionBtn.mesh.parent?.position.setZ(TRAY_Z + 0.29); // on the front lip of the bench
+      return { trayId, plant, material, panel, actionBtn, index: i, lastGeo: '', lastScale: -1 };
+    });
+
+    addInfo(g, kit, {
+      bx: KIOSK_X, by: -0.31, px: 0, py: 0.5, w: 2.2, h: 0.95,
+      title: () => t('hydro.info.racks.title'),
+      lines: () => {
+        const hydro = game.data.balance.circuits.hydro;
+        return [
+          { text: t('hydro.info.racks.1'), size: 0.8 },
+          { text: t('hydro.info.racks.2', { dry: Math.round(cfg.dryAt * 100), flood: Math.round(cfg.floodAt * 100) }), size: 0.8 },
+          { text: t('hydro.info.racks.3', { start: hydro.activeStartHour, end: hydro.activeEndHour }), size: 0.8 },
+          { text: t('hydro.info.racks.4', { co2: cfg.photosynthesis?.co2PerTrayHour ?? 0 }), color: COLORS.info, size: 0.8 },
+          { text: t('hydro.info.racks.5'), size: 0.8 },
+          { text: t('hydro.info.general'), color: COLORS.dim, size: 0.65 },
+        ];
+      },
     });
 
     kit.onRefresh(() => {
-      const f = sim().food;
+      const s = sim();
+      const f = s.food;
       const crops = f.crops;
+      const powered = Boolean(s.power.served.hydro);
+      ledMat.color.set(f.lightsOn ? '#ff5fd0' : '#2a1a2a');
+
+      // Seed kiosk.
+      const sc = crops[seed];
+      const seedName = t(`real.crop.${seed}`);
+      const timeDots = dots(hours, sc.growthHours);
+      const foodDots = dots(kcals, sc.kcal);
+      kiosk.renderCustom(`seed|${seed}`, (ctx, w, h) => {
+        icon.frame(ctx, w, h, COLORS.info);
+        icon.text(ctx, t('hydro.seed.title'), w / 2, h * 0.1, { size: h * 0.1, color: COLORS.title, bold: true, align: 'center' });
+        icon.cropIcon(ctx, seed, w / 2, h * 0.38, h * 0.2, COLORS.info);
+        icon.text(ctx, seedName, w / 2, h * 0.66, { size: h * 0.11, bold: true, align: 'center', maxWidth: w * 0.9 });
+        /** @param {string} label @param {number} n @param {number} y @param {string} c */
+        const row = (label, n, y, c) => {
+          icon.text(ctx, label, w * 0.08, y, { size: h * 0.075, color: COLORS.dim });
+          for (let k = 0; k < 5; k++) {
+            ctx.beginPath();
+            ctx.arc(w * 0.5 + k * w * 0.095, y, h * 0.03, 0, Math.PI * 2);
+            ctx.fillStyle = k < n ? c : '#26303a';
+            ctx.fill();
+          }
+        };
+        row(t('hydro.seed.time'), timeDots, h * 0.79, COLORS.warning);
+        row(t('hydro.seed.food'), foodDots, h * 0.9, COLORS.nominal);
+      });
+
       trays.forEach((v) => {
         const tray = f.tray(v.trayId);
         if (!tray) return;
         const state = moistureState(tray.moisture, cfg);
-        const [r, gg, b] = soilColor(tray.moisture, cfg);
-        soil.setColorAt(v.index, color.setRGB(r, gg, b));
+
+        // Sight tube.
+        tmp.position.set(TRAY_XS[v.index] - 0.31, gaugeY, TRAY_Z + 0.19);
+        tmp.scale.set(1, Math.max(0.04, Math.min(1, tray.moisture)), 1);
+        tmp.updateMatrix();
+        level.setMatrixAt(v.index, tmp.matrix);
+        level.setColorAt(v.index, color.set(state === 'ok' ? '#6fc3ff' : state === 'dry' ? '#ffbf3f' : '#ff6b5c'));
 
         const title = t('hydro.tray.title', { n: v.index + 1 });
-        /** @type {{ text: string, color?: string, size?: number }[]} */
-        const lines = [];
         if (!tray.cropId) {
-          const seed = crops[v.seed];
-          lines.push({ text: t('hydro.tray.empty'), color: COLORS.dim, size: 0.85 });
-          lines.push({ text: t('hydro.tray.seed', { name: t(`real.crop.${seed.id}`), hours: seed.growthHours, kcal: seed.kcal }), color: COLORS.info, size: 0.85 });
-          v.seedBtn.setState(t('hydro.btn.seed'), BUTTON.info);
-          v.actionBtn.setState(t('hydro.btn.sow'), BUTTON.on);
-        } else {
-          const crop = crops[tray.cropId];
-          const name = t(`real.crop.${crop.id}`);
-          if (tray.ready) {
-            lines.push({ text: t('hydro.tray.ready', { name, hours: (cfg.spoilAfterReadyHours - tray.readyHours).toFixed(1) }), color: COLORS.warning, size: 0.9 });
-            lines.push({ text: t('hydro.tray.to_pantry'), color: COLORS.dim, size: 0.75 });
-          } else {
-            lines.push({ text: t('hydro.tray.growing', { name, pct: Math.floor((100 * tray.growthHours) / crop.growthHours) }), size: 0.9 });
-          }
-          lines.push({
-            text: t('hydro.tray.moisture', { bar: moistureBar(tray.moisture), pct: Math.round(tray.moisture * 100) }),
-            color: state === 'ok' ? COLORS.nominal : state === 'dry' ? COLORS.warning : COLORS.info,
-            size: 0.85,
+          v.panel.renderCustom(`empty|${title}`, (ctx, w, h) => {
+            icon.frame(ctx, w, h);
+            icon.sprout(ctx, h * 0.38, h * 0.5, h * 0.24, COLORS.dim);
+            icon.text(ctx, title, h * 0.8, h * 0.2, { size: h * 0.12, color: COLORS.title, bold: true });
+            icon.text(ctx, t('hydro.tray.empty_title'), h * 0.8, h * 0.48, { size: h * 0.19, color: COLORS.dim, bold: true, maxWidth: w - h * 0.9 });
+            icon.text(ctx, t('hydro.tray.empty_hint'), h * 0.8, h * 0.76, { size: h * 0.15, color: COLORS.info, maxWidth: w - h * 0.9 });
           });
-          const problem = !sim().power.served.hydro ? 'hydro.tray.dark' : state === 'dry' ? 'hydro.tray.dry' : state === 'flooded' ? 'hydro.tray.flooded' : null;
-          if (problem && !tray.ready) {
-            const left = Math.max(0, cfg.spoilWithoutCareHours - tray.neglectHours).toFixed(1);
-            lines.push({ text: t(problem, { hours: left }), color: COLORS.critical, size: 0.8 });
-          }
-          v.seedBtn.setState(t('hydro.btn.seed_locked'), BUTTON.off);
-          v.actionBtn.setState(t('hydro.btn.harvest'), tray.ready ? BUTTON.warn : BUTTON.off);
+          v.actionBtn.setState(t('hydro.btn.sow'), BUTTON.on);
+          v.plant.visible = false;
+          v.lastGeo = '';
+          return;
         }
-        if (hydroState.watering === v.trayId) lines.push({ text: t('hydro.tray.watering'), color: COLORS.info, size: 0.8 });
-        v.panel.renderLines(title, lines, { border: tray.ready ? COLORS.warning : tray.cropId && state !== 'ok' ? COLORS.critical : COLORS.border });
 
-        // Plant: crop shape, size by growth, yellowish and drooping when neglected.
-        v.plant.visible = Boolean(tray.cropId);
-        if (tray.cropId && tray.cropId !== v.lastCrop) v.plant.geometry = cropGeometry(tray.cropId);
-        v.lastCrop = tray.cropId ?? '';
-        if (tray.cropId) {
-          const growth = Math.min(1, tray.growthHours / crops[tray.cropId].growthHours);
-          const scale = tray.ready ? 1.05 : 0.25 + 0.75 * growth;
-          if (Math.abs(scale - v.lastScale) > 0.005) {
-            v.lastScale = scale;
-            v.plant.scale.set(scale, scale, scale);
-          }
-          v.material.color.set(tray.neglectHours > 0 ? '#d8c27a' : '#ffffff');
-          v.plant.rotation.z = tray.neglectHours > 0 && state === 'dry' ? 0.12 : 0;
+        const crop = crops[tray.cropId];
+        const name = t(`real.crop.${crop.id}`);
+        const growth = tray.ready ? 1 : Math.min(1, tray.growthHours / crop.growthHours);
+        const hungry = f.growthFactor < 1;
+        /** @type {[string, string]} */
+        const [msgKey, msgColor] = tray.ready ? ['hydro.msg.ready', COLORS.warning]
+          : !powered ? ['hydro.msg.dark', COLORS.critical]
+          : state === 'dry' ? ['hydro.msg.dry', COLORS.critical]
+          : state === 'flooded' ? ['hydro.msg.flooded', COLORS.critical]
+          : hydroState.watering === v.trayId ? ['hydro.msg.watering', COLORS.info]
+          : hungry ? ['hydro.msg.hungry', COLORS.warning]
+          : ['hydro.msg.ok', COLORS.nominal];
+        const border = tray.ready ? COLORS.warning : msgColor === COLORS.critical ? COLORS.critical : COLORS.border;
+        const key = [crop.id, Math.round(growth * 50), Math.round(tray.moisture * 50), msgKey, f.lightsOn].join('|');
+        v.panel.renderCustom(key, (ctx, w, h) => {
+          icon.frame(ctx, w, h, border);
+          const r = h * 0.26;
+          const pad = h * 0.09;
+          icon.cropIcon(ctx, crop.id, pad + r, h * 0.38, r, border);
+          const x0 = pad * 2 + r * 2;
+          const rw = w - x0 - pad;
+          icon.text(ctx, name, x0, h * 0.16, { size: h * 0.16, bold: true, maxWidth: rw - h * 0.22 });
+          icon.lightIcon(ctx, w - pad - h * 0.08, h * 0.16, h * 0.08, f.lightsOn);
+          icon.sprout(ctx, x0 + h * 0.06, h * 0.38, h * 0.07);
+          icon.bar(ctx, x0 + h * 0.17, h * 0.33, rw - h * 0.17, h * 0.1, growth, tray.ready ? COLORS.warning : COLORS.nominal);
+          icon.drop(ctx, x0 + h * 0.06, h * 0.59, h * 0.12);
+          icon.waterGauge(ctx, x0 + h * 0.17, h * 0.53, rw - h * 0.17, h * 0.1, tray.moisture, cfg);
+          icon.text(ctx, t(msgKey), pad, h * 0.83, { size: h * 0.16, color: msgColor, bold: true, maxWidth: w - pad * 2 });
+        });
+        v.actionBtn.setState(t(tray.ready ? 'hydro.btn.harvest' : 'hydro.btn.growing'), tray.ready ? BUTTON.warn : BUTTON.off);
+
+        // Plant model: sprout → young → mature; yellowish and drooping when it needs care.
+        const stage = tray.ready ? 'mature' : plantStage(growth);
+        const geoKey = `${crop.id}:${stage}`;
+        if (geoKey !== v.lastGeo) {
+          v.plant.geometry = cropGeometry(crop.id, stage);
+          v.lastGeo = geoKey;
         }
+        v.plant.visible = true;
+        const scale = tray.ready ? 1.05
+          : stage === 'sprout' ? 1 + growth * 2
+          : stage === 'young' ? 0.5 + (0.5 * (growth - 0.15)) / 0.55
+          : 0.85 + (0.15 * (growth - 0.7)) / 0.3;
+        if (Math.abs(scale - v.lastScale) > 0.005) {
+          v.lastScale = scale;
+          v.plant.scale.setScalar(scale);
+        }
+        v.material.color.set(tray.neglectHours > 0 ? '#d8c27a' : hungry ? '#dfe8b0' : '#ffffff');
+        v.plant.rotation.z = tray.neglectHours > 0 && state === 'dry' ? 0.12 : 0;
       });
-      if (soil.instanceColor) soil.instanceColor.needsUpdate = true;
+      level.instanceMatrix.needsUpdate = true;
+      if (level.instanceColor) level.instanceColor.needsUpdate = true;
     });
   },
 
-  /** Hose reel with a grabbable nozzle: hold the trigger (F on desktop) and aim at a tray to water it. */
+  /** Hose reel with a grabbable nozzle: hold the trigger (F on desktop) and aim at a channel to water it. */
   hydro_hose(g, _station, kit) {
     const { t, game } = kit;
     const { scene } = kit.services;
@@ -164,7 +315,7 @@ export const builders = {
     g.add(reel, hub);
     const panel = kit.addPanel(g, 0.62, 0.3, 0, 0.42);
     panel.renderLines(t('hydro.hose.title'), [
-      { text: t('hydro.hose.hint'), size: 0.8 },
+      { text: t('hydro.hose.hint'), size: 0.85 },
       { text: t('hydro.hose.desktop'), color: COLORS.dim, size: 0.7 },
     ]);
 
@@ -321,72 +472,193 @@ export const builders = {
       bubbleGeo.attributes.position.needsUpdate = true;
     });
 
-    const panel = kit.addPanel(g, 0.66, 0.46, 0.62, 0.05);
-    const harvest = kit.addButton(g, { width: 0.4, height: 0.09, label: t('hydro.btn.bio_harvest'),
-      onSelect: () => game.intent('food:harvest', { trayId: 'bioreactor' }) }, 0.62, -0.28);
+    const panel = new Panel(0.66, 0.4, { pxPerMeter: 560 });
+    panel.mesh.position.set(0.66, 0.1, 0);
+    g.add(panel.mesh);
+    const harvest = kit.addButton(g, { width: 0.3, height: 0.09, label: t('hydro.btn.harvest'),
+      onSelect: () => game.intent('food:harvest', { trayId: 'bioreactor' }) }, 0.56, -0.2);
+    addInfo(g, kit, {
+      bx: 0.84, by: -0.2, px: 0.66, py: 0.42, w: 0.9, h: 0.6,
+      title: () => t('hydro.info.bio.title'),
+      lines: () => {
+        const bio = sim().food.bioreactor;
+        return [
+          { text: t('hydro.info.bio.1', { pct: Math.floor((100 * bio.growthHours) / bioCfg.growthHours), hours: bioCfg.growthHours, kcal: bioCfg.kcal }), size: 0.8 },
+          { text: t('hydro.bio.o2', { o2: bio.o2Total.toFixed(1) }), color: COLORS.info, size: 0.8 },
+          { text: t('hydro.bio.fact'), size: 0.78 },
+          { text: t('hydro.bio.source'), color: COLORS.dim, size: 0.65 },
+        ];
+      },
+    });
     kit.onRefresh(() => {
       const f = sim().food;
       const bio = f.bioreactor;
-      /** @type {{ text: string, color?: string, size?: number }[]} */
-      const lines = [];
-      if (bio.ready) lines.push({ text: t('hydro.bio.ready', { kcal: bioCfg.kcal }), color: COLORS.warning, size: 0.9 });
-      else lines.push({ text: t('hydro.bio.growing', { pct: Math.floor((100 * bio.growthHours) / bioCfg.growthHours) }), size: 0.9 });
-      if (!f.lightsOn) lines.push({ text: t('hydro.bio.dark'), color: COLORS.dim, size: 0.8 });
-      lines.push({ text: t('hydro.bio.o2', { o2: bio.o2Total.toFixed(1) }), color: COLORS.info, size: 0.8 });
-      lines.push({ text: t('hydro.bio.fact'), size: 0.72 });
-      lines.push({ text: t('hydro.bio.source'), color: COLORS.dim, size: 0.65 });
-      panel.renderLines(t('hydro.bio.title'), lines, { border: bio.ready ? COLORS.warning : COLORS.border });
-      harvest.setState(t('hydro.btn.bio_harvest'), bio.ready ? BUTTON.warn : BUTTON.off);
+      const pct = bio.ready ? 1 : bio.growthHours / bioCfg.growthHours;
+      /** @type {[string, string]} */
+      const [msgKey, msgColor] = bio.ready ? ['hydro.bio.msg_ready', COLORS.warning]
+        : !f.lightsOn ? ['hydro.bio.msg_dark', COLORS.dim]
+        : ['hydro.bio.msg_ok', COLORS.nominal];
+      const border = bio.ready ? COLORS.warning : COLORS.border;
+      panel.renderCustom([Math.round(pct * 50), msgKey, f.lightsOn].join('|'), (ctx, w, h) => {
+        icon.frame(ctx, w, h, border);
+        const r = h * 0.24;
+        const pad = h * 0.09;
+        icon.cropIcon(ctx, 'spirulina', pad + r, h * 0.4, r, border);
+        const x0 = pad * 2 + r * 2;
+        const rw = w - x0 - pad;
+        icon.text(ctx, t('hydro.bio.title'), x0, h * 0.2, { size: h * 0.13, color: COLORS.title, bold: true, maxWidth: rw - h * 0.2 });
+        icon.lightIcon(ctx, w - pad - h * 0.07, h * 0.2, h * 0.07, f.lightsOn);
+        icon.bar(ctx, x0, h * 0.42, rw, h * 0.11, pct, bio.ready ? COLORS.warning : COLORS.nominal);
+        icon.text(ctx, t(msgKey), pad, h * 0.82, { size: h * 0.14, color: msgColor, bold: true, maxWidth: w - pad * 2 });
+      });
+      harvest.setState(t('hydro.btn.harvest'), bio.ready ? BUTTON.warn : BUTTON.off);
     });
   },
 
+  /** Water tank + nutrient solution reservoir («Nutrientes +» uses one cartridge). */
   hydro_water(g, station, kit) {
-    const { t, sim } = kit;
+    const { t, game, sim } = kit;
+    const cfg = game.data.balance.food;
+    const nut = cfg.nutrients;
+    const floorY = -station.y;
     kit.addCylinder(g, 0.4, 1.8, 0.9, 0.9 - station.y, 0.45, '#4f7f8f');
-    const panel = kit.addPanel(g, 0.6, 0.32);
+    // Nutrient reservoir with a level window.
+    kit.addBox(g, 0.44, 0.7, 0.4, -0.72, floorY + 0.35, 0.26, '#6a5a86');
+    addStatic(g, [
+      pbox(0.1, 0.52, 0.01, -0.72, floorY + 0.36, 0.465, '#1b232c'),
+      pcyl(0.02, 0.5, -0.72, floorY + 0.95, 0.2, '#6fae7a'),
+      pbox(0.16, 0.06, 0.16, -0.72, floorY + 0.73, 0.26, '#c9d1d9'),
+    ]);
+    const levelMat = new THREE.MeshBasicMaterial({ color: '#b77fe0', toneMapped: false });
+    const level = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.5, 0.006).translate(0, 0.25, 0), levelMat);
+    level.position.set(-0.72, floorY + 0.11, 0.473);
+    g.add(level);
+
+    const panel = new Panel(0.74, 0.4, { pxPerMeter: 560 });
+    panel.mesh.position.set(0, 0.04, 0);
+    g.add(panel.mesh);
+    const feed = kit.addButton(g, { width: 0.34, height: 0.09, label: t('hydro.btn.feed'),
+      onSelect: () => game.intent('hydro:feed', {}) }, -0.1, -0.27);
+    addInfo(g, kit, {
+      bx: 0.22, by: -0.27, px: 0, py: 0.42, w: 1.2, h: 0.8,
+      title: () => t('hydro.info.tank.title'),
+      lines: () => {
+        const f = sim().food;
+        return [
+          { text: t('hydro.info.tank.1'), size: 0.8 },
+          { text: t('hydro.info.tank.2'), size: 0.8 },
+          { text: t('hydro.info.tank.3', {
+            level: Math.round(f.nutrients * 100), low: Math.round((nut?.lowAt ?? 0) * 100),
+            step: Math.round((nut?.perCartridge ?? 0) * 100), count: f.cartridges,
+          }), color: COLORS.info, size: 0.8 },
+          { text: t('hydro.info.tank.4', { condensate: Math.round(game.data.balance.water.hydroCondensateFraction * 100) }), size: 0.8 },
+          { text: t('hydro.info.general'), color: COLORS.dim, size: 0.65 },
+        ];
+      },
+    });
     kit.onRefresh(() => {
       const s = sim();
+      const f = s.food;
       const w = s.resources.get('water');
-      const recycler = s.lifeSupport.recyclerStuck ? 'ui.state.unpowered' : s.power.served.lifeSupport ? 'ui.state.ok' : 'ui.state.unpowered';
-      panel.renderLines(t('ui.water.title'), [
-        { text: `${w.value.toFixed(1)} L   ${t(`ui.status.${w.status}`)}`, color: statusColor(w.status), size: 1.2 },
-        t('ui.water.recycler', { state: t(recycler) }),
-      ]);
+      const low = Boolean(nut) && f.nutrients < nut.lowAt;
+      const recyclerOk = !s.lifeSupport.recyclerStuck && s.power.served.lifeSupport;
+      const recycler = t('ui.water.recycler', { state: t(recyclerOk ? 'ui.state.ok' : 'ui.state.unpowered') });
+      level.scale.y = Math.max(0.02, f.nutrients);
+      levelMat.color.set(low ? '#ffbf3f' : '#b77fe0');
+      const key = [Math.round(w.value * 2), w.status, Math.round(f.nutrients * 50), f.cartridges, low, recycler].join('|');
+      panel.renderCustom(key, (ctx, W, H) => {
+        icon.frame(ctx, W, H, low ? COLORS.warning : COLORS.border);
+        const pad = H * 0.1;
+        const colW = (W - pad * 3) / 2;
+        // Water.
+        icon.drop(ctx, pad + H * 0.1, H * 0.22, H * 0.2);
+        icon.text(ctx, t('hydro.tank.water'), pad + H * 0.24, H * 0.2, { size: H * 0.13, color: COLORS.title, bold: true, maxWidth: colW - H * 0.24 });
+        icon.bar(ctx, pad, H * 0.38, colW, H * 0.11, w.value / w.max, statusColor(w.status));
+        icon.text(ctx, t('hydro.tank.liters', { liters: w.value.toFixed(0) }), pad, H * 0.62, { size: H * 0.14, color: statusColor(w.status), bold: true });
+        // Nutrients.
+        const x1 = pad * 2 + colW;
+        icon.flask(ctx, x1 + H * 0.09, H * 0.2, H * 0.24, f.nutrients, low ? '#ffbf3f' : '#b77fe0');
+        icon.text(ctx, t('hydro.tank.nutrients'), x1 + H * 0.24, H * 0.2, { size: H * 0.13, color: COLORS.title, bold: true, maxWidth: colW - H * 0.24 });
+        icon.bar(ctx, x1, H * 0.38, colW, H * 0.11, f.nutrients, low ? COLORS.warning : '#b77fe0');
+        icon.text(ctx, low ? t('hydro.tank.low') : t('hydro.tank.cartridges', { count: f.cartridges }), x1, H * 0.62,
+          { size: H * 0.13, color: low ? COLORS.warning : COLORS.text, bold: low, maxWidth: colW });
+        icon.text(ctx, recycler, pad, H * 0.86, { size: H * 0.1, color: recyclerOk ? COLORS.dim : COLORS.warning, maxWidth: W - pad * 2 });
+      });
+      feed.setState(t('hydro.btn.feed'), f.cartridges > 0 ? (low ? BUTTON.warn : BUTTON.on) : BUTTON.off);
     });
   },
 
-  /** Real crop cycles (CSA) vs compressed game time, plus quinoa and spirulina (NASA NTRS). */
+  /**
+   * Wall guide: 4 pictogram steps (sow → water → harvest → make bars); the one to do now lights up.
+   * Its «Info» sheet keeps the real crop cycles (CSA) and the NASA quinoa / spirulina facts.
+   */
   hydro_cropguide(g, _station, kit) {
-    const { t, sim } = kit;
-    const csa = kit.game.data.real?.csa_food;
-    const nasa = kit.game.data.real?.bioregen_crops;
-    const panel = kit.addPanel(g, 1.05, 0.8);
-    if (!csa) {
-      panel.renderLines(t('hydro.guide.title'), [{ text: t('hydro.guide.no_data'), color: COLORS.warning }]);
-      return;
-    }
+    const { t, game, sim } = kit;
+    const cfg = game.data.balance.food;
+    const csa = game.data.real?.csa_food;
+    const nasa = game.data.real?.bioregen_crops;
+    const panel = new Panel(1.05, 0.8, { pxPerMeter: 520 });
+    g.add(panel.mesh);
+    /** @type {['sow' | 'water' | 'harvest' | 'cook', (ctx: CanvasRenderingContext2D, cx: number, cy: number, r: number) => void][]} */
+    const steps = [
+      ['sow', (ctx, cx, cy, r) => icon.sprout(ctx, cx, cy, r)],
+      ['water', (ctx, cx, cy, r) => icon.drop(ctx, cx, cy + r * 0.2, r * 1.5)],
+      ['harvest', (ctx, cx, cy, r) => icon.cropIcon(ctx, 'tomato', cx, cy, r)],
+      ['cook', (ctx, cx, cy, r) => icon.foodBar(ctx, cx, cy, r * 2.2)],
+    ];
     kit.onRefresh(() => {
       const s = sim();
-      const kcalPerDay = Math.round((s.balance.food.consumptionPerHour * 24) / 100) * 100;
-      const game = s.food.crops;
-      panel.renderLines(t('hydro.guide.title'), [
-        ...csa.crops.items.map((/** @type {any} */ c) => ({
-          text: game[c.id]
-            ? t('hydro.guide.crop_game', { name: t(c.nameKey), min: c.daysMin, max: c.daysMax, hours: game[c.id].growthHours })
-            : t('hydro.guide.crop', { name: t(c.nameKey), min: c.daysMin, max: c.daysMax }),
-          color: game[c.id] ? COLORS.nominal : COLORS.dim,
-          size: 0.78,
-        })),
-        ...(nasa
-          ? [
-              { text: t('hydro.guide.quinoa', { min: nasa.quinoa.proteinPctMin, max: nasa.quinoa.proteinPctMax, hours: game.quinoa?.growthHours ?? '—' }), color: COLORS.nominal, size: 0.78 },
-              { text: t('hydro.guide.spirulina', { pct: nasa.spirulina.proteinPctUpTo }), color: COLORS.nominal, size: 0.78 },
-            ]
-          : []),
-        { text: t('hydro.guide.compressed'), color: COLORS.dim, size: 0.7 },
-        { text: t('hydro.guide.diet', { min: csa.crewDiet.kcalPerDayMin, max: csa.crewDiet.kcalPerDayMax, game: kcalPerDay }), size: 0.75 },
-        { text: t('hydro.guide.source', { date: formatDay(csa.source.retrievedAt) }), color: COLORS.dim, size: 0.65 },
-      ]);
+      const now = currentStep(s.food, s.kitchen, cfg);
+      const hungry = s.food.growthFactor < 1;
+      panel.renderCustom(`${now}|${hungry}`, (ctx, w, h) => {
+        icon.frame(ctx, w, h, COLORS.info);
+        icon.text(ctx, t('hydro.steps.title'), w / 2, h * 0.09, { size: h * 0.085, color: COLORS.title, bold: true, align: 'center', maxWidth: w * 0.9 });
+        const pad = w * 0.04;
+        const tw = (w - pad * 3) / 2;
+        const th = h * 0.3;
+        steps.forEach(([id, draw], i) => {
+          const x = pad + (i % 2) * (tw + pad);
+          const y = h * 0.17 + Math.floor(i / 2) * (th + pad * 0.7);
+          const active = id === now;
+          icon.tile(ctx, x, y, tw, th, active ? '#1f3a2a' : '#161d25', active ? COLORS.nominal : COLORS.border, active ? 7 : 3);
+          icon.badge(ctx, x + th * 0.24, y + th * 0.26, th * 0.16, String(i + 1), active ? COLORS.nominal : COLORS.dim);
+          draw(ctx, x + tw * 0.3, y + th * 0.6, th * 0.24);
+          icon.text(ctx, t(`hydro.steps.${id}`), x + tw * 0.52, y + th * 0.5, { size: th * 0.24, color: active ? COLORS.text : COLORS.dim, bold: active, maxWidth: tw * 0.45 });
+        });
+        const msg = hungry && now === 'wait' ? 'feed' : now;
+        icon.text(ctx, t(`hydro.steps.now.${msg}`), w / 2, h * 0.91, {
+          size: h * 0.075, color: msg === 'wait' ? COLORS.nominal : COLORS.warning, bold: true, align: 'center', maxWidth: w * 0.92,
+        });
+      });
+    });
+
+    addInfo(g, kit, {
+      bx: 0, by: -0.46, px: 0, py: 0, w: 1.05, h: 0.8,
+      title: () => t('hydro.info.guide.title'),
+      lines: () => {
+        if (!csa) return [{ text: t('hydro.guide.no_data'), color: COLORS.warning }];
+        const s = sim();
+        const kcalPerDay = Math.round((s.balance.food.consumptionPerHour * 24) / 100) * 100;
+        const crops = s.food.crops;
+        return [
+          ...csa.crops.items.map((/** @type {any} */ c) => ({
+            text: crops[c.id]
+              ? t('hydro.guide.crop_game', { name: t(c.nameKey), min: c.daysMin, max: c.daysMax, hours: crops[c.id].growthHours })
+              : t('hydro.guide.crop', { name: t(c.nameKey), min: c.daysMin, max: c.daysMax }),
+            color: crops[c.id] ? COLORS.nominal : COLORS.dim,
+            size: 0.78,
+          })),
+          ...(nasa
+            ? [
+                { text: t('hydro.guide.quinoa', { min: nasa.quinoa.proteinPctMin, max: nasa.quinoa.proteinPctMax, hours: crops.quinoa?.growthHours ?? '—' }), color: COLORS.nominal, size: 0.78 },
+                { text: t('hydro.guide.spirulina', { pct: nasa.spirulina.proteinPctUpTo }), color: COLORS.nominal, size: 0.78 },
+              ]
+            : []),
+          { text: t('hydro.guide.compressed'), color: COLORS.dim, size: 0.7 },
+          { text: t('hydro.guide.diet', { min: csa.crewDiet.kcalPerDayMin, max: csa.crewDiet.kcalPerDayMax, game: kcalPerDay }), size: 0.75 },
+          { text: t('hydro.guide.source', { date: formatDay(csa.source.retrievedAt) }), color: COLORS.dim, size: 0.65 },
+        ];
+      },
     });
   },
 
@@ -402,12 +674,18 @@ export const builders = {
     });
   },
 
-  /** Pantry: raw harvest lots as crates on a cabinet (1 instanced draw call), freshness panel, «Comer crudo». */
+  /** Pantry: raw harvest as crates on a cabinet (1 instanced draw call), freshness traffic light, «Comer». */
   hydro_pantry(g, station, kit) {
     const { t, game, sim } = kit;
     const floorY = -station.y;
     const shelf = game.data.balance.kitchen.rawShelfHours;
     kit.addBox(g, 0.9, 1.1, 0.45, 0, floorY + 0.55, 0.26, '#6f7a80');
+    addStatic(g, [
+      pbox(0.92, 0.03, 0.47, 0, floorY + 1.115, 0.26, '#c9d1d9'),
+      pbox(0.86, 0.3, 0.02, 0, floorY + 1.28, 0.05, '#4a525a'),
+      pbox(0.03, 0.34, 0.45, -0.445, floorY + 1.28, 0.26, '#4a525a'),
+      pbox(0.03, 0.34, 0.45, 0.445, floorY + 1.28, 0.26, '#4a525a'),
+    ]);
     const COLS = 5;
     const ROWS = 2;
     const crates = new THREE.InstancedMesh(new THREE.BoxGeometry(0.15, 0.1, 0.17), new THREE.MeshLambertMaterial(), COLS * ROWS);
@@ -417,18 +695,37 @@ export const builders = {
     crates.count = 0;
     g.add(crates);
 
-    const panel = kit.addPanel(g, 0.74, 0.44, 0, 0.42);
-    const eat = kit.addButton(g, { width: 0.34, height: 0.08, label: t('hydro.btn.eat_raw'),
-      onSelect: () => game.intent('kitchen:eat', {}) }, 0, 0.1);
+    const panel = new Panel(0.74, 0.4, { pxPerMeter: 560 });
+    panel.mesh.position.set(0, 0.46, 0);
+    g.add(panel.mesh);
+    const eat = kit.addButton(g, { width: 0.3, height: 0.08, label: t('hydro.btn.eat_raw'),
+      onSelect: () => game.intent('kitchen:eat', {}) }, -0.1, 0.17);
+    addInfo(g, kit, {
+      bx: 0.2, by: 0.17, px: 0, py: 0.46, w: 0.9, h: 0.56,
+      title: () => t('hydro.info.pantry.title'),
+      lines: () => {
+        const k = sim().kitchen;
+        const lots = k ? freshnessLines(k.pantry, shelf) : [];
+        return [
+          { text: t('hydro.info.pantry.1', { hours: shelf }), size: 0.8 },
+          ...(lots.length
+            ? lots.map((l) => ({
+                text: t('hydro.pantry.line', { name: t(`real.crop.${l.itemId}`), count: l.count, hours: l.hoursLeft.toFixed(1) }),
+                color: FRESH_COLORS[freshnessLevel(l.hoursLeft, shelf)],
+                size: 0.8,
+              }))
+            : [{ text: t('hydro.info.pantry.none'), color: COLORS.dim, size: 0.8 }]),
+          { text: t('hydro.info.general'), color: COLORS.dim, size: 0.65 },
+        ];
+      },
+    });
     kit.onRefresh(() => {
       const k = sim().kitchen;
       if (!k) return;
       // Crates: one per lot (oldest first), colour per crop.
       const n = Math.min(k.pantry.length, COLS * ROWS);
       for (let i = 0; i < n; i++) {
-        const col = i % COLS;
-        const row = Math.floor(i / COLS);
-        tmp.position.set(-0.34 + col * 0.17, floorY + 1.15, 0.36 - row * 0.2);
+        tmp.position.set(-0.34 + (i % COLS) * 0.17, floorY + 1.18, 0.36 - Math.floor(i / COLS) * 0.2);
         tmp.updateMatrix();
         crates.setMatrixAt(i, tmp.matrix);
         crates.setColorAt(i, color.set(CROP_COLORS[k.pantry[i].itemId] ?? '#a0a0a0'));
@@ -437,45 +734,72 @@ export const builders = {
       crates.instanceMatrix.needsUpdate = true;
       if (crates.instanceColor) crates.instanceColor.needsUpdate = true;
 
-      /** @type {{ text: string, color?: string, size?: number }[]} */
-      const lines = [];
-      if (k.pantry.length === 0) lines.push({ text: t('hydro.pantry.empty'), color: COLORS.dim, size: 0.85 });
-      for (const l of freshnessLines(k.pantry, shelf)) {
-        lines.push({
-          text: t('hydro.pantry.line', { name: t(`real.crop.${l.itemId}`), count: l.count, hours: l.hoursLeft.toFixed(1) }),
-          color: l.hoursLeft < 6 ? COLORS.critical : l.hoursLeft < 12 ? COLORS.warning : COLORS.nominal,
-          size: 0.82,
+      const lots = k.pantry.slice(0, COLS * ROWS).map((/** @type {any} */ lot) =>
+        ({ itemId: lot.itemId, level: freshnessLevel(shelf - lot.ageHours, shelf) }));
+      const urgent = lots.some((/** @type {any} */ l) => l.level === 'urgent');
+      const msgKey = !lots.length ? 'hydro.pantry.msg_empty' : urgent ? 'hydro.pantry.msg_urgent' : 'hydro.pantry.msg_ok';
+      const msgColor = !lots.length ? COLORS.dim : urgent ? COLORS.critical : COLORS.nominal;
+      const key = `${lots.map((/** @type {any} */ l) => `${l.itemId}:${l.level}`).join(',')}|${msgKey}`;
+      panel.renderCustom(key, (ctx, w, h) => {
+        icon.frame(ctx, w, h, urgent ? COLORS.critical : COLORS.border);
+        icon.text(ctx, t('hydro.pantry.title'), h * 0.1, h * 0.13, { size: h * 0.13, color: COLORS.title, bold: true });
+        const r = h * 0.12;
+        lots.forEach((/** @type {any} */ l, i) => {
+          const cx = h * 0.1 + r + (i % COLS) * ((w - h * 0.2 - r * 2) / (COLS - 1));
+          icon.cropIcon(ctx, l.itemId, cx, h * 0.36 + Math.floor(i / COLS) * r * 2.3, r, FRESH_COLORS[/** @type {'fresh'} */ (l.level)]);
         });
-      }
-      lines.push({ text: t('hydro.pantry.stock', k.stock), color: COLORS.info, size: 0.75 });
-      lines.push({ text: t('hydro.pantry.hint'), color: COLORS.dim, size: 0.68 });
-      panel.renderLines(t('hydro.pantry.title'), lines);
+        icon.text(ctx, t(msgKey), h * 0.1, h * 0.87, { size: h * 0.13, color: msgColor, bold: true, maxWidth: w - h * 0.2 });
+      });
       eat.setState(t('hydro.btn.eat_raw'), k.pantry.length ? BUTTON.warn : BUTTON.off);
     });
   },
 
-  /** Food processor: pick a recipe, press «Procesar»; runs on the hydro circuit and vibrates while busy. */
+  /** Food processor: one button («Hacer barra») picks the best recipe; runs on the hydro circuit. */
   hydro_processor(g, station, kit) {
     const { t, game, sim } = kit;
     const floorY = -station.y;
     const body = kit.addBox(g, 0.9, 1.0, 0.55, 0, floorY + 0.5, 0.3, '#8a8f96');
     const hopper = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.08, 0.24, 14), kit.lambert('#c9d1d9'));
     hopper.position.set(-0.18, floorY + 1.12, 0.3);
-    const chute = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.06, 0.16), kit.lambert('#4a525a'));
-    chute.position.set(0.2, floorY + 0.55, 0.6);
+    g.add(hopper);
+    addStatic(g, [
+      pbox(0.26, 0.05, 0.2, 0.2, floorY + 0.55, 0.62, '#4a525a'), // output tray
+      pbox(0.2, 0.12, 0.02, 0.2, floorY + 0.68, 0.58, '#20272e'), // output slot
+      pbox(0.3, 0.2, 0.02, -0.2, floorY + 0.7, 0.58, '#2a3540'), // window
+      pcyl(0.025, 0.5, 0.36, floorY + 1.25, 0.12, '#d9b44a'), // power conduit
+    ]);
     const lampMat = new THREE.MeshLambertMaterial({ color: '#333333', emissive: '#000000' });
     const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.04, 10, 8), lampMat);
     lamp.position.set(0.3, floorY + 1.04, 0.3);
-    g.add(hopper, chute, lamp);
+    g.add(lamp);
 
-    const panel = kit.addPanel(g, 0.86, 0.44, 0, 0.36);
-    const recipeIds = () => sim().kitchen?.recipes.map((/** @type {any} */ r) => r.id) ?? [];
-    const recipeBtn = kit.addButton(g, { width: 0.3, height: 0.08, label: t('hydro.btn.recipe'), onSelect: () => {
-      const k = sim().kitchen;
-      if (k && !k.busy) game.intent('kitchen:select', { recipeId: nextRecipe(recipeIds(), k.selected) });
-    } }, -0.2, 0.05);
-    const processBtn = kit.addButton(g, { width: 0.3, height: 0.08, label: t('hydro.btn.process'),
-      onSelect: () => game.intent('kitchen:process', {}) }, 0.2, 0.05);
+    const panel = new Panel(0.86, 0.42, { pxPerMeter: 560 });
+    panel.mesh.position.set(0, 0.4, 0);
+    g.add(panel.mesh);
+    const processBtn = kit.addButton(g, { width: 0.36, height: 0.09, label: t('hydro.btn.process'),
+      onSelect: () => game.intent('kitchen:auto', {}) }, -0.12, 0.1);
+    addInfo(g, kit, {
+      bx: 0.24, by: 0.1, px: 0, py: 0.52, w: 1.3, h: 0.9,
+      title: () => t('hydro.info.kitchen.title'),
+      lines: () => {
+        const k = sim().kitchen;
+        return [
+          { text: t('hydro.info.kitchen.1'), size: 0.8 },
+          ...(k?.recipes ?? []).map((/** @type {any} */ r) => ({
+            text: t('hydro.info.kitchen.recipe', {
+              name: t(`real.recipe.${r.id}`),
+              inputs: Object.entries(r.inputs).map(([kind, n]) => `${n} ${t(`hydro.kind.${kind}`)}`).join(' + '),
+              mult: r.multiplier, hours: r.hours, kw: r.drawKw,
+            }),
+            color: RECIPE_COLORS[r.id],
+            size: 0.75,
+          })),
+          { text: t('hydro.info.kitchen.2'), size: 0.75 },
+          { text: t('hydro.info.kitchen.3'), color: COLORS.info, size: 0.75 },
+          { text: t('hydro.info.general'), color: COLORS.dim, size: 0.65 },
+        ];
+      },
+    });
 
     const baseY = body.position.y;
     let phase = 0;
@@ -484,39 +808,41 @@ export const builders = {
       const running = Boolean(k?.busy && k.powered);
       phase += dt * 40;
       body.position.y = running ? baseY + Math.sin(phase) * 0.003 : baseY;
-      hopper.rotation.y = running ? hopper.rotation.y + dt * 3 : hopper.rotation.y;
+      if (running) hopper.rotation.y += dt * 3;
     });
 
     kit.onRefresh(() => {
       const k = sim().kitchen;
       if (!k) return;
-      const r = k.recipe(k.busy ? k.job.recipeId : k.selected);
-      const name = t(`real.recipe.${r.id}`);
-      const inputs = Object.entries(r.inputs).map(([kind, n]) => `${n} ${t(`hydro.kind.${kind}`)}`).join(' + ');
-      /** @type {{ text: string, color?: string, size?: number }[]} */
-      const lines = [{ text: t('hydro.kitchen.recipe', { name }), size: 0.95 }];
-      lines.push({ text: t('hydro.kitchen.inputs', { inputs, hours: r.hours, kw: r.drawKw }), color: COLORS.info, size: 0.75 });
-      let lampColor = '#000000';
-      if (k.busy) {
-        lines.push({ text: t('hydro.kitchen.busy', { name, pct: Math.floor((100 * k.job.progressHours) / k.job.hours) }), color: COLORS.warning, size: 0.85 });
-        if (!k.powered) lines.push({ text: t('hydro.kitchen.no_power'), color: COLORS.critical, size: 0.8 });
-        lampColor = k.powered ? '#c88a10' : '#802010';
-      } else {
-        const missing = k.missing(r.id);
-        if (Object.keys(missing).length) {
-          const txt = Object.entries(missing).map(([kind, n]) => `${n} ${t(`hydro.kind.${kind}`)}`).join(' + ');
-          lines.push({ text: t('hydro.kitchen.missing', { inputs: txt }), color: COLORS.critical, size: 0.8 });
-        } else {
-          lines.push({ text: t('hydro.kitchen.yield', { kcal: k.previewKcal(r.id), mult: r.multiplier }), color: COLORS.nominal, size: 0.85 });
-          lampColor = '#1f8a3a';
-        }
-      }
-      lines.push({ text: t('hydro.kitchen.hint'), color: COLORS.dim, size: 0.68 });
-      panel.renderLines(t('hydro.kitchen.title'), lines, { border: k.busy ? COLORS.warning : COLORS.border });
+      const best = k.busy ? k.job.recipeId : k.best();
+      const name = best ? t(`real.recipe.${best}`) : '';
+      const pct = k.busy ? k.job.progressHours / k.job.hours : 0;
+      /** @type {[string, string, string]} message, colour, lamp */
+      const [msgKey, msgColor, lampColor] = k.busy
+        ? (k.powered ? ['hydro.kitchen.msg_busy', COLORS.warning, '#c88a10'] : ['hydro.kitchen.msg_no_power', COLORS.critical, '#802010'])
+        : k.pantry.length === 0 ? ['hydro.kitchen.msg_empty', COLORS.dim, '#000000']
+        : !best ? ['hydro.kitchen.msg_missing', COLORS.warning, '#000000']
+        : !k.powered ? ['hydro.kitchen.msg_no_power', COLORS.critical, '#802010']
+        : ['hydro.kitchen.msg_ready', COLORS.nominal, '#1f8a3a'];
+      const barColor = RECIPE_COLORS[best ?? ''] ?? '#5a6570';
+      const crates = Math.min(4, k.pantry.length);
+      panel.renderCustom([msgKey, best, Math.round(pct * 40), crates].join('|'), (ctx, w, h) => {
+        icon.frame(ctx, w, h, k.busy ? COLORS.warning : COLORS.border);
+        icon.text(ctx, t('hydro.kitchen.title'), h * 0.1, h * 0.13, { size: h * 0.13, color: COLORS.title, bold: true });
+        if (name) icon.text(ctx, name, w - h * 0.1, h * 0.13, { size: h * 0.12, color: barColor, bold: true, align: 'right', maxWidth: w * 0.5 });
+        // Crates → machine → bar.
+        const cy = h * 0.43;
+        for (let i = 0; i < Math.max(1, crates); i++) icon.crate(ctx, w * 0.1 + i * h * 0.13, cy + (i % 2) * h * 0.05, h * 0.2, crates ? '#b98a4a' : '#3a4652');
+        icon.arrow(ctx, w * 0.36, cy, h * 0.18);
+        icon.gear(ctx, w * 0.5, cy, h * 0.17, k.busy && k.powered ? COLORS.warning : '#9aa7b3', pct * 6);
+        icon.arrow(ctx, w * 0.64, cy, h * 0.18);
+        icon.foodBar(ctx, w * 0.82, cy, h * 0.42, best ? barColor : '#3a4652');
+        if (k.busy) icon.bar(ctx, h * 0.1, h * 0.64, w - h * 0.2, h * 0.08, pct, COLORS.warning);
+        icon.text(ctx, t(msgKey, { name }), h * 0.1, h * 0.86, { size: h * 0.13, color: msgColor, bold: true, maxWidth: w - h * 0.2 });
+      });
       lampMat.emissive.set(lampColor);
-      recipeBtn.setState(t('hydro.btn.recipe'), k.busy ? BUTTON.off : BUTTON.info);
-      const ready = !k.busy && k.canProcess(r.id) && k.powered;
-      processBtn.setState(t(k.busy ? 'hydro.btn.processing' : 'hydro.btn.process'), ready ? BUTTON.on : BUTTON.off);
+      const ready = !k.busy && Boolean(best) && k.powered;
+      processBtn.setState(t(k.busy ? 'hydro.btn.working' : 'hydro.btn.process'), ready ? BUTTON.on : BUTTON.off);
     });
   },
 
@@ -526,28 +852,33 @@ export const builders = {
     const floorY = -station.y;
     const max = game.data.balance.kitchen.maxBarsShown;
     kit.addBox(g, 0.8, 1.0, 0.4, 0, floorY + 0.5, 0.22, '#5b5f52');
-    kit.addBox(g, 0.6, 0.03, 0.3, 0, floorY + 1.015, 0.22, '#c9d1d9');
+    addStatic(g, [
+      pbox(0.6, 0.03, 0.3, 0, floorY + 1.015, 0.22, '#c9d1d9'),
+      pbox(0.6, 0.06, 0.015, 0, floorY + 1.045, 0.365, '#9aa7b3'),
+    ]);
     const bars = new THREE.InstancedMesh(new THREE.BoxGeometry(0.13, 0.03, 0.05), new THREE.MeshLambertMaterial(), max);
     const tmp = new THREE.Object3D();
     const color = new THREE.Color();
     for (let i = 0; i < max; i++) bars.setColorAt(i, color.set('#c0a060'));
     bars.count = 0;
     g.add(bars);
-    const panel = kit.addPanel(g, 0.7, 0.38, 0, 0.36);
+    const panel = new Panel(0.7, 0.36, { pxPerMeter: 560 });
+    panel.mesh.position.set(0, 0.36, 0);
+    g.add(panel.mesh);
     let lastTotal = -1;
     kit.onRefresh(() => {
       const k = sim().kitchen;
       if (!k) return;
-      /** @type {string[]} */
-      const made = Object.entries(k.bars).flatMap(([id, n]) => Array(n).fill(id));
+      /** @type {[string, number][]} */
+      const counts = Object.entries(k.bars);
+      const made = counts.flatMap(([id, n]) => Array(n).fill(id));
       const total = made.length;
       if (total !== lastTotal) {
         lastTotal = total;
         const shown = made.slice(-max);
         shown.forEach((id, i) => {
-          const col = i % 4;
           const layer = Math.floor(i / 4);
-          tmp.position.set(-0.21 + col * 0.14, floorY + 1.045 + layer * 0.032, 0.22 + (layer % 2) * 0.02);
+          tmp.position.set(-0.21 + (i % 4) * 0.14, floorY + 1.045 + layer * 0.032, 0.22 + (layer % 2) * 0.02);
           tmp.rotation.y = (layer % 2) * 0.08;
           tmp.updateMatrix();
           bars.setMatrixAt(i, tmp.matrix);
@@ -557,28 +888,21 @@ export const builders = {
         bars.instanceMatrix.needsUpdate = true;
         if (bars.instanceColor) bars.instanceColor.needsUpdate = true;
       }
-      /** @type {{ text: string, color?: string, size?: number }[]} */
-      const lines = [];
-      if (!total) lines.push({ text: t('hydro.bars.none'), color: COLORS.dim, size: 0.85 });
-      for (const [id, n] of Object.entries(k.bars)) {
-        if (n > 0) lines.push({ text: t('hydro.bars.line', { name: t(`real.recipe.${id}`), count: n }), color: RECIPE_COLORS[id], size: 0.85 });
-      }
-      if (total) lines.push({ text: t('hydro.bars.total', { count: total }), color: COLORS.info, size: 0.75 });
-      panel.renderLines(t('hydro.bars.title'), lines);
+      const kinds = counts.filter(([, n]) => n > 0);
+      panel.renderCustom(counts.map(([, n]) => n).join(','), (ctx, w, h) => {
+        icon.frame(ctx, w, h);
+        icon.text(ctx, t('hydro.bars.title'), h * 0.1, h * 0.14, { size: h * 0.14, color: COLORS.title, bold: true });
+        kinds.forEach(([id, n], i) => {
+          const cx = w * 0.16 + i * (w * 0.23);
+          icon.foodBar(ctx, cx, h * 0.42, w * 0.17, RECIPE_COLORS[id]);
+          icon.text(ctx, `×${n}`, cx, h * 0.64, { size: h * 0.14, bold: true, align: 'center' });
+        });
+        icon.text(ctx, total ? t('hydro.bars.msg_total', { count: total }) : t('hydro.bars.msg_none'), h * 0.1, h * 0.87,
+          { size: h * 0.12, color: total ? COLORS.nominal : COLORS.dim, bold: true, maxWidth: w - h * 0.2 });
+      });
     });
   },
 };
-
-/** Crate colour per raw item in the pantry. */
-const CROP_COLORS = /** @type {Record<string, string>} */ ({
-  lettuce: '#5fbf4a', tomato: '#d9472b', soybean: '#c9b25a', quinoa: '#d8c89a',
-  carrot: '#e8862a', sweet_potato: '#9a4f6a', spirulina: '#2f8f6f',
-});
-
-/** Wrapper colour per recipe (bars in the dispenser + panel text). */
-const RECIPE_COLORS = /** @type {Record<string, string>} */ ({
-  bar_energy: '#e0a030', bar_protein: '#4fa3d8', ration_fresh: '#6fcf5a', bar_single: '#c8b48a',
-});
 
 /** "2026-11-14" → "14/11/2026" */
 function formatDay(/** @type {string} */ iso) {

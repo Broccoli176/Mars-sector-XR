@@ -41,6 +41,7 @@ export class Kitchen {
     bus.on('food:harvested', (/** @type {any} */ e) => this.store(e?.cropId, Number(e?.kcal) || 0));
     bus.on('kitchen:select', (/** @type {any} */ e) => this.select(e?.recipeId));
     bus.on('kitchen:process', () => this.process());
+    bus.on('kitchen:auto', () => this.auto());
     bus.on('kitchen:eat', () => this.eatRaw());
   }
 
@@ -99,6 +100,27 @@ export class Kitchen {
   /** @param {string | undefined} recipeId */
   select(recipeId) {
     if (recipeId && this.recipe(recipeId)) this.selected = recipeId;
+  }
+
+  /** Recipe that yields the most kcal with the current pantry, or null if none can be made. */
+  best() {
+    let best = null;
+    let bestKcal = 0;
+    for (const r of this.recipes) {
+      const kcal = this.previewKcal(r.id);
+      if (kcal > bestKcal) {
+        best = r.id;
+        bestKcal = kcal;
+      }
+    }
+    return best;
+  }
+
+  /** One-button cooking: picks the best recipe and starts it. Lone ingredients no recipe uses are rejected as 'missing'. */
+  auto() {
+    const best = this.best();
+    if (best && !this.job) this.selected = best;
+    this.process();
   }
 
   process() {
