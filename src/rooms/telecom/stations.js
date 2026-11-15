@@ -4,6 +4,7 @@
 import * as THREE from 'three';
 import { COLORS, BUTTON, statusColor } from '../../ui/StationKit.js';
 import { Button } from '../../objects/Button.js';
+import { addInfo } from '../../ui/InfoSheet.js';
 
 /** @type {Record<string, (g: THREE.Group, station: any, kit: import('../../ui/StationKit.js').StationKit) => void>} */
 export const builders = {
@@ -75,6 +76,18 @@ export const builders = {
     const receiverLed = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.07, 0.035), receiverMaterial);
     receiverLed.position.set(0.43, 0.86, 0.12);
     g.add(uplinkLed, receiverLed);
+
+    addInfo(g, kit, {
+      bx: 0, by: -0.45, px: 0, py: 0.35, w: 1.1, h: 0.8,
+      title: () => t('telecom.info.title'),
+      lines: () => [
+        { text: t('telecom.info.delay'), size: 0.8 },
+        { text: t('telecom.info.conjunction'), size: 0.8 },
+        { text: t('telecom.info.antenna'), size: 0.8 },
+        { text: t('telecom.info.orbits'), color: COLORS.dim, size: 0.72 },
+        { text: t('ui.telecom.orbit_source'), color: COLORS.info, size: 0.72 },
+      ],
+    });
 
     kit.onRefresh(() => {
       const s = sim();

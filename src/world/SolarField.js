@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { roundedRectGeometry, roundedRingGeometry } from './roundedRect.js';
+import { MARS, marsLook, skyFactor } from './marsLook.js';
 
 /**
  * Window in the Energía room looking out at the base solar field (one row × 6 panels), Rover 2 and a Tesla
@@ -17,25 +18,13 @@ import { roundedRectGeometry, roundedRingGeometry } from './roundedRect.js';
  * @returns {{ daylight: boolean, sky: [number, number, number], ground: number, panel: number, dust: number, soil: number }}
  */
 export function fieldLook(hour, storm, cfg, dustFactor = 1) {
-  const base = fieldLookClean(hour, storm, cfg);
+  const base = marsLook(hour, storm, cfg);
   // Settled dust dulls the cells (soil 0 = clean, 1 = fully covered); the ochre tint is applied in update().
   const soil = Math.min(1, Math.max(0, 1 - dustFactor));
   return { ...base, panel: base.panel * (1 - 0.6 * soil), soil };
 }
 
-/** @param {number} hour @param {boolean} storm @param {{ solarStartHour: number, solarEndHour: number }} cfg */
-function fieldLookClean(hour, storm, cfg) {
-  const daylight = hour >= cfg.solarStartHour && hour < cfg.solarEndHour;
-  if (storm) return { daylight, sky: [0.55, 0.36, 0.26], ground: daylight ? 0.6 : 0.2, panel: daylight ? 0.5 : 0.15, dust: 1 };
-  if (!daylight) return { daylight, sky: [0.03, 0.03, 0.06], ground: 0.16, panel: 0.12, dust: 0 };
-  // Martian day: butterscotch sky; blue-ish near sunrise/sunset (real Mars sunsets are blue).
-  const t = (hour - cfg.solarStartHour) / (cfg.solarEndHour - cfg.solarStartHour);
-  const edge = Math.max(0, 1 - Math.min(t, 1 - t) / 0.12); // 1 at sunrise/sunset, 0 by mid-morning
-  const sky = /** @type {[number, number, number]} */ ([0.78 - 0.4 * edge, 0.6 - 0.15 * edge, 0.45 + 0.2 * edge]);
-  return { daylight, sky, ground: 1, panel: 1, dust: 0 };
-}
-
-const DUST_TINT = new THREE.Color(0xb0703f);
+const DUST_TINT = new THREE.Color(0xc06a34);
 
 /** @param {THREE.BufferGeometry} geo @param {THREE.ColorRepresentation} color */
 function paint(geo, color) {
@@ -123,7 +112,7 @@ export function buildSolarField(scene, getSim, win, controlView) {
     const y = -0.15 + far * (0.6 * Math.sin(x * 0.18) + 0.4 * Math.cos(z * 0.23 + x * 0.05)) + 0.08 * Math.sin(x * 1.3 + z * 0.9);
     gp.setY(i, y);
     const shade = 0.82 + 0.18 * Math.sin(x * 0.18 + 0.6) * far + 0.06 * Math.sin(x * 1.3 + z * 0.9);
-    gc.set([0.72 * shade, 0.42 * shade, 0.27 * shade], i * 3);
+    gc.set([MARS.ground[0] * shade, MARS.ground[1] * shade, MARS.ground[2] * shade], i * 3);
   }
   groundGeo.setAttribute('color', new THREE.BufferAttribute(gc, 3));
   groundGeo.computeVertexNormals();
@@ -136,7 +125,7 @@ export function buildSolarField(scene, getSim, win, controlView) {
   const sc = new Float32Array(sp.count * 3);
   for (let i = 0; i < sp.count; i++) {
     const k = Math.min(1, Math.max(0, (sp.getY(i) + 6) / 40));
-    sc.set([1 - 0.45 * k, 1 - 0.5 * k, 1 - 0.4 * k], i * 3);
+    sc.set(skyFactor(k), i * 3);
   }
   skyGeo.setAttribute('color', new THREE.BufferAttribute(sc, 3));
   const skyMat = new THREE.MeshBasicMaterial({ vertexColors: true, toneMapped: false });
@@ -190,7 +179,7 @@ export function buildSolarField(scene, getSim, win, controlView) {
   // Dust layer over the panels (storm): same instances, slightly above, transparent.
   const dustLayer = new THREE.InstancedMesh(
     new THREE.BoxGeometry(2.32, 0.01, 1.22).translate(0, 0.05, 0),
-    new THREE.MeshBasicMaterial({ color: 0xb06a3c, transparent: true, opacity: 0, depthWrite: false }),
+    new THREE.MeshBasicMaterial({ color: 0xc2703a, transparent: true, opacity: 0, depthWrite: false }),
     PANELS,
   );
   dustLayer.name = 'SolarPanelDust';
@@ -237,7 +226,7 @@ export function buildSolarField(scene, getSim, win, controlView) {
   for (let j = 0; j < DUST; j++) dustPos.set([(Math.random() - 0.5) * 30, Math.random() * 6, -1 - Math.random() * 20], j * 3);
   const dustGeo = new THREE.BufferGeometry();
   dustGeo.setAttribute('position', new THREE.BufferAttribute(dustPos, 3));
-  const dust = new THREE.Points(dustGeo, new THREE.PointsMaterial({ color: 0xc08050, size: 0.07, transparent: true, opacity: 0.7 }));
+  const dust = new THREE.Points(dustGeo, new THREE.PointsMaterial({ color: 0xcf8f66, size: 0.07, transparent: true, opacity: 0.7 }));
   outside.add(dust);
 
   // Nothing outside should be culled oddly by the window frustum.
@@ -324,6 +313,8 @@ export function buildSolarField(scene, getSim, win, controlView) {
 
   const tint = new THREE.Color();
   let shownAngle = NaN;
+  /** Speed at which panels smoothly rotate mechanically (degrees per real second). */
+  const SLEW_SPEED_DEG_PER_SEC = 38;
   /** Rotate every panel (and its dust layer) around its vertical axis. @param {number} deg */
   const rotatePanels = (deg) => {
     const yawDeg = THREE.MathUtils.clamp(deg, -90, 90);
@@ -361,11 +352,29 @@ export function buildSolarField(scene, getSim, win, controlView) {
       /** @type {THREE.MeshBasicMaterial} */ (props.material).color.setScalar(look.ground);
       rover2Mat.color.setRGB(0.67, 0.78, 0.9).multiplyScalar(Math.max(0.25, look.ground));
       /** @type {THREE.MeshBasicMaterial} */ (dustLayer.material).opacity = 0.55 * look.dust;
-      // Panels follow the tracker angle (only rebuilt when it changes).
-      const angle = sim.solarTracker?.angleDeg ?? 0;
-      if (!(Math.abs(angle - shownAngle) <= 0.05)) { // also true on the first frame (shownAngle NaN)
-        shownAngle = angle;
-        rotatePanels(angle);
+      // Panels smoothly animate toward the tracker angle.
+      const tracker = sim.solarTracker;
+      const isStopped = sim.phase === 'training' || sim.time.speed === 0;
+      const targetDeg = tracker ? (isStopped ? tracker.targetDeg : tracker.targetDeg) : 0;
+      if (Number.isNaN(shownAngle)) {
+        shownAngle = targetDeg;
+        rotatePanels(shownAngle);
+      } else {
+        const diff = targetDeg - shownAngle;
+        if (Math.abs(diff) > 0.05) {
+          const step = Math.sign(diff) * Math.min(Math.abs(diff), SLEW_SPEED_DEG_PER_SEC * dt);
+          shownAngle += step;
+          rotatePanels(shownAngle);
+          if (isStopped && tracker) {
+            tracker.angleDeg = shownAngle;
+          }
+        } else if (shownAngle !== targetDeg) {
+          shownAngle = targetDeg;
+          rotatePanels(shownAngle);
+          if (isStopped && tracker) {
+            tracker.angleDeg = shownAngle;
+          }
+        }
       }
       if (controllingRover2) {
         const drive = THREE.MathUtils.clamp(

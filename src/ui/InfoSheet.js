@@ -1,22 +1,21 @@
 // SHARED (see docs/COLLABORATION.md): «Info» button + expandable text sheet for a station.
 // Pictogram panels stay simple for young players; the sheet holds the rigorous explanation and sources.
 // Presentation-only: opening a sheet never touches the simulation.
-import { Panel, COLORS } from './Panel.js';
+import { COLORS } from './Panel.js';
 import { BUTTON } from './StationKit.js';
 
 /** @typedef {{ text: string, color?: string, size?: number }} Line */
 
 /**
  * «Info» button that opens/closes a text sheet over the station (the rigorous version of the pictograms).
- * @param {THREE.Object3D} g @param {import('../../ui/StationKit.js').StationKit} kit
+ * @param {import('three').Object3D} g @param {import('./StationKit.js').StationKit} kit
  * @param {{ bx: number, by: number, px: number, py: number, w: number, h: number, title: () => string, lines: () => Line[] }} o
  */
 export function addInfo(g, kit, { bx, by, px, py, w, h, title, lines }) {
   const { t } = kit;
-  const sheet = new Panel(w, h);
-  sheet.mesh.position.set(px, py, 0.07);
+  const sheet = kit.addPanel(g, w, h, px, py);
+  sheet.mesh.position.z = 0.07; // in front of the station panel it covers
   sheet.mesh.visible = false;
-  g.add(sheet.mesh);
   let open = false;
   const sync = () => {
     sheet.mesh.visible = open;

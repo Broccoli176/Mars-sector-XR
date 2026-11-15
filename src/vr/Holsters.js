@@ -54,8 +54,8 @@ export class Holsters {
     this.slots = /** @type {const} */ ([-1, 1]).map((side) => {
       const socket = new THREE.Group();
       socket.name = side < 0 ? 'SKT_Holster_L' : 'SKT_Holster_R';
-      const ring = new THREE.Mesh(ringGeometry, new THREE.MeshBasicMaterial({ ...IDLE, transparent: true, depthWrite: false, toneMapped: false }));
-      ring.scale.setScalar(1);
+      const ring = new THREE.Mesh(ringGeometry, new THREE.MeshBasicMaterial({ color: IDLE.color, opacity: IDLE.opacity, transparent: true, depthWrite: false, toneMapped: false }));
+      ring.scale.setScalar(IDLE.scale);
       socket.add(ring);
       scene.add(socket);
       return { id: socket.name, side, socket, ring, item: null };

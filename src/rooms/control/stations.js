@@ -81,16 +81,46 @@ export const builders = {
   },
 
   rover_vitals(g, _station, kit) {
-    const { t } = kit;
+    const { t, sim, game } = kit;
+    const real = game.data.real?.perseverance;
     const panel = kit.addPanel(g, 1.3, 0.95);
-    panel.renderLines(t('rover.vitals.title'), [
-      { text: t('rover.vitals.connection'), color: COLORS.warning, size: 0.8 },
-      { text: t('rover.vitals.battery'), size: 0.85 },
-      { text: t('rover.vitals.generator'), size: 0.85 },
-      { text: t('rover.vitals.signal'), size: 0.85 },
-      { text: t('rover.vitals.integrity'), size: 0.85 },
-      { text: t('rover.vitals.note'), color: COLORS.dim, size: 0.72 },
-    ], { border: COLORS.warning });
+    kit.onRefresh(() => {
+      const s = sim();
+      const r = s.rover;
+      const sig = s.resources.get('signal');
+      const link = sig.value >= (s.telecom?.cfg.linkThreshold ?? 20);
+      const cores = r ? (r.cargo?.cores ?? 0) : 0;
+      const delivered = r ? (r.delivered?.cores ?? 0) : 0;
+      const batPct = r ? Math.round(r.batteryPct) : 100;
+      const batWh = r ? Math.round(r.batteryWh) : 860;
+      const dist = r ? Math.round(r.distanceToBase()) : 0;
+      const odo = r ? Math.round(r.odometerM) : 0;
+      const mmrtgW = real?.mmrtgWattsAtLaunch ?? 110;
+      const speed = real?.topSpeedMPerHour ?? 152;
+      const tubes = real?.sampleTubes ?? 43;
+
+      panel.renderLines(t('rover.vitals.title'), [
+        { text: t('rover.vitals.model'), color: COLORS.title, size: 0.9 },
+        {
+          text: t('rover.vitals.link', {
+            status: link ? t('ui.state.ok') : t('ui.telecom.no_link'),
+            pct: Math.round(sig.value),
+          }),
+          color: link ? COLORS.nominal : COLORS.critical,
+          size: 0.85,
+        },
+        { text: t('rover.vitals.generator', { w: mmrtgW }), color: COLORS.info, size: 0.85 },
+        {
+          text: t('rover.vitals.battery', { pct: batPct, wh: batWh }),
+          color: batPct < 20 ? COLORS.critical : batPct < 40 ? COLORS.warning : COLORS.nominal,
+          size: 0.85,
+        },
+        { text: t('rover.vitals.specs', { speed, tubes }), size: 0.82 },
+        { text: t('rover.vitals.location', { m: dist, odo }), size: 0.82 },
+        { text: t('rover.vitals.samples', { cores, delivered }), color: cores > 0 ? COLORS.warning : COLORS.text, size: 0.82 },
+        { text: t('rover.vitals.note'), color: COLORS.dim, size: 0.72 },
+      ], { border: link ? COLORS.nominal : COLORS.critical });
+    });
   },
 };
 

@@ -19,7 +19,11 @@ describe('Rover 2 computer', () => {
       game: { intent: (...args) => intents.push(args) },
       services: { solarField: { isControllingRover2: false } },
       addBox: () => {},
-      addPanel: () => ({ renderLines: (...args) => rendered.push(args) }),
+      addPanel: () => ({
+        mesh: { position: { z: 0 }, visible: true },
+        renderLines: () => {},
+        renderCustom: (key) => rendered.push(key),
+      }),
       addButton: (_g, options, x, y) => {
         const control = { options, x, y, setState: () => {} };
         controls.push(control);
@@ -32,9 +36,10 @@ describe('Rover 2 computer', () => {
     refresh();
     controls.forEach((control) => control.options.onSelect());
 
-    expect(rendered[0][0]).toBe('solar.rover2.title');
-    expect(rendered[0][1].map((line) => (typeof line === 'string' ? line : line.text)))
-      .toContain('solar.rover2.link');
+    // Pictogram panel: not controlling, 25 % dust → «Pulsa CONTROLAR…».
+    expect(rendered[0]).toBe('false|25|energy.rover2.msg_ready');
+    // CONTROLAR and LIMPIAR emit intents; the Info button only opens its sheet.
     expect(intents).toEqual([['rover2:control'], ['rover2:clean']]);
+    expect(controls.map((c) => c.options.label)).toContain('ui.btn.info');
   });
 });

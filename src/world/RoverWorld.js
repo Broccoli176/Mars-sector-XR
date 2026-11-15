@@ -1,5 +1,6 @@
 // @ts-check
 import * as THREE from 'three';
+import { MARS, marsLook, paintSky, bakeShade, groundVariation } from './marsLook.js';
 
 /**
  * World origin offset for the isolated Martian open-world exploration zone.
@@ -112,7 +113,11 @@ export function buildRoverWorld(scene, game, camera, dolly, layout) {
   }
   terrainGeo.computeVertexNormals();
 
-  const terrainMat = new THREE.MeshLambertMaterial({ color: 0x9e4726 });
+  // Same regolith, sky and day/night light as the Telecom window and the solar field (src/world/marsLook.js).
+  // Unlit with baked shading: cheaper than lighting a 480 m terrain.
+  const SUN_DIR = new THREE.Vector3(120, 250, 100).normalize();
+  bakeShade(terrainGeo, MARS.ground, SUN_DIR, 0.55, groundVariation);
+  const terrainMat = new THREE.MeshBasicMaterial({ vertexColors: true, toneMapped: false });
   const terrain = new THREE.Mesh(terrainGeo, terrainMat);
   terrain.position.set(0, 0, 0);
   root.add(terrain);
@@ -134,16 +139,21 @@ export function buildRoverWorld(scene, game, camera, dolly, layout) {
   const ambLight = new THREE.AmbientLight(0x73361f, 0.7);
   root.add(ambLight);
 
-  // Martian Horizon Ring
-  const horizonGeo = new THREE.CylinderGeometry(terrainSize * 0.48, terrainSize * 0.48, 45, 32, 1, true);
-  const horizonMat = new THREE.MeshBasicMaterial({ color: 0xbf673b, side: THREE.BackSide });
+  // Martian sky dome (hazy butterscotch at the horizon, deeper overhead). The main camera only sees 60 m,
+  // so the dome is small, drawn first without writing depth, and follows the camera while it is out here.
+  const SKY_RADIUS = 50;
+  const horizonGeo = paintSky(new THREE.SphereGeometry(SKY_RADIUS, 32, 12), -0.15 * SKY_RADIUS, SKY_RADIUS);
+  const horizonMat = new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.BackSide, toneMapped: false, depthWrite: false });
   const horizon = new THREE.Mesh(horizonGeo, horizonMat);
-  horizon.position.set(0, 15, 0);
+  horizon.renderOrder = -1;
+  horizon.frustumCulled = false;
+  horizon.visible = false;
   root.add(horizon);
+  const camWorld = new THREE.Vector3();
 
   // Rocks & Boulders scattered per balance config
-  const rockGeo = new THREE.DodecahedronGeometry(1.0, 1);
-  const rockMat = new THREE.MeshLambertMaterial({ color: 0x5a2312 });
+  const rockGeo = bakeShade(new THREE.DodecahedronGeometry(1.0, 1), MARS.rock, SUN_DIR, 0.35);
+  const rockMat = new THREE.MeshBasicMaterial({ vertexColors: true, toneMapped: false });
   if (cfg.rocks) {
     for (const r of cfg.rocks) {
       const rock = new THREE.Mesh(rockGeo, rockMat);
@@ -585,6 +595,17 @@ export function buildRoverWorld(scene, game, camera, dolly, layout) {
      */
     update(dt) {
       const s = game.sim;
+      // Same day/night/storm look as the other exterior views.
+      const look = marsLook(s.time.clock().hourFloat, Boolean(s.power.stormActive), s.power.cfg);
+      horizonMat.color.setRGB(...look.sky);
+      terrainMat.color.setScalar(look.ground);
+      rockMat.color.setScalar(look.ground);
+      sunLight.intensity = 1.35 * look.ground;
+      // Sky dome only around a camera that is inside the rover world (never around the base).
+      camera.getWorldPosition(camWorld);
+      root.worldToLocal(camWorld);
+      horizon.visible = Math.hypot(camWorld.x, camWorld.z) < terrainSize * 0.6;
+      if (horizon.visible) horizon.position.copy(camWorld);
       const r = s.rover;
       if (!r) return;
 
