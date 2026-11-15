@@ -4,7 +4,7 @@ import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 /**
  * Panoramic window in the Telecom room with a real 3D Mars diorama outside (original design: teammate B).
  * - Industrial frame with rivets and a centre beam, tinted glass.
- * - Procedural dunes + faceted rocks, a dish antenna that turns with sim.telecom.alignment,
+ * - Procedural dunes + faceted rocks, a dish antenna that turns with sim.telecom.angle,
  *   a blinking beacon, day/night sun, stars + Phobos at night, wind-blown dust (faster in storms).
  *
  * Quest budget notes (AGENTS.md §7):
@@ -270,8 +270,8 @@ export function buildPorthole(scene, getSim, win = { center: [0, 1.6, 0], width:
       stars.visible = !isDay && !storm;
       phobos.visible = !isDay && !storm;
 
-      // B. Dish follows alignment; a broken motor leaves it jittering off target.
-      let targetYaw = (alignment - 0.5) * 1.4;
+      // B. Dish follows the manually controlled azimuth; a broken motor leaves it jittering off target.
+      let targetYaw = THREE.MathUtils.degToRad(sim.telecom.angle);
       let targetPitch = 0.35 + alignment * 0.35;
       if (motorBroken) {
         targetYaw = 0.65 + Math.sin(totalTime * 8) * 0.02;

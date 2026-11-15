@@ -31,11 +31,11 @@ The player never leaves the basement. Locomotion is a short teleport between roo
 ```
    ┌─[WINDOW]─┐                                ┌──────────────┐
    │ Telecom /├═══════ north hall ═════════════┤ Control room │
-   │ Airlock  │            ║                   │ (main PC)    │
+   │ Airlock  │            ║                   │ (Rover)      │
    └──────────┘            ║                   └──────────────┘
    ┌──────────┐      ┌─────╨──────┐
    │ Personal ├══════┤ Hub / Tools│  (training bench)
-   │ (empty)  │      └─────╥──────┘
+   │ (spawn, PC/time) │      └─────╥──────┘
    └──────────┘            ║
    ┌──────────┐            ║                   ┌──────────────┐
    │ Hydro /  ├═══════ south hall ═════════════┤ Energy & O2  │
@@ -195,12 +195,12 @@ Early first-pass numbers (kept for context only; units/threshold semantics diffe
 
 | Room | Contents | Primary interactions |
 | :-- | :-- | :-- |
-| Control room (Sala de control) | Main computer, time lever, bio panel, settings panel | Read telemetry, start/restart, set time speed |
+| Control room (Sala de control) | Rover map/NavCam console with driving controls, disconnected vital-status panel, and local practice minigame facing the entrance | Operate the simulated rover from the existing console; practice on the disconnected minigame |
 | Energy & oxygen (Energía y oxígeno) | Breaker wall + relay, electrolyzer, scrubber, O₂ tanks, thermostat | Reroute power, reset relay, open O₂ tank valves, swap filters, set thermostat |
 | Hydro / farming (Hidroponía · Agricultura) | Racks, water tank, ration locker, recycler valve | Harvest before it spoils, unstick recycler, read water/food |
-| Telecom / airlock | Console under the panoramic window (the only direct view outside), antenna motor, airlock hatch | Realign antenna, read comms and space-weather alerts, inspect dust storm |
-| Hub / tools (Sala central · Herramientas) | Training bench with mission board; tool wall, spares locker (pending) | Tutorial missions, pick tools, repair components, consume spares |
-| Personal | Empty for now | — |
+| Telecomunicaciones | Console under the panoramic window (the only direct view outside), steerable antenna, communications distribution panel | Improve antenna alignment, inspect uplink/signal status, read comms and space-weather alerts |
+| Hub / tools (Sala central · Herramientas) | Training bench with mission board, bio panel; tool wall, spares locker | Tutorial missions, monitor health, pick tools, repair components, consume spares |
+| Personal | Spawn, main computer, time lever, bunk, locker, dosimeter, space-weather and astronaut-health panels | Start/restart the run, set time speed, review personal and real-data information |
 
 Panel placement per wall: `docs/FLOOR_PLAN.md` §4. Alarm catalog, tools/holsters and accessibility: `docs/SIMULATION_SPEC.md` §9.
 | Corridors | Conduits, emergency lights, patched panels | Navigation, leak discovery, alarm localization |

@@ -5,6 +5,12 @@
     "stormDriftPerHour": 0.02,
     "minAlignment": 0,
     "alignTarget": 1,
-    "brokenMotorCap": 40
+    "brokenMotorCap": 40,
+    "targetAzimuthDeg": 0,
+    "initialAzimuthDeg": 0,
+    "maxAzimuthDeg": 45,
+    "turnStepDeg": 2.5,
+    "alignmentRangeDeg": 35,
+    "linkThreshold": 20
   }
 }

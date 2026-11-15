@@ -19,7 +19,7 @@ Datos reales embebidos (sin «en vivo»), ver `docs/SIMULATION_SPEC.md` §6.5:
 - NASA DONKI **en vivo** (`src/rooms/personal/spaceWeatherLive.js`, solo presentación, nunca alimenta la simulación) → «El Sol ahora» de Personal; sin red usa el registro `src/data/real/donki_recent.json` y lo dice.
 - Todos se atribuyen en el panel «Fuentes científicas» del hub. Resumen: `docs/DATA_SOURCES.md`.
 
-Telecom básico implementado (`src/systems/Telecom.js`: señal = 95 × alineación, deriva en tormenta, botón «Alinear antena», motor averiado limita a 40). Electrónica: banco de la Sala central que repara la fuente del receptor de Telecom (`src/systems/Electronics.js`, ver spec §6.6). Pendiente: cola de mensajes/enlace <20 % y clima espacial, reparaciones del resto de componentes, fugas, herramientas/fundas, banco de entrenamiento (T1–T5), alarmas sonoras, guardado, CI y assets. **Desviaciones del prototipo:**
+Telecom básico implementado (`src/systems/Telecom.js`: señal según alineación, deriva en tormenta, ajuste con botones izquierda/derecha y alineación, motor averiado limita a 40). Electrónica: banco de la Sala central que repara la fuente del receptor de Telecom (`src/systems/Electronics.js`, ver spec §6.6). Pendiente: cola de mensajes/enlace <20 % y clima espacial, reparaciones del resto de componentes, fugas, herramientas/fundas, banco de entrenamiento (T1–T5), alarmas sonoras, guardado, CI y assets. **Desviaciones del prototipo:**
 - Los controles se pulsan con rayo + gatillo; el agarre directo llegará después.
 - Hay un modo escritorio de desarrollo (no es modo de juego).
 - Strings y balance siguen en un solo archivo cada uno.
@@ -73,7 +73,7 @@ Decisiones/objetivos iniciales (a confirmar al arrancar):
 | Interacción | Agarre directo para controles físicos; ray solo para controles diegéticos pequeños si aplica |
 | Input | Mandos primero; sin hand tracking en MVP salvo decisión explícita |
 | UI | Paneles/indicadores diegéticos. **Sin HUD head-locked** |
-| Entorno | Base en estrella alrededor de la **Sala central · Herramientas** (hub). Al norte: Telecom y Sala de control. Al oeste: Personal (vacía). Al sur: Hidroponía · Agricultura y Energía y oxígeno. Ver `docs/FLOOR_PLAN.md`. Base subterránea con **dos ventanas al exterior**: la panorámica de Telecom (`src/world/Porthole.js`) y la del campo solar en Energía (`src/world/SolarField.js`, muro este). En `layout.json` cada muro con ventana lleva `view: "telecom" | "solar"` |
+| Entorno | Base en estrella alrededor de la **Sala central · Herramientas** (hub). Al norte: Telecom y Sala de control (consola de mapa, panel vital y minijuego local del rover). Al oeste: Personal (spawn, ordenador y controles de tiempo). El biomonitor mural está en la Sala central. Al sur: Hidroponía · Agricultura y Energía y oxígeno. Ver `docs/FLOOR_PLAN.md`. Base subterránea con **dos ventanas al exterior**: la panorámica de Telecom (`src/world/Porthole.js`) y la del campo solar en Energía (`src/world/SolarField.js`, muro este). En `layout.json` cada muro con ventana lleva `view: "telecom" | "solar"` |
 | Persistencia | Guardado versionado con migraciones (cuando se implemente) |
 
 ### Principio de diseño
@@ -177,6 +177,7 @@ Los nombres de eventos son API pública una vez implementados: renombrarlos requ
 | `valve:turn` | `{ valveId, open }` | interacción (intent) | |
 | `food:harvest` / `food:harvested` | `{ trayId? }` / `{ trayId, cropId, kcal }` | intent / hidroponía | sin `trayId` cosecha todo lo listo |
 | `antenna:align` | según diseño | intent / telecom | |
+| `antenna:turnLeft` / `antenna:turnRight` | `{}` | intent / Telecom | giro por paso configurado; motor averiado rechaza el giro |
 | `incident:warning` / `incident:triggered` | `{ incidentId, etaHours? }` / `{ incidentId }` | runner de incidentes | |
 | `comms:message` | `{ channel, key, params?, day?, hour? }` | simulación/comms | |
 | `hint` | `{ key, params? }` | simulación/UI feedback | |
@@ -222,9 +223,11 @@ Los tanques de O₂ de emergencia usan `valve:turn` (`valve_o2_tank_1/2`). Pendi
   - Intent: `rover:command { cmd: 'forward' | 'back' | 'left' | 'right' | 'stop' | 'sample' }` (avanza 10 m, atrás 5 m, gira 30°, muestra a ≤ 8 m de un sitio). Necesita enlace: señal ≥ 20 %.
   - Eventos: `rover:rejected { cmd, reason: 'noLink' | 'battery' | 'stuck' | 'noSite' | 'busy' }`, `rover:stopped { reason: 'obstacle' | 'sand' | 'battery' | 'edge' }`, `rover:sampled { siteId, kind: 'core' | 'salvage' }`, `rover:delivered { cores, spares }`.
   - Se recarga en la base por el circuito `repairBay` («Taller · Rover»). Los restos del aterrizaje que trae dan +1 `spares` cada uno.
+  - El panel adyacente `rover_vitals` es solo una maqueta desconectada: batería, generador, señal e integridad muestran «sin datos» y no leen la simulación.
+  - `rover_minigame` es una práctica local aislada con energía propia; no emite `rover:command` ni lee el estado del rover simulado.
 - **Usar lo que sostienes (compartido, `src/vr/Grab.js`):** `userData.grab.onUse(active, handId)`. Con un objeto así en la mano, el gatillo (XR) o la tecla F (escritorio) lo usan en vez del rayo. Lo usan la manguera de Hidroponía y el multímetro (cambia de modo). En escritorio, R gira lo que sostienes.
 - **Incidentes y avisos:** `incident:warning`/`triggered`, `weather:changed`, `comms:message`, `hint`.
-- **Telecom:** `antenna:align` (intent); escucha `component:damaged`/`system:repaired` para `antenna_motor`.
+- **Telecom:** `antenna:align`, `antenna:turnLeft`, `antenna:turnRight` (intents); escucha `component:damaged`/`system:repaired` para `antenna_motor`.
 - **Herramientas (presentación, fase 1):**
   - `item:grab { itemId, hand }`
   - `item:release { itemId }` (cae al suelo)

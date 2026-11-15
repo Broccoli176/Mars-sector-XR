@@ -1,5 +1,5 @@
 // OWNER: teammate (Telecom · Control · Energy) — see docs/COLLABORATION.md
-// Telecom / Esclusa: console under the panoramic window + airlock hatch.
+// Telecom: console under the panoramic window + communications distribution panel.
 // Placement: src/data/stations/telecom.json. The window and Mars diorama: src/world/Porthole.js
 import * as THREE from 'three';
 import { COLORS, BUTTON, statusColor } from '../../ui/StationKit.js';
@@ -17,20 +17,23 @@ export const builders = {
     // Status panel on the wall between the desk and the window sill.
     const panel = kit.addPanel(g, 0.95, 0.3, 0, deskTop + 0.17);
 
-    // Push button lying on the desk top, facing up (pressed from above).
-    const align = new Button({
-      width: 0.36,
-      height: 0.1,
-      label: t('ui.telecom.align'),
-      color: BUTTON.info,
-      onSelect: () => game.intent('antenna:align'),
-    });
-    const holder = new THREE.Group();
-    holder.position.set(0, deskTop + 0.01, 0.45);
-    holder.rotation.x = -Math.PI / 2;
-    holder.add(align.mesh);
-    g.add(holder);
-    kit.registerButton(align);
+    const makeTurnButton = (direction, x, label) => {
+      const button = new Button({
+        width: 0.3,
+        height: 0.1,
+        label,
+        color: BUTTON.action,
+        onSelect: () => game.intent(direction < 0 ? 'antenna:turnLeft' : 'antenna:turnRight'),
+      });
+      const buttonHolder = new THREE.Group();
+      buttonHolder.position.set(x, deskTop + 0.01, 0.45);
+      buttonHolder.rotation.x = -Math.PI / 2;
+      buttonHolder.add(button.mesh);
+      g.add(buttonHolder);
+      return kit.registerButton(button);
+    };
+    const turnLeft = makeTurnButton(-1, -0.46, t('ui.telecom.left'));
+    const turnRight = makeTurnButton(1, 0.46, t('ui.telecom.right'));
 
     // Antenna motor unit + cable mast beside the window.
     kit.addBox(g, 0.28, 0.28, 0.18, -1.05, 0.05, 0.1, '#4f5b66');
@@ -44,31 +47,56 @@ export const builders = {
       const motorBroken = s.telecom.motorBroken;
       panel.renderLines(t('ui.telecom.title'), [
         { text: `${t('ui.telecom.power', { state: t(powered ? 'ui.state.ok' : 'ui.state.unpowered') })}   ·   ${t('ui.telecom.signal', { val: Math.round(sig.value), status: t(`ui.status.${sig.status}`) })}`, color: powered ? statusColor(sig.status) : COLORS.critical },
-        { text: t('ui.telecom.alignment', { pct: alignmentPct }), color: alignmentPct < 40 ? COLORS.critical : alignmentPct < 70 ? COLORS.warning : COLORS.nominal },
+        { text: `${t('ui.telecom.alignment', { pct: alignmentPct })}   ·   ${t('ui.telecom.azimuth', { deg: Math.round(s.telecom.angle) })}`, color: alignmentPct < 40 ? COLORS.critical : alignmentPct < 70 ? COLORS.warning : COLORS.nominal },
         { text: t('ui.telecom.motor', { state: t(motorBroken ? 'ui.state.broken' : 'ui.state.ok') }), color: motorBroken ? COLORS.critical : COLORS.dim, size: 0.85 },
       ]);
-      align.setState(t('ui.telecom.align'), motorBroken || !powered ? BUTTON.off : alignmentPct < 70 ? BUTTON.warn : BUTTON.info);
+      const disabled = motorBroken || !powered;
+      turnLeft.setState(t('ui.telecom.left'), disabled ? BUTTON.off : BUTTON.action);
+      turnRight.setState(t('ui.telecom.right'), disabled ? BUTTON.off : BUTTON.action);
     });
   },
 
-  airlock(g, _station, kit) {
-    // Pressure hatch (the panoramic window above the console is the view outside).
-    kit.addBox(g, 1.25, 2.2, 0.06, 0, 0, -0.03, '#2a2e33'); // frame
-    kit.addBox(g, 1.15, 2.1, 0.12, 0, 0, 0.0, '#59616a'); // hatch
-    const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.06, 16), kit.lambert('#555b62'));
-    hub.rotation.x = Math.PI / 2;
-    hub.position.set(0, 0.05, 0.08);
-    const wheel = new THREE.Mesh(new THREE.TorusGeometry(0.18, 0.025, 8, 20), kit.lambert('#d4883b'));
-    wheel.position.set(0, 0.05, 0.1);
-    g.add(hub, wheel);
+  comms_server_panel(g, _station, kit) {
+    const { t, sim } = kit;
+    kit.addBox(g, 1.25, 1.9, 0.16, 0, 0, 0, '#252d36');
+    kit.addBox(g, 1.15, 1.8, 0.035, 0, 0, 0.09, '#171d25');
 
-    // Status LED: green normal, amber during the dust storm.
-    const ledMaterial = new THREE.MeshBasicMaterial({ color: '#3ddc84', toneMapped: false });
-    const led = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.05, 0.04), ledMaterial);
-    led.position.set(0, 0.95, 0.08);
-    g.add(led);
+    const statusPanel = kit.addPanel(g, 0.9, 0.48, 0, 0.48);
+    statusPanel.mesh.position.z = 0.115;
+    kit.addBox(g, 0.08, 0.08, 0.025, -0.36, -0.12, 0.12, '#24404a');
+    kit.addBox(g, 0.08, 0.08, 0.025, -0.12, -0.12, 0.12, '#24404a');
+    kit.addBox(g, 0.08, 0.08, 0.025, 0.12, -0.12, 0.12, '#24404a');
+    kit.addBox(g, 0.08, 0.08, 0.025, 0.36, -0.12, 0.12, '#24404a');
+
+    const uplinkMaterial = new THREE.MeshBasicMaterial({ color: '#3ddc84', toneMapped: false });
+    const uplinkLed = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.07, 0.035), uplinkMaterial);
+    uplinkLed.position.set(-0.43, 0.86, 0.12);
+    const receiverMaterial = new THREE.MeshBasicMaterial({ color: '#3ddc84', toneMapped: false });
+    const receiverLed = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.07, 0.035), receiverMaterial);
+    receiverLed.position.set(0.43, 0.86, 0.12);
+    g.add(uplinkLed, receiverLed);
+
     kit.onRefresh(() => {
-      ledMaterial.color.set(kit.sim().power.stormActive ? '#ffb020' : '#3ddc84');
+      const s = sim();
+      const powered = s.power.served.telecom;
+      const signal = s.resources.get('signal');
+      const linkUp = powered && signal.value >= s.telecom.cfg.linkThreshold;
+      const signalColor = !powered ? '#b83a2e' : linkUp ? '#3ddc84' : '#ffb020';
+      uplinkMaterial.color.set(linkUp ? '#3ddc84' : '#b83a2e');
+      receiverMaterial.color.set(signalColor);
+      statusPanel.renderLines(t('ui.telecom.server_title'), [
+        {
+          text: t('ui.telecom.server_uplink', {
+            state: t(linkUp ? 'ui.state.ok' : powered ? 'ui.telecom.no_link' : 'ui.state.unpowered'),
+          }),
+          color: linkUp ? COLORS.nominal : powered ? COLORS.warning : COLORS.critical,
+        },
+        {
+          text: t('ui.telecom.server_signal', { value: Math.round(signal.value) }),
+          color: statusColor(signal.status),
+        },
+        { text: t('ui.telecom.server_ports'), color: COLORS.dim, size: 0.8 },
+      ]);
     });
   },
 };

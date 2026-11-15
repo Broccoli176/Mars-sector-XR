@@ -223,8 +223,9 @@ Start **3**. Up to **5** failures can require a spare (4 scripted + `relay_main`
 | :-- | :-- |
 | Formula | `signal = 95 × antennaAlignment / 100` when telecom is powered; 0 otherwise |
 | `antennaAlignment` | 0–100, starts at 100 |
-| Dust storm | alignment −2 points/h |
-| Realign | `antenna:align` ⇒ alignment 100. Prototype: button press on the telecom console (spec target: crank held 4 real s) |
+| Azimuth | The target is 0°; antenna angle is clamped to ±45°. `antenna:turnLeft` / `antenna:turnRight` change it by 2.5° per press. Alignment falls with angular error: `max(0, 1 − abs(angle − target) / 35°)`. |
+| Dust storm | alignment −2 points/h; manual turns recalculate alignment from the current antenna angle |
+| Realign | `antenna:align` moves to the target azimuth and restores alignment to 100%. |
 | `antenna_motor` broken | signal capped at 40, realignment impossible |
 | Radio blackout (§6.3) | signal forced to 0 for its duration |
 
@@ -439,14 +440,14 @@ Ver **`AGENTS.md` §4.2** para el contrato de eventos y payloads (baseline + pro
 | Item | Value |
 | :-- | :-- |
 | Ceiling height | 2.6 m |
-| Layout | **Hub and spokes** (v2, 2026-11-14). Sala central · Herramientas (hub, 6 × 5 m) in the middle. North hall → Telecom (5 × 4) and Sala de control (6 × 6). West corridor → Personal (5 × 4, empty). South hall → Hidroponía · Agricultura (5 × 4) and Energía y oxígeno (6 × 5) |
+| Layout | **Hub and spokes** (v2, 2026-11-14). Sala central · Herramientas (hub, 6 × 5 m) in the middle. North hall → Telecom (5 × 4) and Sala de control (6 × 6, rover console). West corridor → Personal (5 × 4, spawn + main PC/time controls). South hall → Hidroponía · Agricultura (5 × 4) and Energía y oxígeno (6 × 5) |
 | Corridors | 1.8 m wide, straight (L-shaped where the sketch was diagonal); emissive fixtures + conduits, no point lights |
 | Layout | Coordinates, doors, panel walls and teleport anchors: **`docs/FLOOR_PLAN.md`** (authoritative) |
 | Doorways | 0.8 × 2.0 m clear opening |
 | Teleport | only onto `COL_Floor_*` meshes; 1–2 named teleport anchors per room plus free floor targeting |
 | Reference space | `local-floor`; standing default, seated toggle adds +0.4 m eye-height offset |
 | Turning | snap 30° default; smooth turn optional, with vignette |
-| Start / restart | Player spawns in the Sala de control in front of the main PC (9, −5.5); the PC sends the player to the Sala central (hub) for training. "Iniciar turno" exists on the main PC and on the training board. After game over, the same PC shows the summary and a physical restart lever |
+| Start / restart | Player spawns in Personal in front of the main PC (−9.65, −0.5), facing north; the time lever is beside it. "Iniciar turno" exists on the main PC and on the training board in the Sala central. After game over, the same PC shows the summary and restart control |
 | Window | Telecom panoramic window with a 3D exterior (dunes, rocks, dish antenna following `alignment`, sun/stars, dust). No extra dynamic lights: baked vertex shading tinted by time of day/storm. Plus periscope feed on main PC |
 | Device | **Meta Quest 3**, Quest Browser (D15) |
 | XR settings | 72 Hz default (90 Hz only if measured stable); `setFoveation(1.0)` to start (measure text legibility); `framebufferScaleFactor` 1.0 |
@@ -457,12 +458,12 @@ Ver **`AGENTS.md` §4.2** para el contrato de eventos y payloads (baseline + pro
 
 | Room | Panels / interactables |
 | :-- | :-- |
-| Sala de control | Main PC (pages: Estado, Energía, Comms, Resumen; "Iniciar turno" / "Continuar"), time lever, bio panel (biomonitor mirror), log terminal (manual save), "Ajustes" panel |
+| Sala de control | Rover map/NavCam console with driving controls; adjacent `rover_vitals` panel shows disconnected telemetry placeholders; east-wall `rover_minigame` is a local 5 × 5 practice game with its own energy and no connection to the simulated rover |
 | Energía y oxígeno | Breaker wall (6 breakers + relay reset lever + demand meter kW vs 3.0 limit); O₂, CO₂ and pressure gauges; thermostat dial; filter socket; `valve_o2_tank_1`, `valve_o2_tank_2`; electrolyzer |
 | Hidroponía · Agricultura | Water tank gauge; kcal counter + ration locker; crop lights (growing / ready / spoiling); harvest rack; `valve_recycler` |
-| Telecom / airlock | N: window + console (signal/alignment/motor panel, "Alinear antena" button). W: airlock hatch with status LED. Pending: message printer, airlock pressure gauge |
-| Sala central · Herramientas (hub) | **Training bench** (§9.4); tool wall, spares counter, component status board (pending) |
-| Personal | Empty for now |
+| Telecomunicaciones | N: window + console (signal/alignment/azimuth/motor panel and left/right turn controls). W: communications distribution panel with uplink/signal status. Pending: message printer |
+| Sala central · Herramientas (hub) | **Training bench** (§9.4), bio panel (biomonitor mirror), tool wall, spares counter, component status board |
+| Personal | Main PC (pages: Estado, Energía, Comms, Resumen; "Iniciar turno" / "Continuar"), time lever, bunk, locker, dosimeter, «El Sol ahora» and «Salud del astronauta» panels |
 | Corridors | Emergency lights, hull seal panels (leak points), alarm beacons |
 | Wrist | Biomonitor on the non-dominant hand |
 

@@ -7,7 +7,7 @@
     "y": 0.95
   },
   {
-    "id": "airlock",
+    "id": "comms_server_panel",
     "room": "room_telecom",
     "wall": "west",
     "along": -5.5,

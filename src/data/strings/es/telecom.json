@@ -5,7 +5,17 @@
   "ui.telecom.signal": "Señal: {val}% ({status})",
   "ui.telecom.alignment": "Alineación antena: {pct}%",
   "ui.telecom.align": "ALINEAR ANTENA",
+  "ui.telecom.left": "◀ IZQ",
+  "ui.telecom.right": "DER ▶",
+  "ui.telecom.azimuth": "Acimut: {deg}°",
   "ui.telecom.motor": "Motor antena: {state}",
+  "ui.telecom.server_title": "DISTRIBUIDOR DE RED",
+  "ui.telecom.server_uplink": "ENLACE TIERRA: {state}",
+  "ui.telecom.server_signal": "SEÑAL RX: {value}%",
+  "ui.telecom.server_ports": "PUERTOS DE DATOS · A1–A4",
+  "ui.telecom.no_link": "SIN ENLACE",
   "hint.aligned": "Antena reorientada ({pct}%)",
+  "hint.turnedLeft": "Antena girada a la izquierda ({deg}°, {pct}%)",
+  "hint.turnedRight": "Antena girada a la derecha ({deg}°, {pct}%)",
   "hint.motorBroken": "Avería: motor de antena bloqueado"
 }

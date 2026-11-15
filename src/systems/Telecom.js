@@ -1,9 +1,8 @@
 // @ts-check
 /**
  * Telecom system (SIMULATION_SPEC §3.8).
- * signal = nominalSignal × alignment when the telecom circuit is powered, 0 otherwise.
- * Dust storms drift the alignment; 'antenna:align' restores it; a broken antenna motor
- * caps the signal and makes realignment impossible. Tunables come from balance.telecom.
+ * Signal follows antenna alignment while the telecom circuit is powered.
+ * Manual azimuth controls can improve or degrade alignment; a broken motor disables them.
  */
 export class Telecom {
   /**
@@ -20,17 +19,27 @@ export class Telecom {
       minAlignment: 0,
       alignTarget: 1,
       brokenMotorCap: 40,
+      targetAzimuthDeg: 0,
+      initialAzimuthDeg: 0,
+      maxAzimuthDeg: 45,
+      turnStepDeg: 2.5,
+      alignmentRangeDeg: 35,
+      linkThreshold: 20,
       ...cfg,
     };
     this.bus = bus;
     this.resources = resources;
     this.alignment = this.cfg.initialAlignment;
+    this.angle = this.cfg.initialAzimuthDeg;
+    this.lastPowered = true;
     this.motorBroken = false;
     /** Signal cap from the receiver power supply (null = healthy), see src/systems/Electronics.js. */
     /** @type {number | null} */
     this.rxCap = null;
 
     bus?.on('antenna:align', () => this.align());
+    bus?.on('antenna:turnLeft', () => this.turn(-1));
+    bus?.on('antenna:turnRight', () => this.turn(1));
     bus?.on('component:damaged', (e) => {
       if (e?.componentId === 'antenna_motor') this.motorBroken = true;
       if (e?.componentId === 'rx_psu') this.rxCap = e.signalCap ?? 0;
@@ -43,8 +52,37 @@ export class Telecom {
 
   reset() {
     this.alignment = this.cfg.initialAlignment;
+    this.angle = this.cfg.initialAzimuthDeg;
+    this.lastPowered = true;
     this.motorBroken = false;
     this.rxCap = null;
+  }
+
+  /**
+   * Turns the antenna one configured step left or right.
+   * @param {-1 | 1} direction
+   * @returns {'ok' | 'broken'}
+   */
+  turn(direction) {
+    if (this.motorBroken) {
+      this.bus?.emit('hint', { key: 'hint.motorBroken' });
+      return 'broken';
+    }
+
+    this.angle = Math.max(
+      -this.cfg.maxAzimuthDeg,
+      Math.min(this.cfg.maxAzimuthDeg, this.angle + direction * this.cfg.turnStepDeg),
+    );
+    this.alignment = this._alignmentFromAngle();
+    this.bus?.emit('hint', {
+      key: direction < 0 ? 'hint.turnedLeft' : 'hint.turnedRight',
+      params: {
+        deg: Math.round(this.angle),
+        pct: Math.round(this.alignment * 100),
+      },
+    });
+    this._syncSignal();
+    return 'ok';
   }
 
   /**
@@ -57,11 +95,34 @@ export class Telecom {
       return 'broken';
     }
     this.alignment = this.cfg.alignTarget;
+    this.angle = this.cfg.targetAzimuthDeg;
     this.bus?.emit('hint', {
       key: 'hint.aligned',
       params: { pct: Math.round(this.alignment * 100) },
     });
+    this._syncSignal();
     return 'ok';
+  }
+
+  /** Applies the current signal level immediately, including while simulation time is paused. */
+  _syncSignal() {
+    if (!this.resources) return;
+
+    let targetSignal = this.lastPowered ? this.cfg.nominalSignal * this.alignment : 0;
+    if (this.motorBroken) targetSignal = Math.min(targetSignal, this.cfg.brokenMotorCap);
+    if (this.rxCap !== null) targetSignal = Math.min(targetSignal, this.rxCap);
+
+    const current = this.resources.value('signal');
+    const target = Math.round(targetSignal);
+    if (current !== target) this.resources.add('signal', target - current);
+  }
+
+  _alignmentFromAngle() {
+    const error = Math.abs(this.angle - this.cfg.targetAzimuthDeg);
+    return Math.max(
+      this.cfg.minAlignment,
+      Math.min(1, 1 - error / this.cfg.alignmentRangeDeg),
+    );
   }
 
   /**
@@ -71,25 +132,26 @@ export class Telecom {
    * @param {number} dt in-game hours elapsed this tick
    */
   update(powered, stormActive, dt) {
+    this.lastPowered = powered;
     if (stormActive) {
-      this.alignment = Math.max(this.cfg.minAlignment, this.alignment - this.cfg.stormDriftPerHour * dt);
+      const driftDeg = this.cfg.stormDriftPerHour * dt * this.cfg.alignmentRangeDeg;
+      const awayFromTarget = this.angle >= this.cfg.targetAzimuthDeg ? 1 : -1;
+      this.angle = Math.max(
+        -this.cfg.maxAzimuthDeg,
+        Math.min(this.cfg.maxAzimuthDeg, this.angle + awayFromTarget * driftDeg),
+      );
+      this.alignment = this._alignmentFromAngle();
     }
 
-    if (!this.resources) return;
-
-    let targetSignal = powered ? this.cfg.nominalSignal * this.alignment : 0;
-    if (this.motorBroken) {
-      targetSignal = Math.min(targetSignal, this.cfg.brokenMotorCap);
-    }
-    if (this.rxCap !== null) targetSignal = Math.min(targetSignal, this.rxCap);
-    const current = this.resources.value('signal');
-    const target = Math.round(targetSignal);
-    if (current !== target) {
-      this.resources.add('signal', target - current);
-    }
+    this._syncSignal();
   }
 
   snapshot() {
-    return { alignment: this.alignment, motorBroken: this.motorBroken, rxCap: this.rxCap };
+    return {
+      alignment: this.alignment,
+      angle: this.angle,
+      motorBroken: this.motorBroken,
+      rxCap: this.rxCap,
+    };
   }
 }

@@ -1,5 +1,19 @@
 [
   {
+    "id": "main_pc",
+    "room": "room_personal",
+    "wall": "north",
+    "along": -9.65,
+    "y": 1.5
+  },
+  {
+    "id": "time_lever",
+    "room": "room_personal",
+    "wall": "north",
+    "along": -8.5,
+    "y": 1.3
+  },
+  {
     "id": "personal_dosimeter",
     "room": "room_personal",
     "wall": "west",
@@ -16,8 +30,8 @@
   {
     "id": "personal_locker",
     "room": "room_personal",
-    "wall": "north",
-    "along": -9.2,
+    "wall": "west",
+    "along": -1.25,
     "y": 1
   },
   {
