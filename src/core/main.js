@@ -99,7 +99,7 @@ const holsters = new Holsters(scene, locomotion, gameData.balance.holster);
 const interactive = [];
 const stations = buildStations({
   layout, rooms: basement.rooms, game, t, scene, interactive,
-  services: { scene, grab, holsters, floors: basement.floors, renderer },
+  services: { scene, grab, holsters, floors: basement.floors, renderer, locomotion },
 });
 
 // Interaction and locomotion

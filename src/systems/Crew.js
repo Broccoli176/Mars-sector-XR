@@ -22,8 +22,11 @@ export class Crew {
     this.activeKey = '';
   }
 
-  /** @param {number} dtHours */
-  update(dtHours) {
+  /**
+   * @param {number} dtHours
+   * @param {Record<string, number>} [extraCauses] damage per hour from other systems (e.g. { radiation } from Radiation)
+   */
+  update(dtHours, extraCauses = {}) {
     const rm = this.resources;
     /** @type {Record<string, number>} */
     const causes = {};
@@ -40,6 +43,7 @@ export class Crew {
       if (perHour > 0) causes[rule.cause] = (causes[rule.cause] ?? 0) + perHour;
     }
 
+    for (const [cause, perHour] of Object.entries(extraCauses)) causes[cause] = (causes[cause] ?? 0) + perHour;
     const damage = Object.values(causes).reduce((a, b) => a + b, 0);
     const blocked = this.cfg.regenBlockers.some((id) => rm.get(id).status === 'critical');
     const canRegen = !blocked && rm.value('food') > 0 && rm.value('water') > 0;

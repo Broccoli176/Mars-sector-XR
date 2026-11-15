@@ -61,7 +61,7 @@ export const builders = {
     kit.addBox(g, 1.25, 1.9, 0.16, 0, 0, 0, '#252d36');
     kit.addBox(g, 1.15, 1.8, 0.035, 0, 0, 0.09, '#171d25');
 
-    const statusPanel = kit.addPanel(g, 0.9, 0.48, 0, 0.48);
+    const statusPanel = kit.addPanel(g, 0.95, 0.64, 0, 0.44);
     statusPanel.mesh.position.z = 0.115;
     kit.addBox(g, 0.08, 0.08, 0.025, -0.36, -0.12, 0.12, '#24404a');
     kit.addBox(g, 0.08, 0.08, 0.025, -0.12, -0.12, 0.12, '#24404a');
@@ -95,8 +95,32 @@ export const builders = {
           text: t('ui.telecom.server_signal', { value: Math.round(signal.value) }),
           color: statusColor(signal.status),
         },
+        ...earthLinkLines(s, t),
         { text: t('ui.telecom.server_ports'), color: COLORS.dim, size: 0.8 },
       ]);
     });
   },
 };
+
+/**
+ * Earth link lines for the distribution panel: real light-time delay and messages in transit (src/systems/Comms.js).
+ * @param {any} s Simulation @param {Function} t
+ */
+function earthLinkLines(s, t) {
+  const c = s.comms;
+  if (!c) return [];
+  const g = c.geometry;
+  const transit = c.inTransit();
+  return [
+    c.conjunction
+      ? { text: t('ui.telecom.conjunction'), color: COLORS.critical, size: 0.8 }
+      : { text: t('ui.telecom.earth_delay', { min: g.lightMin.toFixed(1), au: g.distanceAu.toFixed(2) }), color: COLORS.info, size: 0.85 },
+    !c.link && transit.count
+      ? { text: t('ui.telecom.held', { count: transit.count }), color: COLORS.warning, size: 0.75 }
+      : transit.count
+        ? { text: t('ui.telecom.in_transit', { count: transit.count, min: transit.nextInMin }), color: COLORS.text, size: 0.75 }
+        : { text: t('ui.telecom.in_transit_none'), color: COLORS.dim, size: 0.75 },
+    { text: t('ui.telecom.rover_delay'), color: COLORS.dim, size: 0.7 },
+    { text: t('ui.telecom.orbit_source'), color: COLORS.dim, size: 0.65 },
+  ];
+}

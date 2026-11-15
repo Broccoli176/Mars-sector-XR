@@ -81,6 +81,7 @@ Systems receive `dtHours = 1/60` per tick. Rates below are **per in-game hour**.
 | RTG (constant) | **0.5 kW** |
 | Solar mast | **1.6 kW** from 06:00 to 18:00, 0 at night |
 | Dust storm factor on solar | × 0.2 |
+| Dust on the panels (§2.5) | solar × `dustFactor` (1 = clean) |
 | Bus limit | 3.0 kW total demand; above it for 5 in-game minutes the main relay trips |
 
 Generation: clear day ≈ **31.2 kWh** (12.0 RTG + 19.2 solar); storm day ≈ **15.8 kWh**.
@@ -129,6 +130,18 @@ Generation: clear day ≈ **31.2 kWh** (12.0 RTG + 19.2 solar); storm day ≈ **
 - If the battery is at 0, only generation is available. Serve circuits in priority order using their **current** draw; a circuit that does not fit goes `offline` and emits `power:lost { circuitId }`.
 - **Overload:** if demand stays above the bus limit for 5 in-game minutes (5 ticks), the main relay trips: every circuit loses power, breakers **stay in their positions**, and an alarm sounds. `power:overloadWarning` fires as soon as demand exceeds the limit. Resetting the relay (one lever at the breaker wall) costs nothing and restores every circuit whose breaker is on. The **3rd trip within 24 in-game hours burns the relay**; it needs 1 spare to repair.
 - **Total power loss:** `lifeSupport` **unserved for 3 continuous in-game hours for any reason** (offline by priority, breaker off, relay tripped or burned) ⇒ `game:over { reason: 'powerLoss' }`. Exception: during the **guided day-1 relay trip** the counter starts 3 h late (6 h total grace), so a new player has time to find the reset lever.
+
+### 2.5 Dust on the solar panels (implemented, `PowerGrid.dustFactor`, `balance.dust` in `energy.json`)
+
+| Item | Value | Source |
+| :-- | :-- | :-- |
+| Calm settling | −0.28 % of output per sol (`calmLossPerSol` 0.0028) | **Real**: Mars Pathfinder Materials Adherence Experiment (Landis & Jenkins 2000), `src/data/real/solar_dust.json` |
+| Dust storm deposit | −0.8 %/h while the storm lasts (36 h storm ⇒ ≈ −25 %) | Game balance |
+| Floor | `dustFactor` ≥ 0.4 | Game balance |
+| Electrodynamic dust shield | intent `solar:clean` (button «LIMPIAR PANELES» under the solar window): −0.3 kWh battery, recovers 90 % of the lost output. Rejected (`solar:rejected { reason }`) when clean (`noDust`, factor ≥ 0.99), during a storm (`storm`), with the relay open (`relay`) or battery < cost (`battery`) | Technology real (NASA KSC); numbers are game balance |
+| Dust devil | scripted `dustDevil` event (day 6 13:00): recovers 60 % of the lost output | Real phenomenon (Spirit/Opportunity); amount is game balance |
+
+Events: `solar:dustChanged { dustFactor }` (when the dust % changes by 1), `solar:cleaned { by: 'shield' | 'devil', gained, kwh }`, `solar:rejected { reason }`. Honest note: at the real calm rate a 7-day run loses only ≈ 2 %; the storm is what makes dust matter.
 
 ---
 
@@ -233,6 +246,20 @@ Start **3**. Up to **5** failures can require a spare (4 scripted + `relay_main`
 - **< 20 %:** no data is transmitted (`comms:linkLost`). Incoming messages are **queued**, delivered when signal ≥ 20 again (`comms:linkRestored`), and **dropped** if the incident they announce has already triggered.
 - **≥ 30 %:** storm forecast delivered (12 h ahead).
 - **≥ 50 %:** failure warnings (`warnLeadHours`, §6.2) and CME alerts delivered.
+
+**Implemented (v0.1, `src/systems/Comms.js`):** the queue and the 20 % link threshold (`telecom.linkThreshold`); the 30/50 % tiers and dropping stale messages are still pending.
+
+### 3.8.1 Earth–Mars light time (implemented)
+
+| Item | Value |
+| :-- | :-- |
+| Calendar | tick 0 = `comms.startDateUtc` (2026-11-14 06:00 UTC); 1 tick = 1 minute |
+| Geometry | JPL "Approximate Positions of the Planets" mean elements (`src/data/real/orbits.json`, `src/systems/orbits.js`), recomputed every game hour. Checked against JPL Horizons (< 0.1 % in distance) |
+| Delay | one-way light time, rounded up to whole minutes: **11 min** at the start (1.32 au). A mission message sent at 06:00 arrives at 06:11 |
+| Link | up while `signal ≥ 20` and the Sun–Earth–Mars angle ≥ `conjunctionDeg` (2°, NASA's solar-conjunction moratorium). Otherwise messages wait in the queue |
+| What travels | `comms:send { channel, key, params }` from IncidentRunner (forecasts, SEP alert) and the daily briefings. Hints and the rover are local: the rover is driven from the base (< 1 s delay) |
+
+Events: `comms:message { channel, key, params, day, hour, minute, sentDay, sentHour, sentMinute, delayMin }`, `comms:linkLost { reason: 'signal' | 'conjunction' }`, `comms:linkRestored {}`. The log line shows «(enviado 06:00, 11 min por el camino)». At 1× speed 11 game minutes are ≈ 3 real seconds: the realism is in the timestamps, not in waiting.
 
 ---
 
@@ -345,6 +372,8 @@ In-game times. Randomization: timing ± 2 h (clamped to stay within 06:00–23:5
 | 6 | 12:00 | CME reminder ("impacto en 24 h") | delivered now / 50 | |
 | 6 | 13:00 | **Radio blackout** (solar flare, 2 h) | — | |
 | 6 | 18:00 | Second leak (`hull_seal_telecom`) | 6 / 50 | |
+| 6 | 10:00 | **Implemented:** solar particle event `sep` (real May 2024 profile, §6.5) | 1 h alert via the delayed link | Shelter; why warnings from Earth matter |
+| 6 | 13:00 | **Implemented:** `dustDevil` cleans the panels (§2.5) | — | Dust and power |
 | 7 | 12:00 | **CME arrival** (§6.3) | see day 4 alert | Telecom early warning pays off |
 
 ### 6.3 Space weather (NASA DONKI snapshot, D19)
@@ -355,7 +384,8 @@ Source: `docs/references/registro_nasa_donki.md` (NASA CCMC DONKI, 7 days ending
 | :-- | :-- |
 | **CME** max speed **974 km/s** (16 CMEs, median 367) | One CME toward Mars. ETA = 1.52 AU (≈ 2.27 × 10⁸ km) / 974 km/s ≈ **65 h**: detected day 4, 19:00, arrives day 7, 12:00. The alert message shows the speed and the ETA calculation |
 | **FLR** 6 M-class flares | Two **radio blackouts** of 2 h (day 3 16:00, day 6 13:00): signal forced to 0, messages queued |
-| SEP (0 events), HSS (1), RBE (1), GST (0), MPC (0) | **No mechanic.** HSS/RBE/GST/MPC describe Earth's magnetosphere, which Mars lacks; SEP had no events. Used only as ambient comms text |
+| SEP | **Implemented separately** from the real May 2024 RAD record (§6.5), not from this 7-day snapshot |
+| HSS (1), RBE (1), GST (0), MPC (0) | **No mechanic.** HSS/RBE/GST/MPC describe Earth's magnetosphere, which Mars lacks; SEP had no events. Used only as ambient comms text |
 
 **CME arrival rule:** at arrival, if total demand > **2.0 kW**, `relay_main` burns (needs 1 spare). In all cases the solar mast is offline for 2 h. Essentials with the heater running draw exactly 2.0 kW, so the player must shed telecom/hydro (or briefly the heater) at 12:00.
 
@@ -369,7 +399,8 @@ Real data are embedded as **static, dated snapshots** and labelled in-world as "
 
 | Data | Source | Game use | Rule |
 | :-- | :-- | :-- | :-- |
-| Mars-surface absorbed dose rate, 24 h on 2023-01-01 (MSL RAD, ≈ 5.8–7.5 µGy/h, mean ≈ 6.5) | NASA OSDR RadLab | `systems/Radiation.js`: the game time of day replays the real record (UTC), and the surface dose accumulates during the shift. Personal dosimeter shows rate, chart and dose | **Informational only: no health damage.** The sources give no threshold, and the base is regolith-shielded; no shielding factor is invented |
+| Mars-surface absorbed dose rate, 24 h on 2023-01-01 (MSL RAD, ≈ 5.8–7.5 µGy/h, mean ≈ 6.5) | NASA OSDR RadLab | `systems/Radiation.js`: the game time of day replays the real record (UTC), and the surface dose accumulates during the shift. Personal dosimeter shows rate, chart and dose | **Background never harms health.** The base is regolith-shielded; no shielding factor is invented |
+| **Solar particle event**: RAD record 2024-05-20 → 22 (`real/radlab_sep.json`, `npm run data:radlab:sep`): background ≈ 3.8 µGy/h, onset 05:39 UTC, peak ≈ 304 µGy/h at 06:15, back near background after ≈ 2 days. NASA's press figure: 8,100 µGy for a person beside the rover (≈ 30 chest X-rays) | NASA OSDR RadLab + NASA news (June 2024) | Event `sep` (day 6 10:00, alert 1 h before through the delayed Earth link: `spaceWeather:alert`/`impact { kind: 'sep' }`). The rate = today's background + the real storm excess, minute by minute from its onset. Personal dosimeter switches to «TORMENTA SOLAR · VE AL REFUGIO» | **Shelter (game rule):** while the rate ≥ 50 µGy/h (≈ 9 game hours of the real profile), being outside Personal (intent `crew:shelter { inside }`, from the head position) costs 6 health/h, cause `radiation`. NASA-STD-3001 (OCHMO-TB-020 Rev E): 250 mSv per SPE, 600 mSv career, alert the crew to shelter; surface shelters ≈ 10 g/cm² water-equivalent ⇒ the shelter is a water-tank wall by the bunk. The thresholds are game balance, not a medical model, and no % of the NASA limit is shown (different quantities) |
 | ISS DosTel same day (median ≈ 4.7 µGy/h; SAA spikes to ≈ 510) | NASA OSDR RadLab | Comparison line on the dosimeter (median, not mean) | — |
 | Crop growth times (lettuce 21–28 d, tomato 50–90 d, …) | CSA food-production toolkit | Hidroponía guide; the game crop **is lettuce** and its growth is **time-compressed** (48 game hours), labelled so in-world | Do not present the compressed time as real |
 | Crew diet 1900–3200 kcal/day | CSA | Validates `food.consumptionPerHour` (≈ 2500 kcal/day) | Keep the value inside the range |
@@ -582,7 +613,7 @@ JSON Schemas live in `src/data/schemas/<file>.schema.json` and are validated by 
 | File | Shape (key fields) |
 | :-- | :-- |
 | `resources.json` | `{ [ResourceId]: { unit, min, max, start, direction, warnAt, criticalAt, failAt? } }` (§3.0) |
-| `balance/*.json` (merged: `core`, `energy`, `telecom`, `hydro`; see docs/COLLABORATION.md) | `{ time: { secondsPerDay, ticksPerHour, maxTicksPerFrame, dayStartHour }, power: { batteryKwh, rtgKw, solarKw, solarHours, stormSolarFactor, busLimitKw, overloadTicks, relayBurnTrips }, circuits: { [id]: { drawKw, priority, activeHours? } }, lifeSupport: {...}, thermal: {...}, water: {...}, food: {...}, telecom: {...}, health: {...}, cascade: {...} }` |
+| `balance/*.json` (merged: `core`, `energy` (+ `dust`), `telecom` (+ `comms`), `hydro`, `hub`, `rover`, `personal` (`radiation`); see docs/COLLABORATION.md) | `{ time: { secondsPerDay, ticksPerHour, maxTicksPerFrame, dayStartHour }, power: { batteryKwh, rtgKw, solarKw, solarHours, stormSolarFactor, busLimitKw, overloadTicks, relayBurnTrips }, circuits: { [id]: { drawKw, priority, activeHours? } }, lifeSupport: {...}, thermal: {...}, water: {...}, food: {...}, telecom: {...}, health: {...}, cascade: {...} }` |
 | `components.json` | `[ { id, system, effect, toolId, spares, holdSeconds, needsRepairBay } ]` (§6.1) |
 | `events.json` | `[ { id, day, time: "HH:MM", type: 'failure' \| 'leak' \| 'storm' \| 'flare' \| 'cme' \| 'scripted', params: {}, durationHours?, warnLeadHours?, minSignal?, jitter: bool, stringKey } ]` (§6.2) |
 | `spaceWeather.json` | `{ source: { institution, platform, url, capturedAt, period }, flr: { total, m, x }, cme: { total, minKms, maxKms, medianKms, meanKms }, sep: {...}, hss: {...}, rbe: {...}, gst: {...}, derived: { marsDistanceKm, cmeEtaHours } }` (§6.3) |

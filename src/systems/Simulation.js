@@ -11,6 +11,7 @@ import { Telecom } from './Telecom.js';
 import { Radiation } from './Radiation.js';
 import { Electronics } from './Electronics.js';
 import { Rover } from './Rover.js';
+import { Comms } from './Comms.js';
 
 const TICKS_PER_HOUR = 60;
 
@@ -31,18 +32,24 @@ export class Simulation {
 
     this.time = new TimeManager(b.time, bus);
     this.resources = new ResourceManager(data.resources, bus);
-    this.power = new PowerGrid(b.power, b.circuits, this.resources, bus);
+    this.power = new PowerGrid(b.power, b.circuits, this.resources, bus, b.dust ?? null);
     this.lifeSupport = new LifeSupport(b, this.resources, bus, this.inventory);
     this.food = new Food(b, this.resources, bus);
     this.crew = new Crew(b.health, TICKS_PER_HOUR, this.resources, bus);
     this.incidents = new IncidentRunner(data.events, b.time, { bus, power: this.power });
     this.telecom = new Telecom(b.telecom, bus, this.resources);
+    // Earth link with the real light-time delay (JPL elements). Without the orbits snapshot: no delay.
+    this.comms = new Comms(b.comms, data.real?.orbits ?? null, {
+      bus, time: this.time, resources: this.resources, linkThreshold: this.telecom.cfg.linkThreshold,
+    });
     // Telecom receiver power supply, repaired at the hub electronics bench (spec §6.6).
     this.electronics = b.electronics ? new Electronics(b.electronics, b.time, bus) : null;
     // Perseverance-class rover driven from the Sala de control; charges through the repairBay circuit.
     this.rover = b.rover ? new Rover(b.rover, bus, this.resources) : null;
     // Real Mars-surface radiation replay (informational, no health effect). Only if the snapshot exists.
-    this.radiation = data.real?.radlab ? new Radiation(data.real.radlab) : null;
+    this.radiation = data.real?.radlab
+      ? new Radiation(data.real.radlab, { sep: data.real.radlab_sep ?? null, cfg: b.radiation ?? null, bus })
+      : null;
     this.game = new GameState(b.gameRules, TICKS_PER_HOUR, {
       bus,
       time: this.time,
@@ -86,15 +93,17 @@ export class Simulation {
       hydro: hydro.hydro,
       repairBay: this.rover?.chargeKw() ?? 0,
     };
+    this.power.updateDust(dt);
     this.power.resolve(requests, clock, this.time.tick);
 
     this.lifeSupport.update(this.power.served, dt);
     this.food.update(this.power.served, dt);
-    this.crew.update(dt);
+    this.crew.update(dt, this.radiation?.crewDamage());
     this.radiation?.update(clock, dt);
     this.electronics?.update(this.time.tick, dt);
     this.rover?.update(dt, this.power.served.repairBay);
     this.telecom.update(this.power.served.telecom, this.power.stormActive, dt);
+    this.comms.update();
     this.resources.commit(dt);
 
     this.time.advanceTick();

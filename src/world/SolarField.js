@@ -11,9 +11,18 @@ import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 /**
  * Pure look of the field for a time of day and weather (tested).
  * @param {number} hour 0–24 @param {boolean} storm @param {{ solarStartHour: number, solarEndHour: number }} cfg
- * @returns {{ daylight: boolean, sky: [number, number, number], ground: number, panel: number, dust: number }}
+ * @param {number} [dustFactor] PowerGrid.dustFactor (1 = clean panels)
+ * @returns {{ daylight: boolean, sky: [number, number, number], ground: number, panel: number, dust: number, soil: number }}
  */
-export function fieldLook(hour, storm, cfg) {
+export function fieldLook(hour, storm, cfg, dustFactor = 1) {
+  const base = fieldLookClean(hour, storm, cfg);
+  // Settled dust dulls the cells (soil 0 = clean, 1 = fully covered); the ochre tint is applied in update().
+  const soil = Math.min(1, Math.max(0, 1 - dustFactor));
+  return { ...base, panel: base.panel * (1 - 0.6 * soil), soil };
+}
+
+/** @param {number} hour @param {boolean} storm @param {{ solarStartHour: number, solarEndHour: number }} cfg */
+function fieldLookClean(hour, storm, cfg) {
   const daylight = hour >= cfg.solarStartHour && hour < cfg.solarEndHour;
   if (storm) return { daylight, sky: [0.55, 0.36, 0.26], ground: daylight ? 0.6 : 0.2, panel: daylight ? 0.5 : 0.15, dust: 1 };
   if (!daylight) return { daylight, sky: [0.03, 0.03, 0.06], ground: 0.16, panel: 0.12, dust: 0 };
@@ -23,6 +32,8 @@ export function fieldLook(hour, storm, cfg) {
   const sky = /** @type {[number, number, number]} */ ([0.78 - 0.4 * edge, 0.6 - 0.15 * edge, 0.45 + 0.2 * edge]);
   return { daylight, sky, ground: 1, panel: 1, dust: 0 };
 }
+
+const DUST_TINT = new THREE.Color(0xb0703f);
 
 /** @param {THREE.BufferGeometry} geo @param {THREE.ColorRepresentation} color */
 function paint(geo, color) {
@@ -207,11 +218,12 @@ export function buildSolarField(scene, getSim, win) {
     /** @param {number} dt real seconds */
     update(dt) {
       const sim = getSim();
-      const look = fieldLook(sim.time.clock().hourFloat, Boolean(sim.power.stormActive), sim.power.cfg);
+      const look = fieldLook(sim.time.clock().hourFloat, Boolean(sim.power.stormActive), sim.power.cfg, sim.power.dustFactor ?? 1);
       skyMat.color.setRGB(...look.sky);
       groundMat.color.setScalar(look.ground);
       tint.setScalar(look.panel);
       if (look.daylight && !look.dust) tint.setRGB(look.panel, look.panel, Math.min(1.25, look.panel * 1.2)); // blue glint
+      if (look.soil > 0) tint.lerp(DUST_TINT.clone().multiplyScalar(look.ground), Math.min(0.85, look.soil * 1.6)); // settled dust
       panelMat.color.copy(tint);
       legMat.color.setScalar(look.ground);
       /** @type {THREE.MeshBasicMaterial} */ (props.material).color.setScalar(look.ground);

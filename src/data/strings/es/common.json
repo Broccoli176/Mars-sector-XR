@@ -69,5 +69,20 @@
   "comms.storm.forecast": "Previsión: tormenta de polvo en {hours} h. Duración estimada {duration} h.",
   "comms.storm.start": "Tormenta activa: solar al 20 %.",
   "comms.storm.end": "Tormenta finalizada.",
-  "dev.help": "Teclado (escritorio y emulador): W/S avanzar/retroceder · A/D lateral · Q/E o ←/→ girar · G coger/soltar · F (mantén) usar lo que sostienes · R girar lo que sostienes · H cinturón (guardar/sacar). Ratón: arrastra para mirar · clic para usar o teletransportarte. En el visor: botón «ENTER VR»."
+  "dev.help": "Teclado (escritorio y emulador): W/S avanzar/retroceder · A/D lateral · Q/E o ←/→ girar · G coger/soltar · F (mantén) usar lo que sostienes · R girar lo que sostienes · H cinturón (guardar/sacar). Ratón: arrastra para mirar · clic para usar o teletransportarte. En el visor: botón «ENTER VR».",
+  "ui.log.comms_sent": "(enviado {time}, {min} min por el camino)",
+  "ui.log.link_lost.signal": "Enlace con la Tierra perdido: señal por debajo del 20 %. Los mensajes esperan en cola.",
+  "ui.log.link_lost.conjunction": "Conjunción solar: el Sol tapa la Tierra. Sin enlace hasta que pase.",
+  "ui.log.link_restored": "Enlace con la Tierra restablecido.",
+  "ui.log.solar_cleaned.shield": "Paneles limpiados con el escudo electrodinámico: +{pct} % de producción.",
+  "ui.log.solar_cleaned.devil": "Un remolino de polvo ha barrido los paneles: +{pct} % de producción.",
+  "ui.log.solar_rejected.noDust": "Los paneles ya están limpios.",
+  "ui.log.solar_rejected.storm": "No sirve limpiar ahora: la tormenta sigue echando polvo.",
+  "ui.log.solar_rejected.relay": "Sin energía para el escudo: rearma el relé.",
+  "ui.log.solar_rejected.battery": "Batería insuficiente para limpiar los paneles.",
+  "cause.radiation": "radiación",
+  "summary.cause.radiation": "Causa: radiación de una tormenta solar sin refugio.",
+  "comms.sep.forecast": "¡Alerta! Fulgurante solar enorme. Las partículas llegarán a Marte en unos {minutes} min. Ve al refugio de Personal.",
+  "hint.sep.impact": "Tormenta de partículas solares en curso. Quédate en el refugio (litera de Personal) hasta que baje.",
+  "hint.dust.devil": "Un remolino de polvo pasa junto al campo solar."
 }

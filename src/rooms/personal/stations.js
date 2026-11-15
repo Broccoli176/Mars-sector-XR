@@ -7,6 +7,7 @@
 import { COLORS, BUTTON, statusColor, startButtonState } from '../../ui/StationKit.js';
 import { createSpaceWeatherFeed } from './spaceWeatherLive.js';
 import { formatClock } from '../../utils/strings.js';
+import { Vector3 } from 'three';
 
 const SPEEDS = [0, 1, 2, 4];
 const LOG_COLORS = { info: COLORS.text, hint: COLORS.info, comms: COLORS.title, warning: COLORS.warning, critical: COLORS.critical };
@@ -79,10 +80,37 @@ export const builders = {
     const radlab = kit.game.data.real?.radlab;
     const panel = kit.addPanel(g, 1.2, 0.8);
 
+    // Storm shelter = this room. Report where the player's head is (crew:shelter); the sim decides the dose.
+    const room = kit.game.data.layout.rooms.find((/** @type {any} */ rm) => rm.id === 'room_personal');
+    const loco = kit.services.locomotion;
+    const head = new Vector3();
+    const inShelter = () => {
+      if (!loco || !room) return true;
+      loco.headWorld(head);
+      return head.x >= room.x[0] && head.x <= room.x[1] && head.z >= room.z[0] && head.z <= room.z[1];
+    };
+
     kit.onRefresh(() => {
       const r = sim().radiation;
       if (!r || !radlab) {
         panel.renderLines(t('personal.dosimeter.title'), [{ text: t('personal.dosimeter.no_data'), color: COLORS.warning }]);
+        return;
+      }
+      const inside = inShelter();
+      if (r.sheltered !== inside) kit.game.intent('crew:shelter', { inside });
+      if (r.stormActive) {
+        const dose = r.stormDoseMicroGy >= 1000 ? `${(r.stormDoseMicroGy / 1000).toFixed(2)} mGy` : `${r.stormDoseMicroGy.toFixed(0)} µGy`;
+        const danger = r.shelterNeeded;
+        panel.renderLines(t('personal.sep.title'), [
+          { text: t('personal.sep.rate', { rate: r.rate.toFixed(0), normal: r.marsMean.toFixed(1) }), color: danger ? COLORS.critical : COLORS.warning, size: 1.05 },
+          danger
+            ? { text: t(inside ? 'personal.sep.shelter_ok' : 'personal.sep.shelter_go'), color: inside ? COLORS.nominal : COLORS.critical }
+            : { text: t('personal.sep.calm'), color: COLORS.nominal },
+          { text: t('personal.sep.storm_dose', { dose }), size: 0.85 },
+          { text: t('personal.sep.exposed', { min: Math.round(r.exposedMinutes) }), color: r.exposedMinutes > 0 ? COLORS.warning : COLORS.dim, size: 0.85 },
+          { text: t('personal.sep.nasa'), color: COLORS.info, size: 0.75 },
+          { text: t('personal.sep.real'), color: COLORS.dim, size: 0.7 },
+        ], { border: danger ? COLORS.critical : COLORS.warning });
         return;
       }
       const c = sim().time.clock();
@@ -97,6 +125,10 @@ export const builders = {
     kit.addBox(g, 2.0, 0.45, 0.9, 0, base + 0.225, 0.45, '#5f646b'); // frame
     kit.addBox(g, 1.9, 0.12, 0.82, 0, base + 0.51, 0.45, '#7d6f8a'); // mattress
     kit.addBox(g, 0.4, 0.1, 0.6, -0.7, base + 0.62, 0.45, '#c9c4bb'); // pillow
+    // Storm shelter: a wall of water tanks behind the bunk (NASA: ~10 g/cm² water-equivalent around the astronaut).
+    kit.addBox(g, 2.1, 1.3, 0.22, 0, base + 1.24, 0.11, '#3b6688');
+    const sign = kit.addPanel(g, 0.95, 0.16, 0, base + 2.0);
+    sign.renderLines('', [{ text: kit.t('personal.shelter.sign'), color: COLORS.info, size: 1.4 }]);
   },
 
   personal_locker(g, station, kit) {

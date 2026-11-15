@@ -2,7 +2,9 @@ import { TimeManager } from './TimeManager.js';
 
 /**
  * Fires the scripted incidents of events.json (SIMULATION_SPEC §6.2).
- * Prototype scope: guided relay trip, hints, dust storm (+ forecast).
+ * Prototype scope: guided relay trip, hints, dust storm (+ forecast), dust devil, solar particle event.
+ * Mission messages go out as 'comms:send': Comms (src/systems/Comms.js) delivers them after the real
+ * Earth–Mars light time, and only while there is a link.
  */
 export class IncidentRunner {
   /**
@@ -52,6 +54,10 @@ export class IncidentRunner {
     if (event.type === 'storm') {
       this.#comms('comms.storm.forecast', { hours: event.warnLeadHours, duration: event.durationHours }, clock);
     }
+    if (event.type === 'sep') {
+      this.bus.emit('spaceWeather:alert', { kind: 'sep', etaHours: event.warnLeadHours });
+      this.#comms('comms.sep.forecast', { minutes: Math.round(event.warnLeadHours * 60) }, clock);
+    }
   }
 
   /** @param {any} event @param {number} tick @param {any} clock */
@@ -60,6 +66,12 @@ export class IncidentRunner {
     switch (event.type) {
       case 'relayTrip':
         this.power.trip(tick, { guided: Boolean(event.guided) });
+        break;
+      case 'dustDevil':
+        this.power.dustDevil();
+        break;
+      case 'sep':
+        this.bus.emit('spaceWeather:impact', { kind: 'sep', durationHours: event.durationHours });
         break;
       case 'storm':
         this.power.stormActive = true;
@@ -76,6 +88,7 @@ export class IncidentRunner {
 
   /** @param {string} key @param {Record<string, any>} params @param {any} clock */
   #comms(key, params, clock) {
-    this.bus.emit('comms:message', { channel: 'mission', key, params, day: clock.day, hour: clock.hour });
+    void clock;
+    this.bus.emit('comms:send', { channel: 'mission', key, params });
   }
 }

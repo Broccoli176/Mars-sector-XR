@@ -1,0 +1,8 @@
+{
+  "radiation": {
+    "_about": "Solar particle event rules. The storm rate itself is REAL (src/data/real/radlab_sep.json). shelterAboveUGyPerHour and unshelteredDamagePerHour are GAME RULES (not a medical model); NASA-STD-3001 only says to alert the crew and shelter them (250 mSv per-event limit).",
+    "shelterAboveUGyPerHour": 50,
+    "unshelteredDamagePerHour": 6,
+    "stormMaxHours": 48
+  }
+}
