@@ -18,12 +18,59 @@
         display: flex; align-items: center; justify-content: space-between;
         font-weight: 600; color: #ffcf66; margin-bottom: 6px; font-size: 14px;
       }
-      #onboarding-toggle {
+      #onboarding-toggle, #onboarding-menu {
         background: #243140; color: #a4b3c4; border: 1px solid #3d4f62; border-radius: 4px;
         cursor: pointer; font-size: 11px; padding: 2px 7px; font-weight: normal;
       }
-      #onboarding-toggle:hover { background: #324357; color: #ffffff; }
+      #onboarding-toggle:hover, #onboarding-menu:hover { background: #324357; color: #ffffff; }
       #onboarding-content { white-space: pre-line; }
+      /* Start menu (src/ui/StartMenu.js): game palette (src/ui/theme.js), big cards for young players. */
+      #start-menu {
+        position: fixed; inset: 0; z-index: 20; display: flex; align-items: center; justify-content: center;
+        background: radial-gradient(ellipse at center, rgba(17, 22, 28, 0.82), rgba(5, 6, 7, 0.95));
+        color: #d8e1e8; padding: 16px; box-sizing: border-box; overflow-y: auto;
+      }
+      #start-menu[hidden] { display: none; }
+      .sm-card { max-width: 860px; width: 100%; text-align: center; }
+      .sm-lang { display: flex; gap: 8px; justify-content: flex-end; align-items: center; flex-wrap: wrap; margin-bottom: 8px; font-size: 14px; color: #a9b6c2; }
+      .sm-lang-btn { font: inherit; font-weight: 700; color: #d8e1e8; background: #182029; border: 2px solid #3a4652; border-radius: 999px; padding: 4px 14px; cursor: pointer; }
+      .sm-lang-btn:hover, .sm-lang-btn:focus-visible { border-color: #7cc4ff; outline: none; }
+      .sm-lang-btn[aria-pressed="true"] { background: #2f6fb3; border-color: #7cc4ff; color: #ffffff; }
+      .sm-lang-note { flex-basis: 100%; text-align: right; color: #ffbf3f; }
+      .sm-title { margin: 0 0 6px; color: #ffcf66; font-size: clamp(22px, 4vw, 38px); letter-spacing: 0.5px; }
+      .sm-mission {
+        margin: 0 auto 18px; max-width: 760px; padding: 14px 18px; text-align: left; border-radius: 12px;
+        border: 2px solid #ffcf66; background: rgba(24, 32, 41, 0.92);
+      }
+      .sm-mission-title { margin: 0 0 6px; color: #ffcf66; font-size: 20px; letter-spacing: 1px; }
+      .sm-mission-facts { margin: 0 0 10px; padding-left: 20px; font-size: 16px; line-height: 1.45; }
+      .sm-mission-facts li:first-child { font-weight: 700; color: #ffffff; }
+      .sm-timeline-title { margin: 0 0 6px; color: #7cc4ff; font-size: 16px; }
+      .sm-timeline { list-style: none; margin: 0 0 8px; padding: 0; display: grid; gap: 4px; font-size: 15px; }
+      .sm-timeline li { display: flex; gap: 10px; align-items: baseline; }
+      .sm-day { flex: 0 0 auto; min-width: 54px; padding: 1px 8px; border-radius: 999px; background: #2a1f14; color: #ffbf3f; font-weight: 700; font-size: 14px; text-align: center; }
+      .sm-mission-start { margin: 0; font-size: 14px; color: #a9b6c2; }
+      .sm-subtitle { margin: 0 0 22px; font-size: clamp(16px, 2.4vw, 22px); color: #a9b6c2; }
+      .sm-options { display: flex; gap: 18px; justify-content: center; flex-wrap: wrap; }
+      .sm-option {
+        flex: 1 1 300px; max-width: 400px; display: flex; flex-direction: column; align-items: center; gap: 8px;
+        padding: 22px 18px; border-radius: 14px; cursor: pointer; font: inherit; color: #ffffff;
+        border: 2px solid #3a4652; background: #182029; transition: transform 0.12s, border-color 0.12s, background 0.12s;
+      }
+      .sm-option:hover, .sm-option:focus-visible { transform: translateY(-2px); border-color: #7cc4ff; background: #1f2a36; outline: none; }
+      .sm-icon { font-size: 46px; line-height: 1; }
+      .sm-name { font-size: 24px; font-weight: 700; }
+      .sm-desc { font-size: 15px; color: #c4ced8; }
+      .sm-status { margin-top: 4px; font-size: 14px; font-weight: 600; padding: 4px 10px; border-radius: 999px; background: #2a1f14; color: #ffbf3f; }
+      .sm-status[data-state="ready"] { background: #14281d; color: #8fe08f; }
+      .sm-help { margin: 20px auto 0; max-width: 640px; padding: 14px 16px; border-radius: 10px; border: 1px solid #3a4652; background: #141b23; text-align: left; }
+      .sm-help-text { margin: 0 0 12px; font-size: 15px; line-height: 1.45; }
+      .sm-help-actions { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+      .sm-link { color: #7cc4ff; font-size: 15px; }
+      .sm-emulator { font: inherit; font-size: 15px; font-weight: 700; color: #ffffff; background: #227a90; border: none; border-radius: 8px; padding: 10px 14px; cursor: pointer; }
+      .sm-emulator:hover { background: #1f7388; }
+      .sm-error { margin-top: 14px; color: #ff6b5c; font-weight: 600; }
+      #onboarding-menu { margin-left: 6px; }
       #crosshair {
         position: fixed; left: 50%; top: 50%; width: 8px; height: 8px; margin: -4px 0 0 -4px;
         border-radius: 50%; background: rgba(255, 207, 102, 0.7);
@@ -35,12 +82,16 @@
     <div id="app"></div>
     <div id="onboarding-panel">
       <div id="onboarding-header">
-        <span>Ares Uno · Base Subterránea</span>
-        <button id="onboarding-toggle" type="button" aria-label="Alternar ayuda">Minimizar</button>
+        <span id="onboarding-title">Ares Uno · Base Subterránea</span>
+        <span>
+          <button id="onboarding-toggle" type="button" aria-label="Alternar ayuda">Minimizar</button>
+          <button id="onboarding-menu" type="button" aria-label="Volver al menú">Menú</button>
+        </span>
       </div>
       <div id="onboarding-content"></div>
     </div>
     <div id="crosshair"></div>
+    <div id="start-menu" hidden></div>
     <script type="module" src="/src/core/main.js"></script>
   </body>
 </html>

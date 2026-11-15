@@ -387,6 +387,8 @@ The summary also states that the CME effect on surface electronics is a **teachi
 
 ### 6.2 Incident script (`src/data/events.json`)
 
+**Implemented 2026-11-15 (one real fault per tool, `src/systems/Repairs.js`):** `failure`/`leak` events in `events.json`: D3 14:00 `scrubber_fan` (screwdriver, 1 spare, 8 s), D5 10:00 leak `hull_seal_hub` on the Sala central north wall (sealant gun, 1 sealant charge, 5 s), D7 09:00 `antenna_motor` (wrench, 1 spare, 10 s); the soldering iron keeps the D2 receiver fault at the electronics bench. Pump, electrolyzer and recycler faults below stay planned. The rows below are the original design and are not all scheduled.
+
 In-game times. Randomization: timing ± 2 h (clamped to stay within 06:00–23:59 of the same day), magnitude ± 25 %, seeded RNG (§6.4). Day-1 incidents and space-weather events have no jitter.
 
 | Day | Time | Incident | `warnLeadHours` / `minSignal` | Teaches |
@@ -433,7 +435,7 @@ Real data are embedded as **static, dated snapshots** and labelled in-world as "
 | Data | Source | Game use | Rule |
 | :-- | :-- | :-- | :-- |
 | Mars-surface absorbed dose rate, 24 h on 2023-01-01 (MSL RAD, ≈ 5.8–7.5 µGy/h, mean ≈ 6.5) | NASA OSDR RadLab | `systems/Radiation.js`: the game time of day replays the real record (UTC), and the surface dose accumulates during the shift. Personal dosimeter shows rate, chart and dose | **Background never harms health.** The base is regolith-shielded; no shielding factor is invented |
-| **Solar particle event**: RAD record 2024-05-20 → 22 (`real/radlab_sep.json`, `npm run data:radlab:sep`): background ≈ 3.8 µGy/h, onset 05:39 UTC, peak ≈ 304 µGy/h at 06:15, back near background after ≈ 2 days. NASA's press figure: 8,100 µGy for a person beside the rover (≈ 30 chest X-rays) | NASA OSDR RadLab + NASA news (June 2024) | Event `sep` (day 6 10:00, alert 1 h before through the delayed Earth link: `spaceWeather:alert`/`impact { kind: 'sep' }`). The rate = today's background + the real storm excess, minute by minute from its onset. Personal dosimeter switches to «TORMENTA SOLAR · VE AL REFUGIO» | **Shelter (game rule):** while the rate ≥ 50 µGy/h (≈ 9 game hours of the real profile), being outside Personal (intent `crew:shelter { inside }`, from the head position) costs 6 health/h, cause `radiation`. NASA-STD-3001 (OCHMO-TB-020 Rev E): 250 mSv per SPE, 600 mSv career, alert the crew to shelter; surface shelters ≈ 10 g/cm² water-equivalent ⇒ the shelter is a water-tank wall by the bunk. The thresholds are game balance, not a medical model, and no % of the NASA limit is shown (different quantities) |
+| **Solar particle event**: RAD record 2024-05-20 → 22 (`real/radlab_sep.json`, `npm run data:radlab:sep`): background ≈ 3.8 µGy/h, onset 05:39 UTC, peak ≈ 304 µGy/h at 06:15, back near background after ≈ 2 days. NASA's press figure: 8,100 µGy for a person beside the rover (≈ 30 chest X-rays) | NASA OSDR RadLab + NASA news (June 2024) | Event `sep` (day 6 10:00, alert 1 h before through the delayed Earth link: `spaceWeather:alert`/`impact { kind: 'sep' }`). The rate = today's background + the real storm excess, minute by minute from its onset. Personal dosimeter switches to «TORMENTA SOLAR · VE AL REFUGIO» | **Shelter (game rule):** the shelter is the water-tank alcove around the Personal bunk (`balance.shelter`; head inside the alcove, not just inside the room). While the rate ≥ 50 µGy/h (≈ 9 game hours of the real profile), being outside Personal (intent `crew:shelter { inside }`, from the head position) costs 6 health/h, cause `radiation`. NASA-STD-3001 (OCHMO-TB-020 Rev E): 250 mSv per SPE, 600 mSv career, alert the crew to shelter; surface shelters ≈ 10 g/cm² water-equivalent ⇒ the shelter is a water-tank wall by the bunk. The thresholds are game balance, not a medical model, and no % of the NASA limit is shown (different quantities) |
 | ISS DosTel same day (median ≈ 4.7 µGy/h; SAA spikes to ≈ 510) | NASA OSDR RadLab | Comparison line on the dosimeter (median, not mean) | — |
 | Crop growth times (lettuce 21–28 d, tomato 50–90 d, …) | CSA food-production toolkit | Hidroponía guide; the game crop **is lettuce** and its growth is **time-compressed** (48 game hours), labelled so in-world | Do not present the compressed time as real |
 | Crew diet 1900–3200 kcal/day | CSA | Validates `food.consumptionPerHour` (≈ 2500 kcal/day) | Keep the value inside the range |
@@ -527,13 +529,15 @@ Ver **`AGENTS.md` §4.2** para el contrato de eventos y payloads (baseline + pro
 | Hidroponía · Agricultura | Water tank gauge; kcal counter + ration locker; crop lights (growing / ready / spoiling); harvest rack; `valve_recycler` |
 | Telecomunicaciones | N: window + console (signal/alignment/azimuth/motor panel and left/right turn controls). W: communications distribution panel with uplink/signal status. Pending: message printer |
 | Sala central · Herramientas (hub) | **Training bench** (§9.4), tool wall, spares counter, component status board |
-| Personal | Bunk + water-tank radiation shelter, locker, dosimeter, «El Sol ahora» and «Salud del astronauta» panels |
+| Personal | Storm-shelter alcove (bunk walled with water tanks; only the alcove protects), locker, dosimeter, «El Sol ahora» and «Salud del astronauta» panels |
 | Corridors | Emergency lights, hull seal panels (leak points), alarm beacons |
 | Wrist | Biomonitor on the non-dominant hand |
 
 Every threshold in §3.0 must be readable on at least one of these panels. Wall-by-wall placement: `docs/FLOOR_PLAN.md` §4.
 
 ### 9.3 Interaction, tools and alarms
+
+**Hold-to-repair (implemented 2026-11-15):** aim the tool at the broken part (desktop: the crosshair) and hold the trigger / F. The tool animates (wrench ratchets with sparks, screwdriver spins, soldering iron glows and smokes, sealant gun sprays foam) and `repair:work` batches feed `Repairs`; the part's label shows the tool to use, the progress bar and any rejection. Progress is kept when you let go.
 
 **Tools in the simulation (implemented 2026-11-15, `src/systems/Toolbelt.js`):** the tool-wall intents (`item:grab`, `item:socket`, `item:release`) tell the simulation what the player carries (hand or belt holster). Only components that can break in this build (`components[].inGame`) need their tool: replacing a burned `relay_main` needs the **screwdriver** (plus 1 spare) and soldering at the electronics bench (`rx_psu`) needs the **soldering iron**. Without it: `relay:rejected` / `electronics:rejected` with `reason: 'noTool'`, a log line and a bench message. The wrench and the sealant gun are labelled «Sin uso por ahora» on the wall until their faults exist. Two holsters for four tools makes «what do I carry» a real choice.
 

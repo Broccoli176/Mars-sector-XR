@@ -71,3 +71,24 @@ describe('Tool and component data (spec §6.1)', () => {
     for (const c of components) expect(gameData.strings[c.nameKey], c.nameKey).toBeDefined();
   });
 });
+
+describe('tool use animations (toolRules.toolMotion)', () => {
+  it('each tool moves in its own way while used', async () => {
+    const { toolMotion, TOOL_TIPS, TOOL_EFFECT } = await import('../src/rooms/hub/toolRules.js');
+    // Wrench ratchets back and forth within ±35°.
+    const swings = [0.1, 0.3, 0.5, 0.7].map((t) => toolMotion('wrench', t).roll);
+    expect(Math.max(...swings.map(Math.abs))).toBeLessThanOrEqual((35 * Math.PI) / 180 + 1e-9);
+    expect(Math.sign(swings[0])).not.toBe(Math.sign(swings[2]));
+    // Screwdriver keeps spinning.
+    expect(toolMotion('screwdriver', 1).roll).toBeGreaterThan(toolMotion('screwdriver', 0.5).roll);
+    // Soldering iron heats up and saturates.
+    expect(toolMotion('solder_iron', 0.1).heat).toBeLessThan(toolMotion('solder_iron', 0.5).heat);
+    expect(toolMotion('solder_iron', 5).heat).toBe(1);
+    // Sealant gun kicks back but never pushes forward.
+    expect(toolMotion('sealant_gun', 0.15).push).toBeGreaterThanOrEqual(0);
+    for (const id of ['wrench', 'screwdriver', 'solder_iron', 'sealant_gun']) {
+      expect(TOOL_TIPS[/** @type {keyof typeof TOOL_TIPS} */ (id)]).toHaveLength(3);
+      expect(TOOL_EFFECT[/** @type {keyof typeof TOOL_EFFECT} */ (id)]).toBeTypeOf('string');
+    }
+  });
+});

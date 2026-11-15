@@ -1,7 +1,6 @@
 import * as THREE from 'three';
-import { VRButton } from 'three/addons/webxr/VRButton.js';
 import { gameData } from '../data/index.js';
-import { createTranslator } from '../utils/strings.js';
+import { createTranslator, pickLanguage, setNumberLanguage } from '../utils/strings.js';
 import { Game } from './Game.js';
 import { buildBasement } from '../world/Basement.js';
 import { buildPorthole } from '../world/Porthole.js';
@@ -17,9 +16,11 @@ import { KeyboardLocomotion } from '../vr/KeyboardLocomotion.js';
 import { buildCollider } from '../vr/Collision.js';
 import { Grab } from '../vr/Grab.js';
 import { Holsters } from '../vr/Holsters.js';
+import { createStartMenu } from '../ui/StartMenu.js';
+import { startMode, missionBriefing, VR_SESSION_INIT } from '../ui/startMenuRules.js';
 
 // Dev-only: `?iwer` installs Meta's Immersive Web Emulation Runtime (Quest 3) without the browser
-// extension. Must run before VRButton checks session support. Lazy-loaded: not in the main bundle.
+// extension. The start menu offers the same emulator on demand («Usar emulador integrado»). Lazy-loaded.
 const devParams = new URLSearchParams(window.location.search);
 if (devParams.has('iwer')) {
   const { installEmulatedQuest3 } = await import('../dev/iwer.js');
@@ -30,7 +31,19 @@ const PANEL_REFRESH_SECONDS = 0.25; // 4 Hz canvas updates
 const MAX_FRAME_DT = 0.1;
 const FACING_YAW = { north: 0, west: Math.PI / 2, south: Math.PI, east: -Math.PI / 2 };
 
-const t = createTranslator(gameData.strings);
+// Language (start menu): ?lang= or the last choice saved in this browser; Spanish by default.
+/** @returns {string | null} */
+const savedLanguage = () => {
+  try {
+    return window.localStorage.getItem('ares.lang');
+  } catch {
+    return null;
+  }
+};
+const lang = pickLanguage(devParams, savedLanguage());
+document.documentElement.lang = lang;
+setNumberLanguage(lang);
+const t = createTranslator(gameData.stringsByLang[lang]);
 const game = new Game(gameData, t);
 const { layout } = gameData;
 
@@ -123,10 +136,11 @@ xr.holsters = holsters; // B/Y belt button
 desktop.holsters = holsters; // H key (dev)
 holsters.grab = grab; // rings light up while holding a tool
 const keyboard = new KeyboardLocomotion(renderer, camera, dolly, locomotion, collider);
-if (devParams.has('iwer') || devParams.has('debug')) {
-  // Do not expose the THREE namespace here: referencing it as a value defeats tree-shaking.
+/** Dev handle (`?debug`, `?iwer` or the built-in emulator). Do not expose the THREE namespace: it defeats tree-shaking. */
+function exposeDebug() {
   /** @type {any} */ (window).__marte = { renderer, camera, dolly, game, grab, holsters, Vector3: THREE.Vector3 };
 }
+if (devParams.has('iwer') || devParams.has('debug')) exposeDebug();
 
 // Wrist biomonitor on the left controller (physical device, not a head-locked HUD).
 const wristBio = new Panel(0.13, 0.08, { pxPerMeter: 2400 });
@@ -143,32 +157,91 @@ const crosshair = /** @type {HTMLElement} */ (document.getElementById('crosshair
 if (onboardingContent) onboardingContent.textContent = t('dev.help');
 if (onboardingToggle && onboardingContent) {
   let minimized = false;
+  onboardingToggle.textContent = t('ui.help.minimize');
   onboardingToggle.addEventListener('click', () => {
     minimized = !minimized;
     onboardingContent.style.display = minimized ? 'none' : 'block';
-    onboardingToggle.textContent = minimized ? 'Ayuda [?]' : 'Minimizar';
+    onboardingToggle.textContent = t(minimized ? 'ui.help.expand' : 'ui.help.minimize');
   });
 }
-// Show aiming crosshair in desktop/browser mode for easy interaction with 3D buttons
-if (crosshair) crosshair.style.display = 'block';
-
-document.body.appendChild(VRButton.createButton(renderer));
+// ---- Start menu: immersive VR (headset / Meta Immersive Web Emulator / built-in IWER) or browser mode ----
+const startMenuRoot = /** @type {HTMLElement} */ (document.getElementById('start-menu'));
+/** Shows or hides the desktop help and crosshair, and turns mouse/keyboard input on or off. @param {boolean} on */
+const setBrowserUi = (on) => {
+  if (onboarding) onboarding.style.display = on ? 'block' : 'none';
+  if (crosshair) crosshair.style.display = on ? 'block' : 'none';
+  desktop.enabled = on;
+  keyboard.enabled = on;
+};
+/** Opens an immersive VR session (must run inside the click that chose it). */
+const enterVr = async () => {
+  const xrApi = /** @type {any} */ (navigator).xr;
+  if (!xrApi) throw new Error('WebXR no disponible');
+  const session = await xrApi.requestSession('immersive-vr', VR_SESSION_INIT);
+  await renderer.xr.setSession(session);
+};
+const helpTitle = document.getElementById('onboarding-title');
+if (helpTitle) helpTitle.textContent = t('ui.help.title');
+const helpMenu = document.getElementById('onboarding-menu');
+if (helpMenu) helpMenu.textContent = t('menu.back');
+const startMenu = createStartMenu(startMenuRoot, t, {
+  language: lang,
+  // The language can change only before the shift starts: it reloads the page with the new tables.
+  canChangeLanguage: () => game.sim.phase === 'training',
+  onLanguage(next) {
+    try {
+      window.localStorage.setItem('ares.lang', next);
+    } catch {
+      // private mode: the URL keeps the choice for this visit
+    }
+    const url = new URL(window.location.href);
+    url.searchParams.set('lang', next);
+    window.location.replace(url.toString());
+  },
+  briefing: missionBriefing(gameData.balance, gameData.events),
+  async onChoose(choice) {
+    if (choice === 'browser') {
+      startMenu.hide();
+      setBrowserUi(true);
+      return;
+    }
+    if (choice === 'emulator' && !(/** @type {any} */ (window).__xrDevice)) {
+      // Built-in Meta IWER (emulated Quest 3), lazy-loaded only when chosen.
+      const { installEmulatedQuest3 } = await import('../dev/iwer.js');
+      /** @type {any} */ (window).__xrDevice = installEmulatedQuest3();
+      exposeDebug();
+    }
+    await enterVr();
+    startMenu.hide();
+  },
+});
+document.getElementById('onboarding-menu')?.addEventListener('click', () => {
+  setBrowserUi(false);
+  startMenu.show();
+});
+const initialMode = startMode(devParams);
+if (initialMode === 'browser') setBrowserUi(true);
+else {
+  setBrowserUi(false);
+  startMenu.show();
+}
 
 // Auto-pause (SIMULATION_SPEC §1.1): page hidden or XR session not visible.
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'hidden') game.intent('time:autoPause');
 });
 renderer.xr.addEventListener('sessionstart', () => {
-  if (onboarding) onboarding.style.display = 'none';
-  if (crosshair) crosshair.style.display = 'none';
+  startMenu.hide();
+  setBrowserUi(false);
   const session = renderer.xr.getSession();
   session?.addEventListener('visibilitychange', () => {
     if (session.visibilityState !== 'visible') game.intent('time:autoPause');
   });
 });
 renderer.xr.addEventListener('sessionend', () => {
-  if (onboarding) onboarding.style.display = 'block';
-  if (crosshair) crosshair.style.display = 'block';
+  // Back to the start menu: choose VR again or continue in the browser.
+  setBrowserUi(false);
+  startMenu.show();
   camera.position.set(0, layout.eyeHeight, 0);
   camera.rotation.set(0, 0, 0);
 });

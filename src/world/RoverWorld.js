@@ -19,57 +19,58 @@ export function roverCameraYaw(heading) {
 }
 
 /**
- * Geological scientific data for samples found in the open world.
+ * Geological scientific data for samples found in the open world. Texts are string keys
+ * (`rover.fpv.sample.<id>.*` in src/data/strings/<lang>/control.json).
  */
 export const SAMPLES_DATA = {
   seitah: {
     id: 'seitah',
-    name: 'Cristal de Olivino Magmático',
-    siteName: 'Formación Séítah',
+    nameKey: 'rover.fpv.sample.seitah.name',
+    siteKey: 'rover.fpv.sample.seitah.site',
     type: 'core',
     color: '#34d399',
-    composition: 'Forsterita (74%), Fayalita (22%), Magnetita (4%)',
-    analysis: 'Cristalización magmática lenta. Clave para datar el vulcanismo temprano en el cráter Jezero.',
+    compositionKey: 'rover.fpv.sample.seitah.composition',
+    analysisKey: 'rover.fpv.sample.seitah.analysis',
     coords: { x: -90, y: 170 },
   },
   delta: {
     id: 'delta',
-    name: 'Lutita Sedimentaria Lacustre',
-    siteName: 'Delta Fluvial de Jezero',
+    nameKey: 'rover.fpv.sample.delta.name',
+    siteKey: 'rover.fpv.sample.delta.site',
     type: 'core',
     color: '#60a5fa',
-    composition: 'Filosilicatos (52%), Carbonatos (28%), Óxidos de Hierro (20%)',
-    analysis: 'Depositada en un antiguo lago marciano. Alta probabilidad de preservación de biofirmas.',
+    compositionKey: 'rover.fpv.sample.delta.composition',
+    analysisKey: 'rover.fpv.sample.delta.analysis',
     coords: { x: 120, y: 235 },
   },
   backshell: {
     id: 'backshell',
-    name: 'Blindaje Térmico / Backshell',
-    siteName: 'Restos de Aterrizaje ARES',
+    nameKey: 'rover.fpv.sample.backshell.name',
+    siteKey: 'rover.fpv.sample.backshell.site',
     type: 'salvage',
     color: '#fbbf24',
-    composition: 'Aleación Titanio Grado 5 (65%), Compuesto Carbono (35%)',
-    analysis: 'Material aeroespacial recuperable. Proporciona +1 unidad de repuestos mecánicos.',
+    compositionKey: 'rover.fpv.sample.backshell.composition',
+    analysisKey: 'rover.fpv.sample.backshell.analysis',
     coords: { x: 150, y: 90 },
   },
   parachute: {
     id: 'parachute',
-    name: 'Tejido de Paracaídas Supersónico',
-    siteName: 'Zona de Eyección de Paracaídas',
+    nameKey: 'rover.fpv.sample.parachute.name',
+    siteKey: 'rover.fpv.sample.parachute.site',
     type: 'salvage',
     color: '#f97316',
-    composition: 'Fibras aramidas Kevlar-Nylon de ultra-resistencia',
-    analysis: 'Polímeros sintéticos útiles para reparación de filtros y juntas (+1 unidad de repuestos).',
+    compositionKey: 'rover.fpv.sample.parachute.composition',
+    analysisKey: 'rover.fpv.sample.parachute.analysis',
     coords: { x: -140, y: 60 },
   },
   hematite: {
     id: 'hematite',
-    name: 'Esférulas de Hematita (Arándanos)',
-    siteName: 'Lecho Mineral de Hematita',
+    nameKey: 'rover.fpv.sample.hematite.name',
+    siteKey: 'rover.fpv.sample.hematite.site',
     type: 'core',
     color: '#a78bfa',
-    composition: 'Óxido Férrico Cristalino Fe2O3 (88%), Silicio (12%)',
-    analysis: 'Concreciones minerales formadas en aguas subterráneas ricas en hierro. Evidencia hidrológica.',
+    compositionKey: 'rover.fpv.sample.hematite.composition',
+    analysisKey: 'rover.fpv.sample.hematite.analysis',
     coords: { x: 25, y: 110 },
   },
 };
@@ -85,6 +86,7 @@ export const SAMPLES_DATA = {
  * @param {any} layout
  */
 export function buildRoverWorld(scene, game, camera, dolly, layout) {
+  const t = game.t; // player-facing texts (src/data/strings/<lang>/control.json → rover.fpv.*)
   const root = new THREE.Group();
   root.name = 'Rover_OpenWorld';
   root.position.copy(ROVER_WORLD_ORIGIN);
@@ -418,13 +420,13 @@ export function buildRoverWorld(scene, game, camera, dolly, layout) {
   `;
   topBar.innerHTML = `
     <div>
-      <span style="color: #ffaa44; font-weight: bold; font-size: 16px;">ROVER PERSEVERANCE</span>
-      <span style="color: #8899a6; margin-left: 12px; font-size: 13px;">TELEOPERACIÓN EN PRIMERA PERSONA</span>
+      <span style="color: #ffaa44; font-weight: bold; font-size: 16px;">${t('rover.fpv.title')}</span>
+      <span style="color: #8899a6; margin-left: 12px; font-size: 13px;">${t('rover.fpv.subtitle')}</span>
     </div>
     <div id="rover-hud-stats" style="font-size: 14px; font-weight: 500;">
-      🔋 Batería: <span id="rover-hud-bat" style="color: #34d399;">100%</span> &nbsp;|&nbsp;
-      🧭 Acimut: <span id="rover-hud-hdg">0°</span> &nbsp;|&nbsp;
-      📦 Muestras: <span id="rover-hud-cargo" style="color: #60a5fa;">0</span>
+      🔋 ${t('rover.fpv.battery')}: <span id="rover-hud-bat" style="color: #34d399;">100%</span> &nbsp;|&nbsp;
+      🧭 ${t('rover.fpv.heading')}: <span id="rover-hud-hdg">0°</span> &nbsp;|&nbsp;
+      📦 ${t('rover.fpv.samples')}: <span id="rover-hud-cargo" style="color: #60a5fa;">0</span>
     </div>
   `;
   hudContainer.appendChild(topBar);
@@ -439,7 +441,7 @@ export function buildRoverWorld(scene, game, camera, dolly, layout) {
     padding: 9px 16px; border-radius: 6px; font-weight: bold; font-size: 13px;
     cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.5);
   `;
-  exitBtn.textContent = '◀ VOLVER A LA SALA DE CONTROL (Q)';
+  exitBtn.textContent = t('rover.fpv.exit');
   hudContainer.appendChild(exitBtn);
 
   // Prompt alert for nearby collectible
@@ -476,7 +478,7 @@ export function buildRoverWorld(scene, game, camera, dolly, layout) {
     background: rgba(0, 0, 0, 0.65); border-radius: 6px; padding: 6px 16px;
     font-size: 13px; color: #cbd5e1;
   `;
-  bottomHint.innerHTML = `<b>W / ↑</b> Avanzar &nbsp;·&nbsp; <b>S / ↓</b> Retroceder &nbsp;·&nbsp; <b>A / D</b> Girar &nbsp;·&nbsp; <b>E / Clic</b> Recolectar Muestra`;
+  bottomHint.innerHTML = t('rover.fpv.controls');
   hudContainer.appendChild(bottomHint);
 
   document.body.appendChild(hudContainer);
@@ -690,11 +692,11 @@ export function buildRoverWorld(scene, game, camera, dolly, layout) {
         if (nearest && dist < 18) {
           promptBox.style.display = 'block';
           if (dist <= 3.8 && !isSampling) {
-            promptBox.innerHTML = `🎯 <b>MUESTRA DETECTADA: ${nearest.name.toUpperCase()}</b><br><span style="color: #34d399; font-size: 14px;">[ PRESIONA 'E' O HAZ CLIC PARA RECOLECTAR CON EL BRAZO MECÁNICO ]</span>`;
+            promptBox.innerHTML = `🎯 <b>${t('rover.fpv.detected', { name: t(nearest.nameKey).toUpperCase() })}</b><br><span style="color: #34d399; font-size: 14px;">${t('rover.fpv.collect')}</span>`;
           } else if (isSampling) {
-            promptBox.innerHTML = `🦾 <b style="color: #38bdf8;">BRAZO MECÁNICO EN OPERACIÓN...</b>`;
+            promptBox.innerHTML = `🦾 <b style="color: #38bdf8;">${t('rover.fpv.arm_busy')}</b>`;
           } else {
-            promptBox.innerHTML = `📍 <b>OBJETO PRÓXIMO: ${nearest.name}</b> · Distancia: ${Math.round(dist)} m`;
+            promptBox.innerHTML = `📍 <b>${t('rover.fpv.nearby', { name: t(nearest.nameKey) })}</b> · ${t('rover.fpv.distance', { m: Math.round(dist) })}`;
           }
         } else {
           promptBox.style.display = 'none';
@@ -740,12 +742,12 @@ export function buildRoverWorld(scene, game, camera, dolly, layout) {
           if (isFPV) {
             inspectCard.style.display = 'block';
             inspectCard.innerHTML = `
-              <div style="font-size: 11px; letter-spacing: 1px; color: #34d399; font-weight: bold;">🔬 ANÁLISIS ESPECTROMÉTRICO SHERLOC / PIXL</div>
-              <div style="font-size: 16px; font-weight: bold; margin: 6px 0; color: #fff;">${activeSample.name}</div>
-              <div style="font-size: 12px; color: #94a3b8; margin-bottom: 8px;">Ubicación: ${activeSample.siteName}</div>
-              <div style="font-size: 13px; margin-bottom: 6px;"><b>Composición:</b> ${activeSample.composition}</div>
-              <div style="font-size: 12px; color: #cbd5e1; line-height: 1.4;">${activeSample.analysis}</div>
-              <div style="margin-top: 10px; font-size: 11px; color: #38bdf8;">✓ ALMACENANDO EN CONTENEDOR HERMÉTICO...</div>
+              <div style="font-size: 11px; letter-spacing: 1px; color: #34d399; font-weight: bold;">${t('rover.fpv.analysis')}</div>
+              <div style="font-size: 16px; font-weight: bold; margin: 6px 0; color: #fff;">${t(activeSample.nameKey)}</div>
+              <div style="font-size: 12px; color: #94a3b8; margin-bottom: 8px;">${t('rover.fpv.location', { site: t(activeSample.siteKey) })}</div>
+              <div style="font-size: 13px; margin-bottom: 6px;"><b>${t('rover.fpv.composition')}</b> ${t(activeSample.compositionKey)}</div>
+              <div style="font-size: 12px; color: #cbd5e1; line-height: 1.4;">${t(activeSample.analysisKey)}</div>
+              <div style="margin-top: 10px; font-size: 11px; color: #38bdf8;">${t('rover.fpv.storing')}</div>
             `;
           }
         } else if (sampleTimer < 15.5) {

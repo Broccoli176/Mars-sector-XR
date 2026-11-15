@@ -15,6 +15,7 @@ import { Rover } from './Rover.js';
 import { Comms } from './Comms.js';
 import { SolarTracker } from './SolarTracker.js';
 import { Toolbelt } from './Toolbelt.js';
+import { Repairs } from './Repairs.js';
 
 const TICKS_PER_HOUR = 60;
 
@@ -58,6 +59,8 @@ export class Simulation {
     if (this.electronics) this.electronics.tools = this.tools;
     // Perseverance-class rover driven from the Sala de control; charges through the repairBay circuit.
     this.rover = b.rover ? new Rover(b.rover, bus, this.resources) : null;
+    // Hand-tool repairs of scripted faults and hull leaks (repair:work intents).
+    this.repairs = new Repairs(b.components ?? [], { bus, resources: this.resources, inventory: this.inventory, time: this.time, tools: this.tools });
     // Real Mars-surface radiation replay (informational, no health effect). Only if the snapshot exists.
     this.radiation = data.real?.radlab
       ? new Radiation(data.real.radlab, { sep: data.real.radlab_sep ?? null, cfg: b.radiation ?? null, bus })

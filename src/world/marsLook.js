@@ -9,29 +9,31 @@ import * as THREE from 'three';
  * so a sRGB hex must be converted first (e.g. #c87942 ⇒ [0.58, 0.19, 0.055]).
  */
 export const MARS = {
-  /** Regolith (rusty orange soil, ≈ #c87942 on screen), before shading. */
-  ground: /** @type {[number, number, number]} */ ([0.58, 0.19, 0.055]),
-  /** Rocks and boulders (same hue as the soil, darker; ≈ #956142). */
-  rock: /** @type {[number, number, number]} */ ([0.30, 0.12, 0.055]),
-  /** Loose bright sand patches (≈ #e4ad76). */
-  sand: /** @type {[number, number, number]} */ ([0.78, 0.42, 0.18]),
+  /** Regolith (intense rusty orange soil, ≈ #e77326 on screen), before shading. */
+  ground: /** @type {[number, number, number]} */ ([0.8, 0.16, 0.02]),
+  /** Rocks and boulders (same hue as the soil, darker; ≈ #9e5e38). */
+  rock: /** @type {[number, number, number]} */ ([0.34, 0.11, 0.04]),
+  /** Loose bright sand patches (≈ #eda65a). */
+  sand: /** @type {[number, number, number]} */ ([0.85, 0.38, 0.1]),
   /** Wind-blown dust particles. */
-  dust: 0xcf8a5e,
+  dust: 0xe0884a,
 };
 
 /**
  * Sky and light for a time of day and weather (pure; tested through SolarField.fieldLook).
- * Martian day: butterscotch sky; blue-ish near sunrise/sunset (real Mars sunsets are blue).
+ * The sky always keeps a soft orange tint (dust in the air scatters red light): pale orange by day, a deeper
+ * warm orange near sunrise/sunset, a dusty orange in storms and a very dark orange-brown at night.
+ * (Real Martian sunsets have a blue glow around the Sun; the game keeps the whole sky orange on purpose.)
  * @param {number} hour 0–24 @param {boolean} storm @param {{ solarStartHour: number, solarEndHour: number }} cfg
  * @returns {{ daylight: boolean, sky: [number, number, number], ground: number, panel: number, dust: number }}
  */
 export function marsLook(hour, storm, cfg) {
   const daylight = hour >= cfg.solarStartHour && hour < cfg.solarEndHour;
-  if (storm) return { daylight, sky: [0.55, 0.36, 0.26], ground: daylight ? 0.6 : 0.2, panel: daylight ? 0.5 : 0.15, dust: 1 };
-  if (!daylight) return { daylight, sky: [0.03, 0.03, 0.06], ground: 0.16, panel: 0.12, dust: 0 };
+  if (storm) return { daylight, sky: daylight ? [0.62, 0.3, 0.13] : [0.1, 0.045, 0.02], ground: daylight ? 0.6 : 0.2, panel: daylight ? 0.5 : 0.15, dust: 1 };
+  if (!daylight) return { daylight, sky: [0.07, 0.03, 0.012], ground: 0.16, panel: 0.12, dust: 0 };
   const t = (hour - cfg.solarStartHour) / (cfg.solarEndHour - cfg.solarStartHour);
   const edge = Math.max(0, 1 - Math.min(t, 1 - t) / 0.12); // 1 at sunrise/sunset, 0 by mid-morning
-  const sky = /** @type {[number, number, number]} */ ([0.78 - 0.4 * edge, 0.6 - 0.15 * edge, 0.45 + 0.2 * edge]);
+  const sky = /** @type {[number, number, number]} */ ([0.9 - 0.12 * edge, 0.47 - 0.17 * edge, 0.22 - 0.1 * edge]);
   return { daylight, sky, ground: 1, panel: 1, dust: 0 };
 }
 
@@ -79,8 +81,12 @@ export function groundVariation(x, z) {
   return 0.92 + 0.08 * Math.sin(x * 0.18 + 0.6) + 0.05 * Math.sin(x * 1.3 + z * 0.9);
 }
 
-/** CSS colour from a linear-ish RGB triple (canvas panels). @param {[number, number, number]} rgb @param {number} [scale] */
+/**
+ * CSS colour from a linear RGB triple (canvas panels such as the rover map and NavCam). Converted to sRGB so a
+ * canvas shows the same colour as the 3D views. @param {[number, number, number]} rgb @param {number} [scale]
+ */
 export function cssColor(rgb, scale = 1) {
-  const ch = (/** @type {number} */ v) => Math.round(Math.min(1, Math.max(0, v * scale)) * 255);
+  const srgb = (/** @type {number} */ v) => (v <= 0.0031308 ? 12.92 * v : 1.055 * v ** (1 / 2.4) - 0.055);
+  const ch = (/** @type {number} */ v) => Math.round(srgb(Math.min(1, Math.max(0, v * scale))) * 255);
   return `rgb(${ch(rgb[0])}, ${ch(rgb[1])}, ${ch(rgb[2])})`;
 }

@@ -44,6 +44,7 @@ Dev URL params:
 - `?view=x,z,deg` places the player rig.
 - `?ff=ticks` fast-forwards the simulation after "Iniciar turno".
 - `?iwer` installs Meta's Immersive Web Emulation Runtime (Quest 3) without the browser extension. It is lazy-loaded and kept out of the main bundle.
+- The start menu (`src/ui/StartMenu.js`) offers «Realidad virtual» (headset or the Meta Immersive Web Emulator extension; without either it offers the same built-in IWER emulator) or «Navegador». `?mode=browser` or `?view=` skip it for screenshots.
 - `?debug` exposes `window.__marte`.
 
 Keyboard locomotion (WASD, Q/E or arrows) works on desktop and inside emulated XR sessions. The body is a 0.22 m circle that collides with and slides along walls, door frames and furniture, with door assist (`src/vr/Collision.js`). With the Immersive Web Emulator extension, click the page once so it receives the keys.

@@ -46,7 +46,8 @@
       "toolId": "screwdriver",
       "spares": 1,
       "holdSeconds": 8,
-      "needsRepairBay": false
+      "needsRepairBay": false,
+      "inGame": true
     },
     {
       "id": "electrolyzer_cell",
@@ -64,7 +65,8 @@
       "toolId": "wrench",
       "spares": 1,
       "holdSeconds": 10,
-      "needsRepairBay": false
+      "needsRepairBay": false,
+      "inGame": true
     },
     {
       "id": "relay_main",
@@ -92,7 +94,9 @@
       "toolId": "sealant_gun",
       "spares": 0,
       "holdSeconds": 5,
-      "needsRepairBay": false
+      "needsRepairBay": false,
+      "inGame": true,
+      "charges": 1
     },
     {
       "id": "rx_psu",
@@ -238,5 +242,5 @@
     "doorSeconds": 0.5,
     "doorOpenDeg": 100
   },
-  "_componentsAbout": "components[].inGame = can break in this build; its repair needs components[].toolId carried (hand or belt holster, src/systems/Toolbelt.js). The others are listed for the planned repairs and shown as «sin uso por ahora» on the tool wall."
+  "_componentsAbout": "components[].inGame = can break in this build (scripted in events.json or by the game); its repair needs components[].toolId carried (hand or belt, src/systems/Toolbelt.js). Repairs (src/systems/Repairs.js) hold the tool for holdSeconds and consume spares or, for leaks, charges of inventory.sealantCharges."
 }

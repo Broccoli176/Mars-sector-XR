@@ -77,7 +77,10 @@ export class Game {
     bus.on('relay:rejected', (e) => push(t(e.reason === 'noTool' ? 'ui.log.relay_no_tool' : 'ui.log.relay_no_spare'), 'critical'));
     bus.on('system:repaired', (e) => {
       if (e.partId === 'relay_main') push(t('ui.log.relay_replaced'), 'warning');
+      else if (e.partId && e.partId !== 'rx_psu') push(t('ui.log.repaired', { name: t(`hub.comp.${e.partId}`) }));
     });
+    bus.on('leak:started', () => push(t('ui.log.leak_started'), 'critical'));
+    bus.on('leak:sealed', () => push(t('ui.log.leak_sealed', { left: sim.inventory.sealantCharges })));
     bus.on('food:ready', () => push(t('ui.log.food_ready'), 'warning'));
     bus.on('food:harvested', (e) => push(t('ui.log.food_harvested', { kcal: e.kcal })));
     bus.on('food:spoiled', (e) => push(t(`ui.log.food_spoiled.${e.reason}`), 'critical'));

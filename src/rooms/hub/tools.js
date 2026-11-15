@@ -5,10 +5,31 @@ import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { COLORS } from '../../ui/StationKit.js';
 import { font, fitLine } from '../../ui/theme.js';
-import { decideRelease, shouldReturnHome, updateT1 } from './toolRules.js';
+import { decideRelease, shouldReturnHome, updateT1, toolMotion, TOOL_TIPS, TOOL_EFFECT } from './toolRules.js';
 
 const TOOL_MATERIAL = new THREE.MeshLambertMaterial({ vertexColors: true });
 const HOT_TIP_MATERIAL = new THREE.MeshBasicMaterial({ color: '#ff7a2f', toneMapped: false });
+const TIP_COLD = new THREE.Color('#ff7a2f');
+const TIP_HOT = new THREE.Color('#fff4a8');
+/** Reach of a tool from its tip to the part it works on (m). */
+const TOOL_REACH = 0.6;
+/** `repair:work` batches: send the accumulated seconds this often (like the hydro hose). */
+const WORK_FLUSH_SECONDS = 0.25;
+/** Shared pool of effect particles (sparks, solder smoke, sealant foam): 1 draw call for all tools. */
+const PARTICLES = 120;
+const EFFECTS = {
+  sparks: { color: new THREE.Color('#ffd27a'), life: 0.35, speed: 1.6, gravity: 6, rise: 0, spread: 0.9, rate: 70 },
+  smoke: { color: new THREE.Color('#bfc6cc'), life: 1.1, speed: 0.12, gravity: -0.35, rise: 0.12, spread: 0.6, rate: 18 },
+  foam: { color: new THREE.Color('#f2cf4a'), life: 0.5, speed: 1.1, gravity: 2.5, rise: 0, spread: 0.25, rate: 60 },
+};
+const _tip = new THREE.Vector3();
+const _dir = new THREE.Vector3();
+const _fxDir = new THREE.Vector3();
+const _eye = new THREE.Vector3();
+const _look = new THREE.Vector3();
+/** Desktop aims from the eyes, which sit this much further back than a held tool tip (m). */
+const DESKTOP_EXTRA_REACH = 0.6;
+const _q = new THREE.Quaternion();
 // Invisible grab zone around each tool: much easier to hit with the ray than the thin tool itself.
 const GRAB_ZONE_MATERIAL = new THREE.MeshBasicMaterial({ visible: false });
 const GRAB_ZONE = new THREE.BoxGeometry(0.1, 0.1, 0.26).translate(0, 0, -0.08);
@@ -122,7 +143,7 @@ export function buildToolWall(g, kit, hubState) {
   const raycaster = new THREE.Raycaster();
   let now = performance.now() / 1000;
 
-  /** @type {{ id: string, mesh: THREE.Mesh, slot: THREE.Object3D, place: string, hand: string, holster: number | null, landedAt: number | null, vy: number, floorY: number, forceHolster: number | null }[]} */
+  /** @type {{ id: string, mesh: THREE.Mesh, slot: THREE.Object3D, visual: THREE.Mesh, tipMaterial: THREE.MeshBasicMaterial | null, use: { active: boolean, t: number, heat: number, emit: number, target: string | null, pending: number, sinceFlush: number }, place: string, hand: string, holster: number | null, landedAt: number | null, vy: number, floorY: number, forceHolster: number | null }[]} */
   const items = tools.map((tool, i) => {
     const slot = new THREE.Group();
     slot.position.set(HOOK_XS[i], HOOK_Y, HOOK_Z);
@@ -133,18 +154,23 @@ export function buildToolWall(g, kit, hubState) {
     const visual = new THREE.Mesh(toolGeometry(tool.id, tool.color, tool.accent), TOOL_MATERIAL);
     visual.name = tool.assetId;
     mesh.add(visual);
+    /** @type {THREE.MeshBasicMaterial | null} own copy: heating one iron must not light up a shared material */
+    let tipMaterial = null;
     if (tool.id === 'solder_iron') {
-      const tip = new THREE.Mesh(new THREE.ConeGeometry(0.005, 0.04, 8).rotateX(-Math.PI / 2).translate(0, 0, -0.145), HOT_TIP_MATERIAL);
+      tipMaterial = HOT_TIP_MATERIAL.clone();
+      const tip = new THREE.Mesh(new THREE.ConeGeometry(0.005, 0.04, 8).rotateX(-Math.PI / 2).translate(0, 0, -0.145), tipMaterial);
       visual.add(tip);
     }
     slot.add(mesh);
     kit.registerInteractive(mesh);
-    const item = { id: tool.id, mesh, slot, place: 'wall', hand: 'right', holster: /** @type {number | null} */ (null), landedAt: /** @type {number | null} */ (null), vy: 0, floorY: 0, forceHolster: /** @type {number | null} */ (null) };
+    const item = { id: tool.id, mesh, slot, visual, tipMaterial, use: { active: false, t: 0, heat: 0, emit: 0, target: /** @type {string | null} */ (null), pending: 0, sinceFlush: 0 }, place: 'wall', hand: 'right', holster: /** @type {number | null} */ (null), landedAt: /** @type {number | null} */ (null), vy: 0, floorY: 0, forceHolster: /** @type {number | null} */ (null) };
     mesh.userData.toolId = tool.id;
     mesh.userData.holsterable = true; // belt rings light up while it is held
     mesh.userData.grab = {
       onGrab: (/** @type {string} */ hand) => onGrab(item, hand),
       onRelease: (/** @type {THREE.Vector3} */ pos) => onRelease(item, pos),
+      // Trigger (XR) / F (desktop) while held: use the tool (animation + repair work on the part it points at).
+      onUse: (/** @type {boolean} */ active, /** @type {string} */ handId) => setUsing(item, active, handId),
     };
     return item;
   });
@@ -247,6 +273,142 @@ export function buildToolWall(g, kit, hubState) {
       if (item.place === 'hand') game.intent('item:grab', { itemId: item.id, hand: item.hand });
       else if (item.place === 'holster' && item.holster !== null) game.intent('item:socket', { itemId: item.id, slot: holsters.slots[item.holster].id });
     }
+  });
+
+  // ---- Using a tool: animation, effect particles and repair work on the part it points at ----
+  const pPos = new Float32Array(PARTICLES * 3).fill(-100);
+  const pVel = new Float32Array(PARTICLES * 3);
+  const pCol = new Float32Array(PARTICLES * 3);
+  const pLife = new Float32Array(PARTICLES);
+  const pMax = new Float32Array(PARTICLES).fill(1);
+  /** @type {(typeof EFFECTS)[keyof typeof EFFECTS][]} */
+  const pFx = new Array(PARTICLES).fill(EFFECTS.sparks);
+  const pGeo = new THREE.BufferGeometry();
+  pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
+  pGeo.setAttribute('color', new THREE.BufferAttribute(pCol, 3));
+  const particles = new THREE.Points(pGeo, new THREE.PointsMaterial({ size: 0.012, vertexColors: true, transparent: true, opacity: 0.9, depthWrite: false }));
+  particles.frustumCulled = false;
+  kit.services.scene.add(particles);
+  let nextParticle = 0;
+  /** @param {(typeof EFFECTS)[keyof typeof EFFECTS]} fx @param {THREE.Vector3} at @param {THREE.Vector3} dir */
+  const spawn = (fx, at, dir) => {
+    const i = nextParticle;
+    nextParticle = (nextParticle + 1) % PARTICLES;
+    pPos.set([at.x, at.y, at.z], i * 3);
+    const s = fx.speed * (0.6 + Math.random() * 0.8);
+    pVel.set([
+      (dir.x + (Math.random() - 0.5) * fx.spread) * s,
+      (dir.y + (Math.random() - 0.5) * fx.spread) * s + fx.rise,
+      (dir.z + (Math.random() - 0.5) * fx.spread) * s,
+    ], i * 3);
+    pCol.set([fx.color.r, fx.color.g, fx.color.b], i * 3);
+    pLife[i] = 0;
+    pMax[i] = fx.life * (0.7 + Math.random() * 0.6);
+    pFx[i] = fx;
+  };
+
+  /** @param {typeof items[number]} item */
+  const flushWork = (item) => {
+    const u = item.use;
+    if (u.target && u.pending > 0) game.intent('repair:work', { componentId: u.target, seconds: u.pending });
+    u.pending = 0;
+    u.sinceFlush = 0;
+  };
+  /** Hand that is using each tool (desktop aims with the crosshair, XR with the tool itself). */
+  /** @type {Map<string, string>} */
+  const usingHand = new Map();
+  /** @param {typeof items[number]} item @param {boolean} active @param {string} [handId] */
+  function setUsing(item, active, handId = '') {
+    if (!active) flushWork(item);
+    usingHand.set(item.id, handId);
+    item.use.active = active && item.place === 'hand';
+    item.use.t = 0;
+    if (!item.use.active) item.use.target = null;
+  }
+
+  const toolRay = new THREE.Raycaster();
+  toolRay.far = TOOL_REACH;
+  /** Which repair target the tool tip points at (or null). @param {THREE.Vector3} from @param {THREE.Vector3} dir */
+  const aimedTarget = (from, dir) => {
+    if (kit.repairTargets.length === 0) return null;
+    toolRay.set(from, dir);
+    const hit = toolRay.intersectObjects(kit.repairTargets, false)[0];
+    return hit ? /** @type {string} */ (hit.object.userData.repairTarget) : null;
+  };
+
+  /** @param {typeof items[number]} item @param {number} dt */
+  const animateUse = (item, dt) => {
+    const u = item.use;
+    if (item.place !== 'hand' && u.active) setUsing(item, false);
+    if (u.active) u.t += dt;
+    const m = u.active ? toolMotion(item.id, u.t) : { roll: 0, push: 0, heat: 0 };
+    // Ease back to rest when the trigger is released.
+    const k = u.active ? 1 : Math.min(1, dt * 10);
+    item.visual.rotation.z += (m.roll - item.visual.rotation.z) * k;
+    item.visual.position.z += (m.push - item.visual.position.z) * k;
+    u.heat = u.active ? m.heat : Math.max(0, u.heat - dt * 0.8);
+    if (item.tipMaterial) item.tipMaterial.color.copy(TIP_COLD).lerp(TIP_HOT, u.heat);
+    if (!u.active) return;
+
+    // Tip position and pointing direction in the world.
+    _tip.fromArray(TOOL_TIPS[/** @type {keyof typeof TOOL_TIPS} */ (item.id)] ?? [0, 0, -0.18]);
+    item.mesh.localToWorld(_tip);
+    _dir.set(0, 0, -1).applyQuaternion(item.mesh.getWorldQuaternion(_q));
+    // XR: the tool itself points at the part. Desktop: the tool sits in the corner of the view, so the
+    // crosshair (camera ray) aims, from a bit further away.
+    let target;
+    if (usingHand.get(item.id) === 'desktop' && kit.services.locomotion) {
+      kit.services.locomotion.headWorld(_eye);
+      kit.services.locomotion.headForward(_look);
+      toolRay.far = TOOL_REACH + DESKTOP_EXTRA_REACH;
+      target = aimedTarget(_eye, _look);
+      toolRay.far = TOOL_REACH;
+    } else target = aimedTarget(_tip, _dir);
+    const repairs = kit.sim().repairs;
+    const comp = target ? repairs?.componentOf(target) : null;
+    const working = Boolean(target && comp && comp.toolId === item.id && repairs?.isBroken(target));
+
+    // Repair work in small batches (the simulation decides tool, spares and progress).
+    const workTarget = working ? target : null;
+    if (workTarget !== u.target) flushWork(item);
+    u.target = workTarget;
+    if (working) {
+      u.pending += dt;
+      u.sinceFlush += dt;
+      if (u.sinceFlush >= WORK_FLUSH_SECONDS) flushWork(item);
+    }
+
+    // Effect particles: sparks only on metal being worked; smoke and foam whenever the tool is used.
+    const kind = TOOL_EFFECT[/** @type {keyof typeof TOOL_EFFECT} */ (item.id)];
+    if (kind === 'sparks' && !working) return;
+    if (kind === 'smoke' && u.heat < 0.5) return;
+    const fx = EFFECTS[/** @type {keyof typeof EFFECTS} */ (kind)];
+    u.emit += dt * fx.rate;
+    if (kind === 'smoke') _fxDir.set(0, 1, 0);
+    else if (kind === 'sparks') _fxDir.copy(_dir).negate();
+    else _fxDir.copy(_dir);
+    while (u.emit >= 1) {
+      u.emit -= 1;
+      spawn(fx, _tip, _fxDir);
+    }
+  };
+
+  kit.onFrame((dt) => {
+    for (const item of items) animateUse(item, dt);
+    for (let i = 0; i < PARTICLES; i++) {
+      if (pPos[i * 3 + 1] < -50) continue;
+      pLife[i] += dt;
+      if (pLife[i] >= pMax[i]) {
+        pPos[i * 3 + 1] = -100; // parked
+        continue;
+      }
+      pVel[i * 3 + 1] -= pFx[i].gravity * dt;
+      pPos[i * 3] += pVel[i * 3] * dt;
+      pPos[i * 3 + 1] += pVel[i * 3 + 1] * dt;
+      pPos[i * 3 + 2] += pVel[i * 3 + 2] * dt;
+    }
+    pGeo.attributes.position.needsUpdate = true;
+    pGeo.attributes.color.needsUpdate = true;
   });
 
   kit.onFrame((dt) => {
