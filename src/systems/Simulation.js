@@ -12,6 +12,7 @@ import { Radiation } from './Radiation.js';
 import { Electronics } from './Electronics.js';
 import { Rover } from './Rover.js';
 import { Comms } from './Comms.js';
+import { SolarTracker } from './SolarTracker.js';
 
 const TICKS_PER_HOUR = 60;
 
@@ -33,6 +34,9 @@ export class Simulation {
     this.time = new TimeManager(b.time, bus);
     this.resources = new ResourceManager(data.resources, bus);
     this.power = new PowerGrid(b.power, b.circuits, this.resources, bus, b.dust ?? null);
+    // East–west sun tracker for the solar field (Energía console). Without config: fixed panels at full output.
+    this.solarTracker = b.tracker ? new SolarTracker(b.tracker, b.power, bus) : null;
+    this.power.tracker = this.solarTracker;
     this.lifeSupport = new LifeSupport(b, this.resources, bus, this.inventory);
     this.food = new Food(b, this.resources, bus);
     this.crew = new Crew(b.health, TICKS_PER_HOUR, this.resources, bus);
@@ -94,7 +98,8 @@ export class Simulation {
       repairBay: this.rover?.chargeKw() ?? 0,
     };
     this.power.updateDust(dt);
-    this.power.resolve(requests, clock, this.time.tick);
+    this.power.resolve(requests, clock, this.time.tick, this.solarTracker?.demandKw(clock) ?? 0);
+    this.solarTracker?.update(clock, dt, this.power.trackerPowered);
 
     this.lifeSupport.update(this.power.served, dt);
     this.food.update(this.power.served, dt);

@@ -79,12 +79,12 @@ Systems receive `dtHours = 1/60` per tick. Rates below are **per in-game hour**.
 | Battery start | 30 kWh (50 %) |
 | Warn / critical | 18 kWh (30 %) / 6 kWh (10 %) |
 | RTG (constant) | **0.5 kW** |
-| Solar mast | **1.6 kW** from 06:00 to 18:00, 0 at night |
+| Solar field | **1.7 kW** peak from 06:00 to 18:00 × the sun-tracker cosine factor (§2.6), 0 at night. AUTO tracking all day ≈ 20 kWh − 0.6 kWh motor ≈ the old flat 19.2 kWh; panels left flat at 0° ≈ 13 kWh |
 | Dust storm factor on solar | × 0.2 |
 | Dust on the panels (§2.5) | solar × `dustFactor` (1 = clean) |
 | Bus limit | 3.0 kW total demand; above it for 5 in-game minutes the main relay trips |
 
-Generation: clear day ≈ **31.2 kWh** (12.0 RTG + 19.2 solar); storm day ≈ **15.8 kWh**.
+Generation: clear day ≈ **31.2 kWh** (12.0 RTG + ≈ 19.5 solar with the tracker in AUTO, net of its motor); storm day ≈ **15.8 kWh**. The §2.3 budget assumes AUTO (tests/power.test.js).
 
 ### 2.2 Circuits
 
@@ -138,10 +138,27 @@ Generation: clear day ≈ **31.2 kWh** (12.0 RTG + 19.2 solar); storm day ≈ **
 | Calm settling | −0.28 % of output per sol (`calmLossPerSol` 0.0028) | **Real**: Mars Pathfinder Materials Adherence Experiment (Landis & Jenkins 2000), `src/data/real/solar_dust.json` |
 | Dust storm deposit | −0.8 %/h while the storm lasts (36 h storm ⇒ ≈ −25 %) | Game balance |
 | Floor | `dustFactor` ≥ 0.4 | Game balance |
-| Electrodynamic dust shield | intent `solar:clean` (button «LIMPIAR PANELES» under the solar window): −0.3 kWh battery, recovers 90 % of the lost output. Rejected (`solar:rejected { reason }`) when clean (`noDust`, factor ≥ 0.99), during a storm (`storm`), with the relay open (`relay`) or battery < cost (`battery`) | Technology real (NASA KSC); numbers are game balance |
+| Solar cleaning | intent `solar:clean { by?: 'shield' | 'rover2' }`: −0.3 kWh battery, recovers 90 % of the lost output. Rover 2 can request it only within 1.8 m of a panel; it uses the same storm, relay, battery, and already-clean checks as the shield | Technology real (NASA KSC); numbers are game balance |
 | Dust devil | scripted `dustDevil` event (day 6 13:00): recovers 60 % of the lost output | Real phenomenon (Spirit/Opportunity); amount is game balance |
 
-Events: `solar:dustChanged { dustFactor }` (when the dust % changes by 1), `solar:cleaned { by: 'shield' | 'devil', gained, kwh }`, `solar:rejected { reason }`. Honest note: at the real calm rate a 7-day run loses only ≈ 2 %; the storm is what makes dust matter.
+Events: `solar:dustChanged { dustFactor }` (when the dust % changes by 1), `solar:cleaned { by: 'shield' | 'rover2' | 'devil', gained, kwh }`, `solar:rejected { reason }`. Honest note: at the real calm rate a 7-day run loses only ≈ 2 %; the storm is what makes dust matter.
+
+### Rover 2 (implemented)
+
+The `energy_rover2` console toggles a third-person follow view. Drive with WASD (desktop) or the left controller stick (XR); press E / X-or-A to clean within 1.8 m of a panel, and Q/Esc / Y-or-B to exit. Rover 2 is restricted to the solar work area. Cleaning emits `solar:clean { by: 'rover2' }`, so it shares the PowerGrid's dust, storm, relay, and battery rules.
+
+### 2.6 Sun tracker (implemented, `src/systems/SolarTracker.js`, `balance.tracker` in `energy.json`)
+
+| Item | Value |
+| :-- | :-- |
+| Rule | Single vertical east–west azimuth axis, cosine law: solar × `max(0, cos(h − θ))`, sun azimuth `h = (hour − 12) × 15°` (06:00 = −90° E), panel yaw θ (negative = east). Panels keep a fixed upward tilt and turn around their vertical axes. Simplified: no air mass, no season |
+| Range / speed | ±60° manual/auto yaw, moves at 10°/game minute; starts facing the window at 0° in MANUAL |
+| MANUAL | `solar:turn { dir: -1 \| 1 }` (◀ IZQUIERDA / DERECHA ▶ on the console): target ± 18°. The console shows panel azimuth, sun azimuth, and cosine alignment percentage |
+| AUTO | `solar:auto { on }`: target follows `h` (clamped ±60°), parks at 60° E at night. Motor draws **0.05 kW** in daylight on the main bus (no breaker; counts for the bus limit). This mode remains in the simulation API but has no physical console button. Without power (relay open, or battery 0 and no spare generation) it freezes and emits `solar:rejected { reason: 'tracker' }` |
+| PROTEGER (stow) | `solar:stow { on }`: panels edge-on (90°), output 0; storm dust settles × 0.25. Leaving stow ⇒ MANUAL |
+| Events | `solar:tracker { mode, angleDeg, targetDeg }` on every mode change or manual step |
+
+The physical console exposes manual left/right orientation and PROTEGER; stowing in a storm gives up the storm's 20 % output to keep the panels clean for after. The headless balance policy may still use AUTO, but the day-1 hint teaches manual orientation.
 
 ---
 
@@ -471,14 +488,14 @@ Ver **`AGENTS.md` §4.2** para el contrato de eventos y payloads (baseline + pro
 | Item | Value |
 | :-- | :-- |
 | Ceiling height | 2.6 m |
-| Layout | **Hub and spokes** (v2, 2026-11-14). Sala central · Herramientas (hub, 6 × 5 m) in the middle. North hall → Telecom (5 × 4) and Sala de control (6 × 6, rover console). West corridor → Personal (5 × 4, spawn + main PC/time controls). South hall → Hidroponía · Agricultura (5 × 4) and Energía y oxígeno (6 × 5) |
+| Layout | **Hub and spokes** (v2, 2026-11-14). Sala central · Herramientas (hub, 6 × 5 m) in the middle. North hall → Telecom (5 × 4) and Sala de control (6 × 6, spawn, main PC/time controls, bio panel, rover console). West corridor → Personal (5 × 4, crew quarters + radiation shelter). South hall → Hidroponía · Agricultura (5 × 4) and Energía y oxígeno (6 × 5) |
 | Corridors | 1.8 m wide, straight (L-shaped where the sketch was diagonal); emissive fixtures + conduits, no point lights |
 | Layout | Coordinates, doors, panel walls and teleport anchors: **`docs/FLOOR_PLAN.md`** (authoritative) |
 | Doorways | 0.8 × 2.0 m clear opening |
 | Teleport | only onto `COL_Floor_*` meshes; 1–2 named teleport anchors per room plus free floor targeting |
 | Reference space | `local-floor`; standing default, seated toggle adds +0.4 m eye-height offset |
 | Turning | snap 30° default; smooth turn optional, with vignette |
-| Start / restart | Player spawns in Personal in front of the main PC (−9.65, −0.5), facing north; the time lever is beside it. "Iniciar turno" exists on the main PC and on the training board in the Sala central. After game over, the same PC shows the summary and restart control |
+| Start / restart | Player spawns in the Sala de control in front of the main PC (9, −5.5), facing east; the time lever is beside it. "Iniciar turno" exists on the main PC and on the training board in the Sala central. After game over, the same PC shows the summary and restart control |
 | Window | Telecom panoramic window with a 3D exterior (dunes, rocks, dish antenna following `alignment`, sun/stars, dust). No extra dynamic lights: baked vertex shading tinted by time of day/storm. Plus periscope feed on main PC |
 | Device | **Meta Quest 3**, Quest Browser (D15) |
 | XR settings | 72 Hz default (90 Hz only if measured stable); `setFoveation(1.0)` to start (measure text legibility); `framebufferScaleFactor` 1.0 |
@@ -489,12 +506,12 @@ Ver **`AGENTS.md` §4.2** para el contrato de eventos y payloads (baseline + pro
 
 | Room | Panels / interactables |
 | :-- | :-- |
-| Sala de control | Rover map/NavCam console with driving controls; adjacent `rover_vitals` panel shows disconnected telemetry placeholders |
+| Sala de control | Main PC (pages: Estado, Energía, Comms, Resumen; "Iniciar turno" / "Continuar") and time lever; bio panel (biomonitor mirror); rover map/NavCam console with driving controls in a futuristic multi-monitor housing; `rover_vitals` panel with disconnected telemetry placeholders |
 | Energía y oxígeno | Breaker wall (6 breakers + relay reset lever + demand meter kW vs 3.0 limit); O₂, CO₂ and pressure gauges; thermostat dial; filter socket; `valve_o2_tank_1`, `valve_o2_tank_2`; electrolyzer |
 | Hidroponía · Agricultura | Water tank gauge; kcal counter + ration locker; crop lights (growing / ready / spoiling); harvest rack; `valve_recycler` |
 | Telecomunicaciones | N: window + console (signal/alignment/azimuth/motor panel and left/right turn controls). W: communications distribution panel with uplink/signal status. Pending: message printer |
-| Sala central · Herramientas (hub) | **Training bench** (§9.4), bio panel (biomonitor mirror), tool wall, spares counter, component status board |
-| Personal | Main PC (pages: Estado, Energía, Comms, Resumen; "Iniciar turno" / "Continuar"), time lever, bunk, locker, dosimeter, «El Sol ahora» and «Salud del astronauta» panels |
+| Sala central · Herramientas (hub) | **Training bench** (§9.4), tool wall, spares counter, component status board |
+| Personal | Bunk + water-tank radiation shelter, locker, dosimeter, «El Sol ahora» and «Salud del astronauta» panels |
 | Corridors | Emergency lights, hull seal panels (leak points), alarm beacons |
 | Wrist | Biomonitor on the non-dominant hand |
 

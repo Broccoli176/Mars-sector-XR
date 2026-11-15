@@ -4,7 +4,7 @@ const EPSILON = 1e-9;
  * Power grid (SIMULATION_SPEC §2): battery + RTG + solar, binary breakers,
  * priority service at empty battery, overload relay trips.
  * Dust on the solar panels (dustFactor, 1 = clean): slow real settling rate, heavy deposit in storms,
- * cleaned by the electrodynamic dust shield ('solar:clean') or by a passing dust devil. See spec §2.5.
+ * cleaned by the electrodynamic dust shield ('solar:clean'), Rover 2, or a passing dust devil. See spec §2.5.
  */
 export class PowerGrid {
   /**
@@ -20,6 +20,10 @@ export class PowerGrid {
     /** Fraction of clean-panel output that still reaches the cells (1 = clean). */
     this.dustFactor = dust?.initialFactor ?? 1;
     this.lastDustPct = Math.round((1 - this.dustFactor) * 100);
+    /** Sun tracker (src/systems/SolarTracker.js), set by Simulation; null ⇒ fixed panels at full output. @type {any} */
+    this.tracker = null;
+    /** Whether the tracker motor got power last tick. */
+    this.trackerPowered = true;
     this.circuits = circuits;
     this.resources = resources;
     this.bus = bus;
@@ -48,22 +52,26 @@ export class PowerGrid {
       if (e && e.circuitId in this.breakers) this.breakers[e.circuitId] = Boolean(e.on);
     });
     bus.on('relay:resetRequest', () => this.resetRelay());
-    bus.on('solar:clean', () => this.cleanPanels());
+    bus.on('solar:clean', (e) => this.cleanPanels(e?.by === 'rover2' ? 'rover2' : 'shield'));
   }
 
   /** Dust settles every tick: real calm rate per sol, much faster during a dust storm. @param {number} dtHours */
   updateDust(dtHours) {
     const d = this.dustCfg;
     if (!d) return;
-    const loss = this.stormActive ? d.stormLossPerHour * dtHours : (d.calmLossPerSol / 24) * dtHours;
+    const stowed = this.tracker?.mode === 'stow';
+    const loss = this.stormActive
+      ? d.stormLossPerHour * dtHours * (stowed ? this.tracker.cfg.stowDustFactor : 1)
+      : (d.calmLossPerSol / 24) * dtHours;
     this.#setDust(this.dustFactor - loss);
   }
 
   /**
-   * Electrodynamic dust shield pass: costs battery energy, recovers part of the lost output.
+   * Cleaning pass: costs battery energy and recovers part of the lost solar output.
    * @returns {'ok' | 'noDust' | 'storm' | 'relay' | 'battery'}
+   * @param {'shield' | 'rover2'} [by]
    */
-  cleanPanels() {
+  cleanPanels(by = 'shield') {
     const d = this.dustCfg;
     const reject = (/** @type {'noDust' | 'storm' | 'relay' | 'battery'} */ reason) => {
       this.bus.emit('solar:rejected', { reason });
@@ -76,7 +84,7 @@ export class PowerGrid {
     this.resources.add('power', -d.cleanKwh);
     const gained = (1 - this.dustFactor) * d.cleanRecovery;
     this.#setDust(this.dustFactor + gained);
-    this.bus.emit('solar:cleaned', { by: 'shield', gained, kwh: d.cleanKwh });
+    this.bus.emit('solar:cleaned', { by, gained, kwh: d.cleanKwh });
     return 'ok';
   }
 
@@ -135,7 +143,8 @@ export class PowerGrid {
   /** @param {{ hourFloat: number }} clock */
   generation(clock) {
     const daylight = clock.hourFloat >= this.cfg.solarStartHour && clock.hourFloat < this.cfg.solarEndHour;
-    const solar = daylight ? this.cfg.solarKw * this.dustFactor * (this.stormActive ? this.cfg.stormSolarFactor : 1) : 0;
+    const aim = this.tracker ? this.tracker.factor(clock.hourFloat) : 1;
+    const solar = daylight ? this.cfg.solarKw * aim * this.dustFactor * (this.stormActive ? this.cfg.stormSolarFactor : 1) : 0;
     return this.cfg.rtgKw + solar;
   }
 
@@ -144,9 +153,10 @@ export class PowerGrid {
    * @param {Record<string, number>} requests kW wanted per circuit (before breakers)
    * @param {{ hourFloat: number }} clock
    * @param {number} tick
+   * @param {number} [extraKw] load outside the breaker circuits (sun-tracker motor)
    */
-  resolve(requests, clock, tick) {
-    let total = 0;
+  resolve(requests, clock, tick, extraKw = 0) {
+    let total = extraKw;
     for (const id of this.order) {
       const kw = this.breakers[id] && this.relayClosed ? requests[id] ?? 0 : 0;
       this.demand[id] = kw;
@@ -190,6 +200,10 @@ export class PowerGrid {
         }
       }
     }
+
+    // Tracker motor: runs on the main bus (no breaker) whenever the relay is closed and there is energy.
+    this.trackerPowered = this.relayClosed && (battery > EPSILON || gen - servedLoad >= extraKw - EPSILON);
+    if (this.trackerPowered) servedLoad += extraKw;
 
     for (const id of this.order) {
       if (served[id] !== this.served[id]) {

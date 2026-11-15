@@ -75,6 +75,7 @@
   "ui.log.link_lost.conjunction": "Conjunción solar: el Sol tapa la Tierra. Sin enlace hasta que pase.",
   "ui.log.link_restored": "Enlace con la Tierra restablecido.",
   "ui.log.solar_cleaned.shield": "Paneles limpiados con el escudo electrodinámico: +{pct} % de producción.",
+  "ui.log.solar_cleaned.rover2": "Rover 2 limpió los paneles: +{pct} % de producción.",
   "ui.log.solar_cleaned.devil": "Un remolino de polvo ha barrido los paneles: +{pct} % de producción.",
   "ui.log.solar_rejected.noDust": "Los paneles ya están limpios.",
   "ui.log.solar_rejected.storm": "No sirve limpiar ahora: la tormenta sigue echando polvo.",
@@ -84,5 +85,10 @@
   "summary.cause.radiation": "Causa: radiación de una tormenta solar sin refugio.",
   "comms.sep.forecast": "¡Alerta! Fulgurante solar enorme. Las partículas llegarán a Marte en unos {minutes} min. Ve al refugio de Personal.",
   "hint.sep.impact": "Tormenta de partículas solares en curso. Quédate en el refugio (litera de Personal) hasta que baje.",
-  "hint.dust.devil": "Un remolino de polvo pasa junto al campo solar."
+  "hint.dust.devil": "Un remolino de polvo pasa junto al campo solar.",
+  "ui.log.solar_tracker.auto": "Seguidor solar en AUTO: los paneles siguen al Sol.",
+  "ui.log.solar_tracker.stow": "Paneles protegidos de canto: menos polvo, pero no producen.",
+  "ui.log.solar_tracker.manual": "Seguidor solar en MANUAL.",
+  "ui.log.solar_rejected.tracker": "El seguidor solar no tiene energía: rearma el relé.",
+  "hint.solar.manual": "Usa ◀ IZQUIERDA y DERECHA ▶ bajo la ventana para ajustar la inclinación de los paneles. Al inicio apuntan hacia la ventana; PROTEGER los pone de canto durante una tormenta."
 }

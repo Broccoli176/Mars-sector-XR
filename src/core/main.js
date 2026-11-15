@@ -90,7 +90,7 @@ const solarField = buildSolarField(scene, () => game.sim, {
   width: ss1 - ss0,
   height: sy1 - sy0 - 0.04,
   outward: [1, 0],
-});
+}, { camera, dolly });
 // Hand-held objects (tools) and the two hip holsters (spec §9.3). Created before the stations so
 // room builders can use them through kit.services.
 const locomotion = new Locomotion(renderer, dolly, camera);
@@ -101,7 +101,7 @@ const roverWorld = buildRoverWorld(scene, game, camera, dolly, layout);
 const interactive = [];
 const stations = buildStations({
   layout, rooms: basement.rooms, game, t, scene, interactive,
-  services: { scene, grab, holsters, floors: basement.floors, renderer, roverWorld, locomotion },
+  services: { scene, grab, holsters, floors: basement.floors, renderer, roverWorld, solarField, locomotion },
 });
 
 // Interaction and locomotion
@@ -186,13 +186,16 @@ renderer.setAnimationLoop((timestamp) => {
     fastForwardTicks = 0;
   }
   game.sim.advance(dt);
-  if (!roverWorld.isFPV) keyboard.update(dt);
+  const controllingRover2 = solarField.isControllingRover2;
+  xr.setRover2Control(controllingRover2);
+  desktop.setRover2Control(controllingRover2);
+  if (!roverWorld.isFPV && !controllingRover2) keyboard.update(dt);
   desktop.update();
   xr.update();
   holsters.update();
   stations.animate(dt);
   porthole.update(dt);
-  solarField.update(dt);
+  solarField.update(dt, xr.getRover2Input());
   roverWorld.update(dt);
 
   refreshTimer += dt;

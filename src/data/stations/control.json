@@ -1,5 +1,26 @@
 [
   {
+    "id": "main_pc",
+    "room": "room_control",
+    "wall": "north",
+    "along": 6.8,
+    "y": 1.5
+  },
+  {
+    "id": "time_lever",
+    "room": "room_control",
+    "wall": "north",
+    "along": 8.6,
+    "y": 1.3
+  },
+  {
+    "id": "rover_vitals",
+    "room": "room_control",
+    "wall": "north",
+    "along": 10.05,
+    "y": 1.45
+  },
+  {
     "id": "rover_console",
     "room": "room_control",
     "wall": "east",
@@ -7,10 +28,10 @@
     "y": 1.45
   },
   {
-    "id": "rover_vitals",
+    "id": "bio_panel",
     "room": "room_control",
-    "wall": "north",
-    "along": 10.05,
+    "wall": "south",
+    "along": 7,
     "y": 1.45
   }
 ]

@@ -1,35 +1,119 @@
 // OWNER: teammate (Telecom · Control · Energy) — see docs/COLLABORATION.md
-// Energía y oxígeno: breaker wall + relay, life-support gauges, scrubber, O₂ tanks, thermostat.
+// Energía y oxígeno, laid out as a flow: N distribution (breakers + relay) · E generation (life-support gauges,
+// solar console under the window) · S life support (O₂ tanks + electrolyzer, CO₂ scrubber) · W climate (thermostat).
 // Placement: src/data/stations/energy.json
+import * as THREE from 'three';
 import { COLORS, BUTTON, statusColor } from '../../ui/StationKit.js';
+import { Button } from '../../objects/Button.js';
+import { SolarTracker } from '../../systems/SolarTracker.js';
+
+/** «35° E» / «20° O» / «0°» / «de canto». @param {number} deg @param {Function} t */
+function angleLabel(deg, t) {
+  const d = Math.round(deg);
+  if (Math.abs(d) >= 89) return t('solar.edge_on');
+  return d === 0 ? '0°' : `${Math.abs(d)}° ${t(d < 0 ? 'solar.dir.east' : 'solar.dir.west')}`;
+}
 
 const CIRCUITS = ['lifeSupport', 'heating', 'lighting', 'telecom', 'hydro', 'repairBay'];
 
 /** @type {Record<string, (g: import('three').Group, station: any, kit: import('../../ui/StationKit.js').StationKit) => void>} */
 export const builders = {
-  /** Label under the solar-field window (src/world/SolarField.js): live solar generation. */
-  energy_solar_view(g, _station, kit) {
+  /**
+   * Solar console under the solar-field window (src/world/SolarField.js): a desk with physical push buttons
+   * (◀ IZQUIERDA · DERECHA ▶ · PROTEGER) that drive the sun tracker (src/systems/SolarTracker.js), a production
+   * strip on the desk and an info panel on the wall.
+   */
+  energy_solar_view(g, station, kit) {
     const { t, sim, game } = kit;
-    const panel = kit.addPanel(g, 1.0, 0.3);
-    // Electrodynamic dust shield (NASA KSC): costs battery, cleans most of the settled dust ('solar:clean').
-    const clean = kit.addButton(g, { width: 0.34, height: 0.08, label: t('solar.clean'), color: BUTTON.action,
-      onSelect: () => game.intent('solar:clean') }, 0.72, -0.05);
+    // Desk under the window (sill 1.1 m): top at 0.78 m.
+    const deskTop = 0.78 - station.y;
+    kit.addBox(g, 1.6, 0.74, 0.6, 0, deskTop - 0.39, 0.33, '#3a4048');
+    kit.addBox(g, 1.64, 0.04, 0.64, 0, deskTop - 0.01, 0.33, '#2a2f35');
+    // Production strip standing on the back of the desk, below the sill.
+    const strip = kit.addPanel(g, 1.4, 0.24, 0, deskTop + 0.15);
+    // Info panel on the wall beside the window, left of the solar field and flush to the wall.
+    const info = kit.addPanel(g, 1.0, 0.72, -1.9, 0.6);
+
+    /** @param {string} label @param {number} x @param {() => void} onSelect */
+    const deskButton = (label, x, onSelect) => {
+      const button = new Button({ width: 0.27, height: 0.1, label, color: BUTTON.action, onSelect });
+      const holder = new THREE.Group();
+      holder.position.set(x, deskTop + 0.01, 0.15);
+      holder.rotation.x = -Math.PI / 2;
+      holder.add(button.mesh);
+      g.add(holder);
+      return kit.registerButton(button);
+    };
+    const left = deskButton(t('solar.btn.left'), -0.45, () => game.intent('solar:turn', { dir: -1 }));
+    const right = deskButton(t('solar.btn.right'), 0, () => game.intent('solar:turn', { dir: 1 }));
+    const stow = deskButton(t('solar.btn.stow'), 0.45, () => game.intent('solar:stow', { on: sim().solarTracker?.mode !== 'stow' }));
+
     kit.onRefresh(() => {
       const s = sim();
       const clock = s.time.clock();
-      const solar = Math.max(0, s.power.generation(clock) - s.power.cfg.rtgKw);
       const cfg = s.power.cfg;
+      const tr = s.solarTracker;
+      const solar = Math.max(0, s.power.generation(clock) - cfg.rtgKw);
       const day = clock.hourFloat >= cfg.solarStartHour && clock.hourFloat < cfg.solarEndHour;
       const state = !day ? 'solar.night' : s.power.stormActive ? 'solar.storm' : 'solar.sun';
-      panel.renderLines(t('solar.title'), [
-        { text: t('solar.now', { kw: solar.toFixed(2), max: cfg.solarKw.toFixed(1) }), color: !day ? COLORS.dim : s.power.stormActive ? COLORS.warning : COLORS.nominal, size: 0.95 },
-        { text: t(state, { factor: cfg.stormSolarFactor }), size: 0.8 },
-        { text: t('solar.dust', { pct: Math.round((1 - s.power.dustFactor) * 100), factor: s.power.dustFactor.toFixed(2) }), color: s.power.dustFactor < 0.8 ? COLORS.warning : COLORS.text, size: 0.8 },
-        { text: t('solar.clean_hint', { kwh: s.power.dustCfg?.cleanKwh ?? 0 }), color: COLORS.dim, size: 0.7 },
-        { text: t('solar.rover', { state: t(s.rover?.docked ? 'solar.rover.docked' : 'solar.rover.away') }), color: COLORS.dim, size: 0.75 },
+      strip.renderLines('', [
+        { text: t('solar.now', { kw: solar.toFixed(2), max: cfg.solarKw.toFixed(1) }), color: !day ? COLORS.dim : s.power.stormActive ? COLORS.warning : COLORS.nominal, size: 1.1 },
       ]);
-      const dirty = s.power.dustCfg && s.power.dustFactor < s.power.dustCfg.cleanMinFactor;
-      clean.setState(t('solar.clean'), !dirty || s.power.stormActive ? BUTTON.off : s.power.dustFactor < 0.85 ? BUTTON.warn : BUTTON.action);
+      const lines = [];
+      if (tr) {
+        const sun = SolarTracker.sunAngle(clock.hourFloat);
+        lines.push({ text: t(`solar.mode.${tr.mode}`), color: tr.mode === 'auto' ? COLORS.nominal : tr.mode === 'stow' ? COLORS.warning : COLORS.text, size: 0.95 });
+        lines.push({ text: t('solar.angle', { panel: angleLabel(tr.angleDeg, t), sun: day ? angleLabel(sun, t) : t('solar.sun_down'), pct: Math.round(tr.factor(clock.hourFloat) * 100) }), color: COLORS.info, size: 0.8 });
+        if (tr.mode === 'auto') lines.push({ text: t('solar.auto_cost', { kw: tr.cfg.autoKw }), color: s.power.trackerPowered ? COLORS.dim : COLORS.critical, size: 0.72 });
+      }
+      lines.push({ text: t(state, { factor: cfg.stormSolarFactor }), size: 0.78 });
+      lines.push({ text: t('solar.dust', { pct: Math.round((1 - s.power.dustFactor) * 100), factor: s.power.dustFactor.toFixed(2) }), color: s.power.dustFactor < 0.8 ? COLORS.warning : COLORS.text, size: 0.78 });
+      lines.push({ text: t('solar.rover', { state: t(s.rover?.docked ? 'solar.rover.docked' : 'solar.rover.away') }), color: COLORS.dim, size: 0.68 });
+      info.renderLines(t('solar.title'), lines, { border: tr?.mode === 'stow' ? COLORS.warning : COLORS.border });
+
+      const off = !s.power.relayClosed;
+      left.setState(t('solar.btn.left'), off ? BUTTON.off : BUTTON.action);
+      right.setState(t('solar.btn.right'), off ? BUTTON.off : BUTTON.action);
+      stow.setState(t('solar.btn.stow'), tr?.mode === 'stow' ? BUTTON.warn : s.power.stormActive ? BUTTON.danger : BUTTON.off);
+    });
+  },
+
+  /** Manual third-person control for Rover 2 and its solar-panel cleaning mission. */
+  energy_rover2(g, station, kit) {
+    const { t, sim, game, services } = kit;
+    const deskTop = 0.78 - station.y;
+    kit.addBox(g, 0.44, 0.72, 0.42, 0.3, deskTop - 0.38, 0.35, '#3a4048');
+    kit.addBox(g, 0.5, 0.04, 0.48, 0.3, deskTop - 0.02, 0.35, '#2a2f35');
+    kit.addBox(g, 0.14, 0.5, 0.32, 0.52, deskTop - 0.26, 0.35, '#4b535b');
+    kit.addBox(g, 0.66, 0.66, 0.08, 0.3, 0.28, -0.05, '#20272e');
+    const panel = kit.addPanel(g, 0.58, 0.58, 0.3, 0.28);
+    const control = kit.addButton(g, {
+      width: 0.16,
+      height: 0.08,
+      label: t('solar.rover2.btn.control'),
+      color: BUTTON.action,
+      onSelect: () => game.intent('rover2:control'),
+    }, 0.2, deskTop + 0.06);
+    const clean = kit.addButton(g, {
+      width: 0.16,
+      height: 0.08,
+      label: t('solar.rover2.btn.clean'),
+      color: BUTTON.action,
+      onSelect: () => game.intent('rover2:clean'),
+    }, 0.4, deskTop + 0.06);
+
+    kit.onRefresh(() => {
+      const s = sim();
+      const dustPct = Math.round((1 - (s.power.dustFactor ?? 1)) * 100);
+      const controlling = Boolean(services.solarField?.isControllingRover2);
+      panel.renderLines(t('solar.rover2.title'), [
+        { text: t(controlling ? 'solar.rover2.link.active' : 'solar.rover2.link'), color: controlling ? COLORS.nominal : COLORS.info },
+        t('solar.rover2.task'),
+        { text: t('solar.rover2.controls'), color: COLORS.dim, size: 0.72 },
+        t('solar.rover2.dust', { pct: dustPct }),
+      ], { border: controlling ? COLORS.nominal : COLORS.border });
+      control.setState(t('solar.rover2.btn.control'), s.phase === 'playing' ? BUTTON.action : BUTTON.off);
+      clean.setState(t('solar.rover2.btn.clean'), dustPct > 0 ? BUTTON.action : BUTTON.off);
     });
   },
 

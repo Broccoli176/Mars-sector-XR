@@ -1,7 +1,7 @@
 // OWNER: Persona A (Personal · Hidro · Hub) — see docs/COLLABORATION.md
-// Sala central · Herramientas (hub): training bench (+ mission T1), bio panel, tool wall, spares locker,
+// Sala central · Herramientas (hub): training bench (+ mission T1), tool wall, spares locker,
 // component status board and the "Fuentes científicas" board. Placement: src/data/stations/hub.json
-import { COLORS, statusColor, startButtonState, renderBio } from '../../ui/StationKit.js';
+import { COLORS, statusColor, startButtonState } from '../../ui/StationKit.js';
 import { buildToolWall } from './tools.js';
 import { buildElectronicsBench } from './electronics.js';
 import { createT1, isT1Done } from './toolRules.js';
@@ -14,11 +14,6 @@ const hubState = { t1: createT1() };
 
 /** @type {Record<string, (g: import('three').Group, station: any, kit: import('../../ui/StationKit.js').StationKit) => void>} */
 export const builders = {
-  bio_panel(g, _station, kit) {
-    const panel = kit.addPanel(g, 0.7, 0.42);
-    kit.onRefresh(() => renderBio(panel, kit.sim(), kit.t));
-  },
-
   training_board(g, _station, kit) {
     const { t, game, sim } = kit;
     kit.addBox(g, 1.6, 0.06, 0.6, 0, -0.62, 0.3, '#5a4a38'); // bench

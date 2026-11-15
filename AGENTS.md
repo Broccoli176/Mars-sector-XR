@@ -76,7 +76,7 @@ Decisiones/objetivos iniciales (a confirmar al arrancar):
 | Interacción | Agarre directo para controles físicos; ray solo para controles diegéticos pequeños si aplica |
 | Input | Mandos primero; sin hand tracking en MVP salvo decisión explícita |
 | UI | Paneles/indicadores diegéticos. **Sin HUD head-locked** |
-| Entorno | Base en estrella alrededor de la **Sala central · Herramientas** (hub). Al norte: Telecom y Sala de control (consola de mapa y panel vital). Al oeste: Personal (spawn, ordenador y controles de tiempo). El biomonitor mural está en la Sala central. Al sur: Hidroponía · Agricultura y Energía y oxígeno. Ver `docs/FLOOR_PLAN.md`. Base subterránea con **dos ventanas al exterior**: la panorámica de Telecom (`src/world/Porthole.js`) y la del campo solar en Energía (`src/world/SolarField.js`, muro este). En `layout.json` cada muro con ventana lleva `view: "telecom" | "solar"` |
+| Entorno | Base en estrella alrededor de la **Sala central · Herramientas** (hub). Al norte: Telecom y Sala de control (spawn, ordenador principal y controles de tiempo al norte; biomonitor al sur; consola del rover en la pared este y panel vital al norte). Al oeste: Personal (habitaciones de tripulación, dosímetro y refugio antirradiación). Al sur: Hidroponía · Agricultura y Energía y oxígeno. Ver `docs/FLOOR_PLAN.md`. Base subterránea con **dos ventanas al exterior**: la panorámica de Telecom (`src/world/Porthole.js`) y la del campo solar en Energía (`src/world/SolarField.js`, muro este). En `layout.json` cada muro con ventana lleva `view: "telecom" | "solar"` |
 | Persistencia | Guardado versionado con migraciones (cuando se implemente) |
 
 ### Principio de diseño
@@ -232,7 +232,12 @@ Los tanques de O₂ de emergencia usan `valve:turn` (`valve_o2_tank_1/2`). Pendi
 - **Enlace con la Tierra (`src/systems/Comms.js`):**
   - Intent `comms:send { channel, key, params? }` (lo emiten IncidentRunner y el parte diario).
   - Eventos `comms:message { channel, key, params, day, hour, minute, sentDay, sentHour, sentMinute, delayMin }` (llega tras el retraso de luz real), `comms:linkLost { reason: 'signal' | 'conjunction' }`, `comms:linkRestored {}`.
-- **Polvo en paneles (`PowerGrid`):** intent `solar:clean {}`; eventos `solar:dustChanged { dustFactor }`, `solar:cleaned { by: 'shield' | 'devil', gained, kwh }`, `solar:rejected { reason: 'noDust' | 'storm' | 'relay' | 'battery' }`. Evento de guion `dustDevil`.
+- **Polvo en paneles (`PowerGrid`):** intent `solar:clean { by?: 'shield' | 'rover2' }`; eventos `solar:dustChanged { dustFactor }`, `solar:cleaned { by: 'shield' | 'rover2' | 'devil', gained, kwh }`, `solar:rejected { reason: 'noDust' | 'storm' | 'relay' | 'battery' | 'tracker' }`. Evento de guion `dustDevil`.
+- **Seguidor solar (`src/systems/SolarTracker.js`, consola bajo la ventana de Energía):**
+  - Intents: `solar:turn { dir: -1 | 1 }` (manual, paso 18°, límite ±60° sobre eje vertical), `solar:auto { on }` (sigue al Sol; motor 0,05 kW de día) y `solar:stow { on }` (PROTEGER: de canto, sin producción, ×0,25 de polvo en tormenta).
+  - Evento: `solar:tracker { mode: 'manual' | 'auto' | 'stow', angleDeg, targetDeg }`.
+  - La producción solar = pico × coseno(azimut Sol − azimut panel) × polvo × tormenta (spec §2.6). `SolarField` gira los 6 paneles en una fila sobre su eje vertical con `sim.solarTracker.angleDeg`.
+- **Rover 2 limpiador (`SolarField`, consola `energy_rover2`):** intents `rover2:control {}` (alternar vista de seguimiento en tercera persona) y `rover2:clean {}` (limpiar solo dentro del alcance de los paneles). Escritorio: WASD, E limpia, Q/Esc sale; XR: joystick izquierdo, X/A limpia, Y/B sale. Limpia mediante `solar:clean { by: 'rover2' }` y respeta las mismas restricciones/coste de PowerGrid.
 - **Tormenta solar (`Radiation`):** `spaceWeather:alert { kind: 'sep', etaHours }` y `spaceWeather:impact { kind: 'sep', durationHours }` (IncidentRunner, evento `sep`); intent `crew:shelter { inside }` (presentación, según la posición de la cabeza en Personal); `crew:damage { cause: 'radiation' }` fuera del refugio en lo peor de la tormenta.
 - **Telecom:** `antenna:align`, `antenna:turnLeft`, `antenna:turnRight` (intents); escucha `component:damaged`/`system:repaired` para `antenna_motor`.
 - **Herramientas (presentación, fase 1):**
