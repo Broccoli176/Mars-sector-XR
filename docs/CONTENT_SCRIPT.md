@@ -120,6 +120,8 @@ Each mission has `stepN` keys for multi-step hints (e.g. `tutorial.t3.step2` = "
 | `hydro.guide.*`, `real.crop.*` | `strings/es/hydro.json` | Crop guide (CSA + NASA NTRS: real days vs game hours, quinoa, spirulina), crop names |
 | `hydro.tray.*`, `hydro.btn.*`, `hydro.hose.*`, `hydro.bio.*`, `ui.log.food_spoiled.overwatered` | `strings/es/hydro.json` | Tray panels (seed, growth, moisture, dry/flooded/dark warnings), buttons, hose instructions, bioreactor panel, rot log |
 | `hub.elec.*`, `hint.elec.*`, `hub.comp.rx_psu` | `strings/es/hub.json` | Electronics bench: scope, supply quality, multimeter modes/readings, soldering progress, steps, diode/capacitor facts, parts, fault and repair hints |
+| `rover.*` | `strings/es/control.json` | Rover console: screens, buttons, link/battery/mode/cargo, rejections, stops, sites, hints, NASA facts |
+| `solar.*`, `ui.circuit.repairBay` | `strings/es/energy.json` | «Campo solar» label under the Energía window; breaker «Taller · Rover» |
 | `hub.ctrl.*` | `strings/es/hub.json` | «Prueba de mandos» panel: session line, per-hand buttons/stick/events, ray test button, legend of what each control does |
 | `hub.sources.*` (incl. `hub.sources.use.<datasetId>`) | `strings/es/hub.json` | "Fuentes científicas" board; one `use` line per dataset in `src/data/real/` |
 

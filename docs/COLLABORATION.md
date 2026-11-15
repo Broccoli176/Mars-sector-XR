@@ -27,6 +27,8 @@ Plano y coordenadas de las salas: `docs/FLOOR_PLAN.md`.
 | Herramientas (Sala central) | `src/rooms/hub/{tools,toolRules,controllerDiag,electronics,electronicsRules}.js`, `src/systems/Electronics.js`, `src/data/balance/hub.json` (herramientas + tabla de componentes §6.1) | Fase 2 (reparar componentes de sus salas): coordinar. Se acerca la herramienta a un componente y se mantiene; necesita el sistema Electronics y `repair:*` |
 | Tests | `tests/hydro.test.js`, `tests/hydroRules.test.js`, `tests/electronics.test.js`, `tests/electronicsRules.test.js`, `tests/radiation.test.js`, `tests/tools.test.js`, `tests/spaceweather.test.js`, `tests/controllers.test.js` | `tests/power.test.js`, `tests/telecom.test.js` |
 
+> **Nota (14/11/2026):** a petición del usuario, Persona A hizo la ventana del campo solar en Energía (`src/world/SolarField.js`, `energy_solar_view`) y la consola del rover en la Sala de control (`src/rooms/control/rover.js`, `src/systems/Rover.js`, `src/data/balance/rover.json`). Persona B revisa el PR.
+
 > **Trabaja solo en tus archivos.** Si necesitas algo en un archivo del otro, pídeselo por chat o abre un PR pequeño y espera su revisión.
 
 ### Archivos COMPARTIDOS (tocar solo con PR pequeño y aviso previo)

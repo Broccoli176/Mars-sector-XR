@@ -6,7 +6,7 @@
   "ui.circuit.lighting": "Luces",
   "ui.circuit.telecom": "Telecom",
   "ui.circuit.hydro": "Hidro",
-  "ui.circuit.repairBay": "Taller",
+  "ui.circuit.repairBay": "Taller · Rover",
   "ui.circuit.on": "ON",
   "ui.circuit.off": "OFF",
   "ui.circuit.offline": "SIN ENERGÍA",
@@ -26,5 +26,13 @@
   "hint.relay.reset": "El relé principal ha saltado. Rearma en la pared de breakers (sala Energía y oxígeno, al sur).",
   "hint.filter.swap": "El filtro de CO₂ se agota. Cámbialo en el depurador de la sala Energía y oxígeno.",
   "hint.o2tank.opened": "Tanque de O₂ abierto: +{boost} %.",
-  "hint.o2tank.empty": "Ese tanque ya está vacío."
+  "hint.o2tank.empty": "Ese tanque ya está vacío.",
+  "solar.title": "CAMPO SOLAR (18 paneles) · por la ventana",
+  "solar.now": "Generación solar ahora: {kw} kW (máx. {max} kW)",
+  "solar.sun": "Sol: los paneles cargan las baterías de la base.",
+  "solar.storm": "Tormenta de polvo: el polvo tapa los paneles (×{factor}).",
+  "solar.night": "Noche: los paneles no generan; solo queda el RTG.",
+  "solar.rover": "Rover: {state}",
+  "solar.rover.docked": "en su plataforma de carga (fuera, junto a los paneles)",
+  "solar.rover.away": "de expedición"
 }

@@ -61,6 +61,7 @@ El juego usa datos reales **embebidos como registros con fecha**; solo el clima 
 | Radiación en la superficie de Marte (MSL RAD, Curiosity) e ISS, 24 h del 01/01/2023 | [NASA OSDR RadLab](https://visualization.osdr.nasa.gov/radlab/gui/data-api/) | Dosímetro (Personal) | `npm run data:radlab -- AAAA-MM-DD` |
 | Clima espacial: CME, tormentas geomagnéticas y de partículas, últimos 7 días | [NASA DONKI (api.nasa.gov)](https://api.nasa.gov/) | «El Sol ahora» (Personal): **EN VIVO** si hay red; si no, el registro con fecha | `npm run data:donki` (registro de respaldo) |
 | Estudios reales de salud en el espacio (OSD-924, OSD-343, OSD-812) | [NASA OSDR](https://osdr.nasa.gov/bio/repo/) | «Salud del astronauta» (Personal) | `npm run data:osdr` |
+| Rover Perseverance: velocidad 152 m/h, MMRTG ≈ 110 W, 43 tubos | [NASA Mars 2020](https://science.nasa.gov/mission/mars-2020-perseverance/rover-components/) | Consola del rover (Sala de control) | Editar `src/data/real/perseverance.json` |
 | Quinua y espirulina para soporte vital (CELSS): proteína, O₂ | [NASA NTRS](https://ntrs.nasa.gov/citations/19940015664) | Guía de cultivos y biorreactor (Hidroponía) | Editar `src/data/real/bioregen_crops.json` |
 | Ciclos de cultivo, dieta de la tripulación, hábitats de plantas | [CSA – Food production](https://www.asc-csa.gc.ca/eng/youth-educators/toolkits/food-production/) | Guía de cultivos y bastidor (Hidroponía) | Editar `src/data/real/csa_food.json` |
 

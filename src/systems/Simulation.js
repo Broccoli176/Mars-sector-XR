@@ -10,6 +10,7 @@ import { GameState } from './GameState.js';
 import { Telecom } from './Telecom.js';
 import { Radiation } from './Radiation.js';
 import { Electronics } from './Electronics.js';
+import { Rover } from './Rover.js';
 
 const TICKS_PER_HOUR = 60;
 
@@ -38,6 +39,8 @@ export class Simulation {
     this.telecom = new Telecom(b.telecom, bus, this.resources);
     // Telecom receiver power supply, repaired at the hub electronics bench (spec §6.6).
     this.electronics = b.electronics ? new Electronics(b.electronics, b.time, bus) : null;
+    // Perseverance-class rover driven from the Sala de control; charges through the repairBay circuit.
+    this.rover = b.rover ? new Rover(b.rover, bus, this.resources) : null;
     // Real Mars-surface radiation replay (informational, no health effect). Only if the snapshot exists.
     this.radiation = data.real?.radlab ? new Radiation(data.real.radlab) : null;
     this.game = new GameState(b.gameRules, TICKS_PER_HOUR, {
@@ -81,7 +84,7 @@ export class Simulation {
       lighting: circuits.lighting.drawKw,
       telecom: circuits.telecom.drawKw,
       hydro: hydro.hydro,
-      repairBay: 0,
+      repairBay: this.rover?.chargeKw() ?? 0,
     };
     this.power.resolve(requests, clock, this.time.tick);
 
@@ -90,6 +93,7 @@ export class Simulation {
     this.crew.update(dt);
     this.radiation?.update(clock, dt);
     this.electronics?.update(this.time.tick, dt);
+    this.rover?.update(dt, this.power.served.repairBay);
     this.telecom.update(this.power.served.telecom, this.power.stormActive, dt);
     this.resources.commit(dt);
 

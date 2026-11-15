@@ -1,13 +1,19 @@
 // OWNER: teammate (Telecom · Control · Energy) — see docs/COLLABORATION.md
-// Sala de control: main PC, time lever, bio panel. Placement: src/data/stations/control.json
+// Sala de control: main PC, time lever, bio panel, rover console (./rover.js). Placement: src/data/stations/control.json
 import { COLORS, BUTTON, statusColor, startButtonState, renderBio } from '../../ui/StationKit.js';
 import { formatClock } from '../../utils/strings.js';
+import { buildRoverConsole } from './rover.js';
 
 const SPEEDS = [0, 1, 2, 4];
 const LOG_COLORS = { info: COLORS.text, hint: COLORS.info, comms: COLORS.title, warning: COLORS.warning, critical: COLORS.critical };
 
 /** @type {Record<string, (g: import('three').Group, station: any, kit: import('../../ui/StationKit.js').StationKit) => void>} */
 export const builders = {
+  /** Perseverance-class rover teleoperation console (map, NavCam, status, 6 desk buttons). */
+  rover_console(g, station, kit) {
+    buildRoverConsole(g, station, kit);
+  },
+
   main_pc(g, station, kit) {
     const { t, game, sim } = kit;
     kit.addBox(g, 1.6, 0.06, 0.6, 0, -0.62, 0.3, '#5d666f'); // desk
