@@ -9,7 +9,7 @@ import { Panel } from '../../ui/Panel.js';
 import { describeInputSource, createInputCounters, handLines } from './controllerDiag.js';
 
 // Shared between the tool wall (events) and the training board (checklist). Presentation-only state.
-/** @type {{ t1: ReturnType<typeof createT1>, tools?: any[] }} */
+/** @type {{ t1: ReturnType<typeof createT1> }} */
 const hubState = { t1: createT1() };
 
 /** @type {Record<string, (g: import('three').Group, station: any, kit: import('../../ui/StationKit.js').StationKit) => void>} */
@@ -42,12 +42,12 @@ export const builders = {
 
   /** Tool wall with the 4 tools (wrench, screwdriver, soldering iron, sealant gun). */
   hub_toolwall(g, _station, kit) {
-    hubState.tools = buildToolWall(g, kit, hubState).items; // the electronics bench needs the soldering iron tip
+    buildToolWall(g, kit, hubState);
   },
 
-  /** Electronics bench: repair the Telecom receiver power supply (diodes + filter capacitor). */
+  /** Electronics bench: guided scan → remove → replace minigame for the Telecom receiver power supply. */
   hub_electronics(g, station, kit) {
-    buildElectronicsBench(g, station, kit, hubState);
+    buildElectronicsBench(g, station, kit);
   },
 
   /** Spares locker with live counters (resource `spares` + consumable inventory). */

@@ -1,40 +1,51 @@
 // OWNER: Persona A (Personal · Hidro · Hub) — see docs/COLLABORATION.md
 import { describe, it, expect } from 'vitest';
-import { meterReading, isReversed, scopeTrace } from '../src/rooms/hub/electronicsRules.js';
+import { benchStep, isBroken, scopeTrace } from '../src/rooms/hub/electronicsRules.js';
 import { psuOutput } from '../src/systems/Electronics.js';
 import { gameData } from '../src/data/index.js';
 
 const cfg = gameData.balance.electronics;
 const slot = (/** @type {any} */ over) => ({ id: 'X', kind: 'diode', partId: '1N4007', reversed: false, soldered: true, health: 'ok', ...over });
 const healthy = cfg.slots.map((/** @type {any} */ s) => slot({ id: s.id, kind: s.kind, partId: s.partId }));
-const ctx = { parts: cfg.parts, circuit: cfg.circuit, output: psuOutput(healthy, cfg.circuit, cfg.parts) };
+/** @type {Record<string, string>} */
+const defaults = Object.fromEntries(cfg.slots.map((/** @type {any} */ s) => [s.id, s.partId]));
+/** Healthy board with per-slot overrides. @param {Record<string, any>} over */
+const board = (over) => healthy.map((/** @type {any} */ s) => ({ ...s, ...over[s.id] }));
+const ctx = { output: psuOutput(healthy, cfg.circuit, cfg.parts) };
 
-describe('electronics bench rules', () => {
-  it('diode test: good 0.62 V, open or reversed OL, short 0.00 V; wrong mode shows nothing', () => {
-    expect(meterReading('diode', { type: 'slot', slot: slot({}) }, ctx)).toBe('0.62 V');
-    expect(meterReading('diode', { type: 'slot', slot: slot({ health: 'open' }) }, ctx)).toBe('OL');
-    expect(meterReading('diode', { type: 'slot', slot: slot({ reversed: true }) }, ctx)).toBe('OL');
-    expect(meterReading('diode', { type: 'slot', slot: slot({ health: 'short' }) }, ctx)).toBe('0.00 V');
-    expect(meterReading('cap', { type: 'slot', slot: slot({}) }, ctx)).toBe('—');
+describe('electronics bench: guided repair', () => {
+  it('a healthy board needs nothing, scanned or not', () => {
+    expect(benchStep(healthy, defaults, false)).toEqual({ step: 'ok' });
+    expect(benchStep(healthy, defaults, true)).toEqual({ step: 'ok' });
   });
 
-  it('capacitance: a good 470 µF reads ≈461, a dried one the configured value', () => {
-    const c1 = slot({ kind: 'cap', partId: 'C470u25V' });
-    expect(meterReading('cap', { type: 'slot', slot: c1 }, ctx)).toBe('461 µF');
-    expect(meterReading('cap', { type: 'slot', slot: { ...c1, health: 'dried' } }, ctx)).toBe(`${cfg.circuit.driedUF} µF`);
+  it('a dried capacitor: scan first, then pull out C1', () => {
+    const b = board({ C1: { health: 'dried' } });
+    expect(benchStep(b, defaults, false).step).toBe('scan');
+    expect(benchStep(b, defaults, true)).toEqual({ step: 'remove', slotId: 'C1' });
   });
 
-  it('voltage at test points: AC rms in, DC average after the filter, 5 V out', () => {
-    expect(meterReading('volt', { type: 'tp', id: 'TP1' }, ctx)).toBe('12.0 V~');
-    expect(meterReading('volt', { type: 'tp', id: 'TP3' }, ctx)).toBe('5.00 V');
-    const tp2 = parseFloat(meterReading('volt', { type: 'tp', id: 'TP2' }, ctx));
-    expect(tp2).toBeGreaterThan(14);
-    expect(tp2).toBeLessThan(15.6);
+  it('an empty slot asks for its original part', () => {
+    expect(benchStep(board({ D2: { partId: null } }), defaults, true)).toEqual({ step: 'insert', slotId: 'D2', partId: '1N4007' });
   });
 
-  it('orientation from the axis dot product', () => {
-    expect(isReversed({ x: 1, y: 0, z: 0 }, { x: 0.9, y: 0.1, z: 0 })).toBe(false);
-    expect(isReversed({ x: -1, y: 0, z: 0 }, { x: 1, y: 0, z: 0 })).toBe(true);
+  it('broken parts are removed before empty slots are filled', () => {
+    expect(benchStep(board({ D1: { partId: null }, D3: { health: 'open' } }), defaults, true)).toEqual({ step: 'remove', slotId: 'D3' });
+  });
+
+  it('a loose good part only needs soldering', () => {
+    expect(benchStep(board({ C1: { soldered: false } }), defaults, true)).toEqual({ step: 'solder', slotId: 'C1' });
+  });
+
+  it('a decoy or reversed part counts as broken', () => {
+    expect(isBroken(slot({ partId: '1N4148' }), '1N4007')).toBe(true);
+    expect(isBroken(slot({ reversed: true }), '1N4007')).toBe(true);
+    expect(isBroken(slot({}), '1N4007')).toBe(false);
+    expect(benchStep(board({ C1: { partId: 'C1000u6V' } }), defaults, true)).toEqual({ step: 'remove', slotId: 'C1' });
+  });
+
+  it('the cards offered are the original parts of the slots', () => {
+    for (const s of cfg.slots) expect(cfg.bench.cards).toContain(s.partId);
   });
 
   it('scope trace: the filtered output stays within the ripple band; off is flat 0', () => {

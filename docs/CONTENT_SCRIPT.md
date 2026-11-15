@@ -119,7 +119,7 @@ Each mission has `stepN` keys for multi-step hints (e.g. `tutorial.t3.step2` = "
 | `personal.health.*` | `strings/es/personal.json` | «Salud del astronauta» (OSDR): title, `where.<topic>`, one kid summary per study (`osd924`, `osd343`, `osd812`), source, `no_data` |
 | `hydro.guide.*`, `real.crop.*` | `strings/es/hydro.json` | Crop guide (CSA + NASA NTRS: real days vs game hours, quinoa, spirulina), crop names |
 | `hydro.tray.*`, `hydro.btn.*`, `hydro.hose.*`, `hydro.bio.*`, `ui.log.food_spoiled.overwatered` | `strings/es/hydro.json` | Tray panels (seed, growth, moisture, dry/flooded/dark warnings), buttons, hose instructions, bioreactor panel, rot log |
-| `hub.elec.*`, `hint.elec.*`, `hub.comp.rx_psu` | `strings/es/hub.json` | Electronics bench: scope, supply quality, multimeter modes/readings, soldering progress, steps, diode/capacitor facts, parts, fault and repair hints |
+| `hub.elec.*`, `hint.elec.*`, `hub.comp.rx_psu` | `strings/es/hub.json` | Electronics bench: scope, supply quality, guided steps (`step.*`, `how.*`), feedback messages (`msg.*`), spare cards, Info sheet (`info.*`, `fact.*`), fault and repair hints |
 | `comms.sep.*`, `hint.sep.*`, `personal.sep.*`, `personal.shelter.*` | `strings/es/common.json`, `personal.json` | Solar particle event: alert from Earth, shelter sign, storm dosimeter |
 | `ui.telecom.earth_delay` / `in_transit` / `held` / `conjunction` / `rover_delay` | `strings/es/telecom.json` | Earth link panel (light-time delay, queue) |
 | `ui.log.comms_sent`, `ui.log.link_*`, `ui.log.solar_*`, `solar.dust` | `strings/es/common.json`, `energy.json` | Log lines for delayed messages, link loss, panel cleaning; dust on the solar label |

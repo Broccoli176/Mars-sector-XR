@@ -454,8 +454,8 @@ A real linear supply in `src/systems/Electronics.js`, tunables in `balance/hub.j
 | Dried capacitor | Reads 150 µF ⇒ `noisy`. 10 µF or no capacitor ⇒ `brownout`. A loose (not soldered) part makes no contact |
 | Wrong parts fail with use | 1N4148 (0.2 A) under 0.8 A peaks ⇒ opens; 1000 µF 6.3 V under 15.6 V ⇒ swells (dried). After 1.5 h |
 | Faults | Guided: day 2 10:00 C1 dries. Dust storm start: surge shorts D2. `spaceWeather:impact` CME: D3 opens |
-| Repair | Soldering iron tip on the joint 1.5 s (`electronics:heat`) ⇒ remove ⇒ insert from the bin (stock: 1N4007 ×3, 470 µF ×2, decoys 1N4148 ×2, 10 µF ×2, 1000 µF 6.3 V ×2) ⇒ solder |
-| Multimeter | Diode test: good 0.62 V, open or reversed OL, short 0.00 V. Capacitance: ≈ 461 µF good, 150 µF dried. Voltage: TP1 12 V~ (AC rms), TP2 filtered DC, TP3 5 V |
+| Repair (sim intents) | `electronics:heat` (desolder) ⇒ `remove` ⇒ `insert` ⇒ `heat` (solder). Stock: 1N4007 ×3, 470 µF ×2; the decoys (1N4148, 10 µF, 1000 µF 6.3 V) stay in the model for tests/policies but the bench does not offer them |
+| Bench minigame (presentation) | Ray + trigger only. 1) ESCANEAR (`bench.scanSeconds` 1.2 s) ⇒ broken parts blink red (damaged, reversed, not the original part). 2) Tap the red part ⇒ progress ring for `bench.heatSeconds` (1.5 s) ⇒ heat + remove. 3) Tap the card (`bench.cards`) whose shape matches the green outline ⇒ the part flies in (`bench.flySeconds`) ⇒ insert (never reversed) + heat. Wrong card: shakes, no intent. Rigorous explanation in the Info sheet |
 
 It does not affect survival directly: it lowers the Telecom signal (comms/link once Person B adds the message queue).
 

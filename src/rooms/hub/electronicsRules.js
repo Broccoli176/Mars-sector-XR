@@ -1,49 +1,31 @@
 // OWNER: Persona A (Personal · Hidro · Hub) — see docs/COLLABORATION.md
-// Pure rules for the electronics bench (no three.js): multimeter readings, part orientation and the
-// oscilloscope trace. Tested in tests/electronicsRules.test.js.
-
-export const METER_MODES = /** @type {const} */ (['diode', 'cap', 'volt']);
+// Pure rules for the electronics bench (no three.js): the guided 3-step repair (scan → remove → insert)
+// and the oscilloscope trace. Tested in tests/electronicsRules.test.js.
 
 /**
- * What the multimeter shows for a probe target.
- * @param {'diode' | 'cap' | 'volt'} mode
- * @param {{ type: 'slot', slot: any } | { type: 'tp', id: 'TP1' | 'TP2' | 'TP3' } | null} target
- * @param {{ parts: Record<string, any>, circuit: any, output: import('../../systems/Electronics.js').PsuOutput }} ctx
- * @returns {string} display text ('—' when nothing measurable)
+ * A slot needs work if its part is damaged, reversed or not the original part (decoys/policies), or if it is empty.
+ * @param {{ partId: string | null, health: string, reversed: boolean }} slot @param {string} defaultPartId
  */
-export function meterReading(mode, target, { parts, circuit, output }) {
-  if (!target) return '—';
-  if (target.type === 'tp') {
-    if (mode !== 'volt') return '—';
-    if (target.id === 'TP1') return `${(circuit.acPeakV / Math.SQRT2).toFixed(1)} V~`;
-    if (output.mode === 'off') return '0.00 V';
-    if (target.id === 'TP2') return `${(output.vdcPeak - output.rippleVpp / 2).toFixed(2)} V`;
-    return `${output.vout.toFixed(2)} V`;
-  }
-  const s = target.slot;
-  if (!s.partId) return '—';
-  const def = parts[s.partId];
-  if (mode === 'diode') {
-    if (def.kind !== 'diode') return '—';
-    if (s.health === 'short') return '0.00 V';
-    if (s.health === 'open' || s.reversed) return 'OL'; // reversed: the meter pushes current the blocked way
-    return '0.62 V';
-  }
-  if (mode === 'cap') {
-    if (def.kind !== 'cap') return '—';
-    if (s.health === 'short' || s.health === 'open') return '0 µF';
-    const uF = s.health === 'dried' ? circuit.driedUF : def.uF * 0.98;
-    return `${Math.round(uF)} µF`;
-  }
-  return '—';
+export function isBroken(slot, defaultPartId) {
+  return !slot.partId || slot.health !== 'ok' || slot.reversed || slot.partId !== defaultPartId;
 }
 
 /**
- * A part is reversed if its axis points against the slot's axis (dot product of world directions < 0).
- * @param {{ x: number, y: number, z: number }} partAxis @param {{ x: number, y: number, z: number }} slotAxis
+ * Current step of the guided repair. Priority: pull out what is broken → fill the empty slot → solder a loose part.
+ * @param {{ id: string, partId: string | null, health: string, reversed: boolean, soldered: boolean }[]} slots
+ * @param {Record<string, string>} defaults original part per slot id
+ * @param {boolean} scanned the player already pressed SCAN for the current fault
+ * @returns {{ step: 'ok' | 'scan' | 'remove' | 'insert' | 'solder', slotId?: string, partId?: string }}
  */
-export function isReversed(partAxis, slotAxis) {
-  return partAxis.x * slotAxis.x + partAxis.y * slotAxis.y + partAxis.z * slotAxis.z < 0;
+export function benchStep(slots, defaults, scanned) {
+  const bad = slots.find((s) => s.partId && isBroken(s, defaults[s.id]));
+  const empty = slots.find((s) => !s.partId);
+  const loose = slots.find((s) => s.partId && !s.soldered && !isBroken(s, defaults[s.id]));
+  if (!bad && !empty && !loose) return { step: 'ok' };
+  if (!scanned) return { step: 'scan' };
+  if (bad) return { step: 'remove', slotId: bad.id };
+  if (empty) return { step: 'insert', slotId: empty.id, partId: defaults[empty.id] };
+  return { step: 'solder', slotId: /** @type {any} */ (loose).id };
 }
 
 /**

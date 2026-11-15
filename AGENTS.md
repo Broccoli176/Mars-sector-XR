@@ -230,12 +230,13 @@ Los tanques de O₂ de emergencia usan `valve:turn` (`valve_o2_tank_1/2`). Pendi
   - Eventos: `component:damaged { componentId: 'rx_psu', reason, slotId, signalCap, quality }`, `system:repaired { systemId: 'telecom_rx', partId: 'rx_psu' }`, `electronics:rejected { slotId, partId?, reason: 'soldered' | 'occupied' | 'wrongKind' | 'noStock' }`, `electronics:changed { quality }`.
   - Escucha `weather:changed` (tormenta ⇒ diodo en corto) y `spaceWeather:impact { kind: 'cme' }` (diodo abierto; lo emitirá Persona B).
   - `Telecom` limita la señal a `signalCap` mientras la fuente falla.
+  - Banco (`src/rooms/hub/electronics.js`): minijuego guiado de 3 pasos, solo rayo + gatillo. 1) ESCANEAR: la pieza rota parpadea en rojo. 2) Tocarla: se desuelda y sale (`heat` + `remove`). 3) Tocar la tarjeta de repuesto con la misma forma que el hueco verde: entra soldada (`insert { reversed: false }` + `heat`). Solo se ofrecen los repuestos correctos (`bench.cards`). Sin multímetro ni soldador en la mano. Pasos puros en `electronicsRules.js` (`benchStep`, `isBroken`).
 - **Rover tipo Perseverance (`src/systems/Rover.js`, consola en la Sala de control):**
   - Intent: `rover:command { cmd: 'forward' | 'back' | 'left' | 'right' | 'stop' | 'sample' }` (avanza 10 m, atrás 5 m, gira 30°, muestra a ≤ 8 m de un sitio). Necesita enlace: señal ≥ 20 %.
   - Eventos: `rover:rejected { cmd, reason: 'noLink' | 'battery' | 'stuck' | 'noSite' | 'busy' }`, `rover:stopped { reason: 'obstacle' | 'sand' | 'battery' | 'edge' }`, `rover:sampled { siteId, kind: 'core' | 'salvage' }`, `rover:delivered { cores, spares }`.
   - Se recarga en la base por el circuito `repairBay` («Taller · Rover»). Los restos del aterrizaje que trae dan +1 `spares` cada uno.
   - El panel adyacente `rover_vitals` es solo una maqueta desconectada: batería, generador, señal e integridad muestran «sin datos» y no leen la simulación.
-- **Usar lo que sostienes (compartido, `src/vr/Grab.js`):** `userData.grab.onUse(active, handId)`. Con un objeto así en la mano, el gatillo (XR) o la tecla F (escritorio) lo usan en vez del rayo. Lo usan la manguera de Hidroponía y el multímetro (cambia de modo). En escritorio, R gira lo que sostienes.
+- **Usar lo que sostienes (compartido, `src/vr/Grab.js`):** `userData.grab.onUse(active, handId)`. Con un objeto así en la mano, el gatillo (XR) o la tecla F (escritorio) lo usan en vez del rayo. Lo usa la manguera de Hidroponía. En escritorio, R gira lo que sostienes.
 - **Incidentes y avisos:** `incident:warning`/`triggered`, `weather:changed`, `comms:message`, `hint`.
 - **Enlace con la Tierra (`src/systems/Comms.js`):**
   - Intent `comms:send { channel, key, params? }` (lo emiten IncidentRunner y el parte diario).
