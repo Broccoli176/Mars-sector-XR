@@ -221,5 +221,8 @@ export class Rover {
     this.cargo = [];
     this.bus.emit('rover:delivered', { cores, spares });
     this.bus.emit('hint', { key: 'rover.hint.delivered', params: { cores, spares } });
+    // Rock cores are science for Earth, not a survival resource: the base reports them and Earth's reply
+    // arrives with the real light delay (Comms). Salvage is what helps survival (spares).
+    if (cores > 0) this.bus.emit('comms:send', { channel: 'mission', key: 'comms.science.cores', params: { cores, total: this.delivered.cores } });
   }
 }

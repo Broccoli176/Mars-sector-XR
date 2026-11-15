@@ -49,7 +49,7 @@
   "hint.training.start": "Bienvenido, operador. Pulsa «Iniciar turno» para empezar.",
   "ui.log.overload": "Sobrecarga: {demand} kW > {limit} kW. Reduce carga o saltará el relé.",
   "ui.log.relay_tripped": "Relé principal disparado.",
-  "ui.log.relay_burned": "Relé principal QUEMADO por disparos repetidos. Cambiarlo cuesta 1 repuesto.",
+  "ui.log.relay_burned": "Relé principal QUEMADO por disparos repetidos. Para cambiarlo: destornillador (en la mano o el cinturón) y 1 repuesto.",
   "ui.log.relay_reset": "Relé rearmado.",
   "ui.log.food_ready": "Cosecha lista en Hidroponía.",
   "ui.log.food_harvested": "Cosecha a la despensa: {kcal} kcal en crudo.",
@@ -89,7 +89,7 @@
   "ui.log.solar_tracker.stow": "Paneles protegidos de canto: menos polvo, pero no producen.",
   "ui.log.solar_tracker.manual": "Seguidor solar en MANUAL.",
   "ui.log.solar_rejected.tracker": "El seguidor solar no tiene energía: rearma el relé.",
-  "hint.solar.manual": "Gira los paneles con «◀ Izquierda» y «Derecha ▶», bajo la ventana. «Proteger» los pone de canto durante una tormenta.",
+  "hint.solar.manual": "Gira los paneles con «◀ Izquierda» y «Derecha ▶», bajo la ventana, o pulsa «Auto» para que sigan al Sol (su motor gasta un poco de energía). «Proteger» los pone de canto en una tormenta.",
   "ui.log.kitchen_done": "{name} lista: +{kcal} kcal.",
   "ui.log.kitchen_eaten": "Comida en crudo: +{kcal} kcal.",
   "ui.log.kitchen_spoiled": "Se ha estropeado {name} en la despensa (−{kcal} kcal).",
@@ -105,5 +105,8 @@
   "ui.btn.close": "Cerrar",
   "ui.bio.dark": "Sin luz no recuperas salud",
   "ui.log.relay_no_spare": "No quedan repuestos para cambiar el relé quemado.",
-  "ui.log.relay_replaced": "Relé quemado sustituido: 1 repuesto gastado."
+  "ui.log.relay_replaced": "Relé quemado sustituido: 1 repuesto gastado.",
+  "ui.log.relay_no_tool": "Para cambiar el relé quemado necesitas el destornillador: cógelo en la pared de herramientas de la Sala central.",
+  "comms.science.cores": "Tierra: recibido el informe de {cores} tubo(s) de roca ({total} en total). ¡Ciencia para entender el pasado de Marte!",
+  "summary.rover": "Rover: {cores} muestras para la ciencia · {spares} repuestos rescatados"
 }

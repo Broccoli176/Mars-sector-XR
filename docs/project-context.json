@@ -56,6 +56,13 @@
       "src/rooms/{control,energy,telecom,hydro,hub,personal}/stations.js",
       "src/world/Porthole.js",
       "src/systems/Telecom.js",
+      "src/systems/Comms.js",
+      "src/systems/Radiation.js",
+      "src/systems/Electronics.js",
+      "src/systems/Rover.js",
+      "src/systems/Kitchen.js",
+      "src/systems/SolarTracker.js",
+      "src/ui/theme.js",
       "src/vr/Collision.js"
     ],
     "data": [
@@ -67,7 +74,7 @@
       "src/data/balance/*.json"
     ],
     "tests": "tests/*.test.js (Vitest, headless)",
-    "notes": "Prototype v0.1. Pending: telecom/space weather, electronics/repairs, leaks, tools/holsters, training missions, audio, save, CI, typecheck, schemas, assets. Interaction uses ray + trigger press (direct grab pending)."
+    "notes": "Prototype v0.1. Implemented beyond the core: Telecom, Comms (light delay), Radiation (SEP shelter), Electronics bench, Rover, Kitchen, SolarTracker, tools/holsters (presentation only). Pending: CME and radio blackouts (src/data/spaceWeather.json does not exist), cascade lose rule, tool-based repairs, leaks, training missions T2-T5, audio, save, CI, typecheck, schemas, assets. Interaction uses ray + trigger press; grab is used for tools and the hose. All diegetic text uses src/ui/theme.js."
   },
   "plannedState": {
     "schemasRoot": "src/data/schemas (planned)",
@@ -92,10 +99,10 @@
       "starvation or dehydration",
       "hypothermia",
       "total power loss",
-      "unrecoverable cascade"
+      "unrecoverable cascade (planned, not implemented)"
     ],
     "timeScale": "accelerated, tick-based (1 tick = 1 in-game minute, 360 s per day at 1x)",
-    "spaceWeather": "static NASA DONKI snapshot: one CME (974 km/s, ETA ~65 h) and two radio blackouts",
+    "spaceWeather": "implemented: solar particle event (real MSL RAD record, day 6). Planned: static NASA DONKI snapshot with one CME (974 km/s, ETA ~65 h) and two radio blackouts",
     "comms": "text only with radio SFX; no data transmitted below 20% signal",
     "save": "v1 localStorage; stretch goal for the hackathon",
     "locomotion": [
@@ -104,7 +111,7 @@
     ],
     "input": "Quest 3 controllers; 2 hip holsters for tools",
     "ui": "diegetic panels, gauges, indicator lights; no head-locked HUD",
-    "environment": "hub-and-spokes: Sala central / Herramientas hub; north hall to Telecom (panoramic window) and Control room (spawn, main PC and time controls on the north wall, bio panel south, centered rover map console on the east wall, disconnected rover vitals panel); west corridor to Personal (crew quarters, dosimeter, radiation shelter); south hall to Hydro / Agriculture and Energy & Oxygen (breakers + life support)",
+    "environment": "hub-and-spokes: Sala central / Herramientas hub; north hall to Telecom (panoramic window) and Control room (spawn, main PC and time controls on the north wall, bio panel south, centered rover map console on the east wall, rover telemetry panel); west door of the hub to Personal, no corridor (crew quarters, dosimeter, radiation shelter); south hall to Hydro / Agriculture and Energy & Oxygen (breakers + life support)",
     "floorPlan": "docs/FLOOR_PLAN.md"
   },
   "resources": [

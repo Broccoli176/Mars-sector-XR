@@ -87,6 +87,9 @@ export class Electronics {
     /** @type {number | null} last cap reported to Telecom */
     this.reportedCap = null;
 
+    /** @type {import('./Toolbelt.js').Toolbelt | null} set by Simulation: what the player carries */
+    this.tools = null;
+
     bus.on('electronics:heat', (/** @type {any} */ e) => this.heat(e?.slotId));
     bus.on('electronics:remove', (/** @type {any} */ e) => this.remove(e?.slotId));
     bus.on('electronics:insert', (/** @type {any} */ e) => this.insert(e?.slotId, e?.partId, Boolean(e?.reversed)));
@@ -117,6 +120,10 @@ export class Electronics {
   heat(slotId) {
     const s = this.slot(slotId);
     if (!s || !s.partId) return;
+    if (this.tools && !this.tools.canRepair('rx_psu')) {
+      this.bus.emit('electronics:rejected', { slotId, reason: 'noTool', toolId: this.tools.toolFor('rx_psu') });
+      return;
+    }
     s.soldered = !s.soldered;
     this.#recompute('rework', s.id);
   }

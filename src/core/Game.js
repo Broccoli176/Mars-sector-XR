@@ -74,7 +74,7 @@ export class Game {
       push(t('ui.log.overload', { demand: e.demandKw.toFixed(1), limit: e.limitKw.toFixed(1) }), 'warning'));
     bus.on('relay:tripped', (e) => push(t(e.burned ? 'ui.log.relay_burned' : 'ui.log.relay_tripped'), 'critical'));
     bus.on('relay:reset', () => push(t('ui.log.relay_reset')));
-    bus.on('relay:rejected', () => push(t('ui.log.relay_no_spare'), 'critical'));
+    bus.on('relay:rejected', (e) => push(t(e.reason === 'noTool' ? 'ui.log.relay_no_tool' : 'ui.log.relay_no_spare'), 'critical'));
     bus.on('system:repaired', (e) => {
       if (e.partId === 'relay_main') push(t('ui.log.relay_replaced'), 'warning');
     });

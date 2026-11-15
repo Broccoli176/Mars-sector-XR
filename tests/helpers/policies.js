@@ -26,6 +26,10 @@ export function greedyPolicy(sim) {
 export function competentPolicy(sim) {
   const { bus, power, lifeSupport, food, resources } = sim;
   if (power.relayTripped && !power.relayBurned) bus.emit('relay:resetRequest');
+  if (power.relayBurned) {
+    if (!sim.tools.has('screwdriver')) bus.emit('item:grab', { itemId: 'screwdriver', hand: 'left' });
+    bus.emit('relay:resetRequest');
+  }
   if (lifeSupport.filterLifeHours <= 0.25 && sim.inventory.filters > 0) bus.emit('filter:swap');
   if (food.anyReady) bus.emit('food:harvest');
   tendTrays(sim);
@@ -128,6 +132,7 @@ function repairReceiver(sim) {
   const el = sim.electronics;
   if (!el || el.output.quality === 'ok') return;
   const right = { diode: '1N4007', cap: 'C470u25V' };
+  if (!sim.tools.has('solder_iron')) sim.bus.emit('item:grab', { itemId: 'solder_iron', hand: 'right' });
   for (const s of el.slots) {
     if (s.partId === right[s.kind] && s.health === 'ok' && !s.reversed && s.soldered) continue;
     const partId = right[s.kind];

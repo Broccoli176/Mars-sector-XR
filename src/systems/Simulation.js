@@ -14,6 +14,7 @@ import { Electronics } from './Electronics.js';
 import { Rover } from './Rover.js';
 import { Comms } from './Comms.js';
 import { SolarTracker } from './SolarTracker.js';
+import { Toolbelt } from './Toolbelt.js';
 
 const TICKS_PER_HOUR = 60;
 
@@ -31,6 +32,8 @@ export class Simulation {
     this.bus = bus;
     this.balance = b;
     this.inventory = { ...b.inventory };
+    // Tools the player carries (hand or holster), from the tool-wall intents; repairs check it.
+    this.tools = new Toolbelt(b.components ?? [], bus);
 
     this.time = new TimeManager(b.time, bus);
     this.resources = new ResourceManager(data.resources, bus);
@@ -38,6 +41,7 @@ export class Simulation {
     // East–west sun tracker for the solar field (Energía console). Without config: fixed panels at full output.
     this.solarTracker = b.tracker ? new SolarTracker(b.tracker, b.power, bus) : null;
     this.power.tracker = this.solarTracker;
+    this.power.tools = this.tools;
     this.lifeSupport = new LifeSupport(b, this.resources, bus, this.inventory);
     this.food = new Food(b, this.resources, bus);
     // Pantry + food processor in Hidroponía (spec §3.6.1). Without config, harvests are lost (tests only).
@@ -51,6 +55,7 @@ export class Simulation {
     });
     // Telecom receiver power supply, repaired at the hub electronics bench (spec §6.6).
     this.electronics = b.electronics ? new Electronics(b.electronics, b.time, bus) : null;
+    if (this.electronics) this.electronics.tools = this.tools;
     // Perseverance-class rover driven from the Sala de control; charges through the repairBay circuit.
     this.rover = b.rover ? new Rover(b.rover, bus, this.resources) : null;
     // Real Mars-surface radiation replay (informational, no health effect). Only if the snapshot exists.

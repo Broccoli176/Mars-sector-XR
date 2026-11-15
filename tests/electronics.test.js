@@ -18,6 +18,7 @@ const collect = (sim, type) => {
 };
 /** Desolder → remove → insert → solder. @param {any} sim @param {string} slotId @param {string} partId */
 const replace = (sim, slotId, partId, reversed = false) => {
+  sim.bus.emit('item:grab', { itemId: 'solder_iron', hand: 'right' }); // the bench needs the soldering iron
   sim.bus.emit('electronics:heat', { slotId });
   sim.bus.emit('electronics:remove', { slotId });
   sim.bus.emit('electronics:insert', { slotId, partId, reversed });
@@ -117,6 +118,7 @@ describe('Electronics in the simulation', () => {
   it('rejects inserts into an occupied slot, of the wrong kind or without stock', () => {
     const sim = newSim({ events: [] });
     const rejected = collect(sim, 'electronics:rejected');
+    sim.bus.emit('item:grab', { itemId: 'solder_iron', hand: 'right' });
     sim.bus.emit('electronics:insert', { slotId: 'C1', partId: 'C470u25V' });
     sim.bus.emit('electronics:heat', { slotId: 'C1' });
     sim.bus.emit('electronics:remove', { slotId: 'C1' });

@@ -73,7 +73,8 @@
       "toolId": "screwdriver",
       "spares": 1,
       "holdSeconds": 8,
-      "needsRepairBay": false
+      "needsRepairBay": false,
+      "inGame": true
     },
     {
       "id": "valve_recycler",
@@ -100,7 +101,8 @@
       "toolId": "solder_iron",
       "spares": 0,
       "holdSeconds": 1.5,
-      "needsRepairBay": false
+      "needsRepairBay": false,
+      "inGame": true
     }
   ],
   "holster": {
@@ -235,5 +237,6 @@
   "sparesLocker": {
     "doorSeconds": 0.5,
     "doorOpenDeg": 100
-  }
+  },
+  "_componentsAbout": "components[].inGame = can break in this build; its repair needs components[].toolId carried (hand or belt holster, src/systems/Toolbelt.js). The others are listed for the planned repairs and shown as «sin uso por ahora» on the tool wall."
 }

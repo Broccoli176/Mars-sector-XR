@@ -7,7 +7,7 @@
 - [AGENTS.md](AGENTS.md): contratos/reglas para agentes, arquitectura objetivo, eventos/save, presupuestos y convenciones (baseline)
 - [CLAUDE.md](CLAUDE.md): puntero corto para Claude Code
 - [docs/AGENT_CONTEXT.md](docs/AGENT_CONTEXT.md): intención de diseño, sistemas, riesgos y contexto
-- [docs/SIMULATION_SPEC.md](docs/SIMULATION_SPEC.md): especificación numérica/reglas de simulación (baseline, no implementada)
+- [docs/SIMULATION_SPEC.md](docs/SIMULATION_SPEC.md): especificación numérica/reglas de simulación (implementada en parte; cada sección indica su estado)
 - [docs/DEVELOPMENT_WORKFLOW.md](docs/DEVELOPMENT_WORKFLOW.md): flujo de desarrollo, pruebas WebXR/Quest y profiling (objetivo)
 - [docs/ASSET_CREATION_WORKFLOW.md](docs/ASSET_CREATION_WORKFLOW.md): pipeline de assets y validación VR (objetivo)
 - [docs/ASSET_REGISTRY.md](docs/ASSET_REGISTRY.md): registro de assets/licencias, fuentes de datos y atribuciones
@@ -18,7 +18,7 @@
 - [docs/project-context.json](docs/project-context.json): resumen machine-readable del proyecto
 - [README.md](README.md): visión general y quickstart (plantilla)
 
-## Estructura objetivo (por crear)
+## Estructura
 
 - `src/` (planificado): `core/`, `systems/` (simulación headless), `vr/`, `world/`, `objects/`, `ui/`, `utils/`, `data/`, `types/`
 - `src/data/` (planificado): configuración/balance/recursos/componentes/eventos/strings/gráficos

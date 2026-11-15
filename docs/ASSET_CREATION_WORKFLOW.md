@@ -24,7 +24,7 @@
 
 | Class | Prefix | Tri budget | Texture | Max materials | Notes |
 | :-- | :-- | :-- | :-- | :-- | :-- |
-| Room shell / architecture | `ENV_` | 8k–20k per room | 2K atlas | 1 | Shared atlas across all 5 rooms + corridor |
+| Room shell / architecture | `ENV_` | 8k–20k per room | 2K atlas | 1 | Shared atlas across all 6 rooms + corridors |
 | Corridor module (repeated) | `ENV_` | 2k–5k | 2K shared | 1 | Instance it; reuse the same mesh |
 | Large machinery (pumps, scrubbers) | `PROP_` | 2k–6k | 1K | 1–2 | Hero props may use 2 materials |
 | Interactable hero object (breaker, valve, panel) | `INT_` / `PANEL_` | 1k–4k | 1K | 1 | Pivot at the interaction point |
