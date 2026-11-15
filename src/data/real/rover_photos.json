@@ -1,0 +1,86 @@
+{
+  "_about": "REAL NASA images (static snapshots, not live). Each curated photo has a caption naming the place. Regenerate with `npm run data:roverphotos`.",
+  "source": {
+    "institution": "NASA / JPL-Caltech",
+    "product": "Photojournal (Mars 2020, Ingenuity, HiRISE) + Mars 2020 raw-images API",
+    "url": "https://science.nasa.gov/mission/mars-2020-perseverance/",
+    "terms": "https://www.nasa.gov/nasa-brand-center/images-and-media/",
+    "rawApi": "https://mars.nasa.gov/rss/api/?feed=raw_images&category=mars2020&feedtype=json",
+    "retrievedAt": "2026-11-15"
+  },
+  "photos": [
+    {
+      "siteId": "backshell",
+      "file": "pia25218_backshell_parachute.jpg",
+      "pia": "PIA25218",
+      "url": "https://assets.science.nasa.gov/dynamicimage/assets/science/psd/photojournal/pia/pia25/pia25218/PIA25218.jpg?w=1200&fit=clip",
+      "pageUrl": "https://science.nasa.gov/photojournal/debris-field-for-perseverance-landing-gear-seen-from-mars-helicopter",
+      "credit": "NASA/JPL-Caltech",
+      "date": "2022-04-19",
+      "camera": "Ingenuity (color camera, flight 26)",
+      "crop": [
+        0.1,
+        0,
+        0.41,
+        1
+      ],
+      "captionKey": "rover.photo.backshell"
+    },
+    {
+      "siteId": "parachute",
+      "file": "pia25218_backshell_parachute.jpg",
+      "pia": "PIA25218",
+      "url": "https://assets.science.nasa.gov/dynamicimage/assets/science/psd/photojournal/pia/pia25/pia25218/PIA25218.jpg?w=1200&fit=clip",
+      "pageUrl": "https://science.nasa.gov/photojournal/debris-field-for-perseverance-landing-gear-seen-from-mars-helicopter",
+      "credit": "NASA/JPL-Caltech",
+      "date": "2022-04-19",
+      "camera": "Ingenuity (color camera, flight 26)",
+      "crop": [
+        0.59,
+        0,
+        0.41,
+        1
+      ],
+      "captionKey": "rover.photo.parachute"
+    },
+    {
+      "siteId": "seitah",
+      "file": "pia24690_seitah_flight11.jpg",
+      "pia": "PIA24690",
+      "url": "https://assets.science.nasa.gov/dynamicimage/assets/science/psd/photojournal/pia/pia24/pia24690/PIA24690.jpg?w=1200&fit=clip",
+      "pageUrl": "https://science.nasa.gov/photojournal/ingenuitys-11th-flight",
+      "credit": "NASA/JPL-Caltech/University of Arizona",
+      "date": "2021-08-04",
+      "camera": "HiRISE (Mars Reconnaissance Orbiter) — mapa del vuelo 11 de Ingenuity",
+      "crop": null,
+      "captionKey": "rover.photo.seitah"
+    },
+    {
+      "siteId": "delta",
+      "file": "pia24921_delta.jpg",
+      "pia": "PIA24921",
+      "url": "https://assets.science.nasa.gov/dynamicimage/assets/science/psd/photojournal/pia/pia24/pia24921/PIA24921.jpg?w=1600&fit=clip",
+      "pageUrl": "https://science.nasa.gov/photojournal/detailed-panorama-of-mars-jezero-crater-delta",
+      "credit": "NASA/JPL-Caltech/ASU/MSSS",
+      "date": "2022-06",
+      "camera": "Mastcam-Z (Perseverance) — panorama",
+      "crop": [
+        0.42,
+        0,
+        0.28,
+        0.62
+      ],
+      "captionKey": "rover.photo.delta"
+    }
+  ],
+  "latest": {
+    "file": "latest_navcam.jpg",
+    "imageId": "NLG_2024_0846620381_164ECM_N0930000NCAM00518_00_2I3J",
+    "sol": 2024,
+    "dateTakenUtc": "2026-10-30T08:44:57.868",
+    "camera": "NAVCAM_LEFT",
+    "credit": "NASA/JPL-Caltech",
+    "url": "https://mars.nasa.gov/mars2020-raw-images/pub/ods/surface/sol/02024/ids/edr/browse/ncam/NLG_2024_0846620381_164ECM_N0930000NCAM00518_00_2I3J01_800.jpg",
+    "pageUrl": "https://mars.nasa.gov/mars2020/multimedia/raw-images/NLG_2024_0846620381_164ECM_N0930000NCAM00518_00_2I3J"
+  }
+}

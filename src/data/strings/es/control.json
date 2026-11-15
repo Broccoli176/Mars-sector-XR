@@ -61,5 +61,17 @@
   "rover.hint.cored": "Rover: muestra de roca guardada en un tubo.",
   "rover.hint.salvaged": "Rover: restos del aterrizaje cargados. Tráelos a la base.",
   "rover.hint.delivered": "Rover en la base: {cores} tubos de roca y +{spares} repuestos.",
-  "rover.hint.recovered": "Rover: el MMRTG recargó lo justo para volver a moverse."
+  "rover.hint.recovered": "Rover: el MMRTG recargó lo justo para volver a moverse.",
+  "rover.cam.simulated": "vista simulada",
+  "rover.cam.photo_title": "IMAGEN REAL · NASA · {site}",
+  "rover.cam.latest_title": "NAVCAM REAL · Perseverance · sol {sol}",
+  "rover.photo.backshell": "Así se ve de verdad el escudo trasero de Perseverance: lo fotografió desde el aire el helicóptero Ingenuity en 2022.",
+  "rover.photo.parachute": "El paracaídas real de Perseverance sigue en Marte: lo fotografió el helicóptero Ingenuity desde unos 8 m de altura.",
+  "rover.photo.seitah": "Mapa real de Séítah: el helicóptero Ingenuity voló sobre esta zona para explorar el camino de Perseverance.",
+  "rover.photo.delta": "El delta del cráter Jezero: rocas de un antiguo río que llevaba agua a un lago. Allí se buscan señales de vida antigua.",
+  "rover.photo.latest": "Foto real sin procesar ({camera}) tomada el {date}. Registro guardado, no en vivo.",
+  "rover.photo.credit": "Crédito: {credit} · {date} · {id} · foto de archivo, no en vivo",
+  "rover.photo.received": "📷 Foto real de la NASA recibida: {site}",
+  "rover.photo.gallery": "Fotos reales de la NASA recibidas: {got}/{total}",
+  "rover.photo.snapshot": "Perseverance real: última NavCam del sol {sol} (registro del {date}, no en vivo)"
 }
