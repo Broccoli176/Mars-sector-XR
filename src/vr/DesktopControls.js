@@ -48,7 +48,7 @@ export class DesktopControls {
     });
     window.addEventListener('keydown', (e) => {
       if (e.code === 'KeyF' && !e.repeat && !this.renderer.xr.isPresenting) this.grab?.use('desktop', true);
-      // R flips the held object (e.g. a diode's orientation at the electronics bench; in XR you turn your wrist).
+      // R flips the held object (in XR you turn your wrist).
       if (e.code === 'KeyR' && !e.repeat && !this.renderer.xr.isPresenting) this.grab?.held.get('desktop')?.rotateY(Math.PI);
       // H = belt button (B/Y in XR): stow the held tool, or draw one with an empty hand (right side first).
       if (e.code === 'KeyH' && !e.repeat && !this.renderer.xr.isPresenting) this.holsters?.toggle('desktop', 1, this.hand);
