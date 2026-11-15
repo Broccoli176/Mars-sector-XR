@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import { roundedRectGeometry, roundedRingGeometry } from './roundedRect.js';
 
 /**
  * Window in the Energía room looking out at the base solar field (one row × 6 panels), Rover 2 and a Tesla
@@ -71,8 +72,8 @@ function buildTeslaCoil(scale = 2) {
 /**
  * @param {THREE.Scene} scene
  * @param {() => any} getSim current Simulation (replaced on restart)
- * @param {{ center: [number, number, number], width: number, height: number, outward: [number, number] }} win
- *   window centre (world), size, and the outward horizontal direction [x, z]
+ * @param {{ center: [number, number, number], width: number, height: number, radius?: number, outward: [number, number] }} win
+ *   window centre (world), size, corner radius, and the outward horizontal direction [x, z]
  * @param {{ camera: THREE.PerspectiveCamera, dolly: THREE.Group }} controlView
  */
 export function buildSolarField(scene, getSim, win, controlView) {
@@ -84,21 +85,24 @@ export function buildSolarField(scene, getSim, win, controlView) {
   scene.add(root);
   const floorY = -win.center[1];
 
-  // ---- Frame + glass (same style as the Telecom window) ----
-  const hw = win.width / 2;
+  // ---- Rounded frame + glass ----
   const hh = win.height / 2;
+  const radius = win.radius ?? 0;
+  // Rounded frame (ring a little wider than the opening) + a short sill on the straight bottom edge.
   const frame = new THREE.Mesh(
     mergeGeometries([
-      new THREE.BoxGeometry(win.width + 0.04, 0.06, 0.16).translate(0, hh, 0),
-      new THREE.BoxGeometry(win.width + 0.04, 0.08, 0.2).translate(0, -hh, 0.02),
-      new THREE.BoxGeometry(0.06, win.height, 0.16).translate(-hw, 0, 0),
-      new THREE.BoxGeometry(0.06, win.height, 0.16).translate(hw, 0, 0),
+      roundedRingGeometry(
+        { w: win.width + 0.1, h: win.height + 0.1, r: radius + 0.05 },
+        { w: win.width - 0.06, h: win.height - 0.06, r: Math.max(0, radius - 0.03) },
+        0.16,
+      ),
+      new THREE.BoxGeometry(Math.max(0.2, win.width - 2 * radius), 0.05, 0.12).translate(0, -hh - 0.02, 0.12),
     ]),
     new THREE.MeshLambertMaterial({ color: 0x42474e }),
   );
   root.add(frame);
   const glass = new THREE.Mesh(
-    new THREE.PlaneGeometry(win.width - 0.06, win.height - 0.04),
+    roundedRectGeometry(win.width - 0.06, win.height - 0.06, Math.max(0, radius - 0.03)),
     new THREE.MeshBasicMaterial({ color: 0x7eb8d0, transparent: true, opacity: 0.12, depthWrite: false }),
   );
   glass.position.z = 0.01;

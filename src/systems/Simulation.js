@@ -4,6 +4,7 @@ import { ResourceManager } from './ResourceManager.js';
 import { PowerGrid } from './PowerGrid.js';
 import { LifeSupport } from './LifeSupport.js';
 import { Food } from './Food.js';
+import { Kitchen } from './Kitchen.js';
 import { Crew } from './Crew.js';
 import { IncidentRunner } from './IncidentRunner.js';
 import { GameState } from './GameState.js';
@@ -39,6 +40,8 @@ export class Simulation {
     this.power.tracker = this.solarTracker;
     this.lifeSupport = new LifeSupport(b, this.resources, bus, this.inventory);
     this.food = new Food(b, this.resources, bus);
+    // Pantry + food processor in Hidroponía (spec §3.6.1). Without config, harvests are lost (tests only).
+    this.kitchen = b.kitchen ? new Kitchen(b.kitchen, this.resources, bus) : null;
     this.crew = new Crew(b.health, TICKS_PER_HOUR, this.resources, bus);
     this.incidents = new IncidentRunner(data.events, b.time, { bus, power: this.power });
     this.telecom = new Telecom(b.telecom, bus, this.resources);
@@ -94,7 +97,7 @@ export class Simulation {
       heating: ls.heating * circuits.heating.drawKw,
       lighting: circuits.lighting.drawKw,
       telecom: circuits.telecom.drawKw,
-      hydro: hydro.hydro,
+      hydro: hydro.hydro + (this.kitchen?.wants().hydro ?? 0),
       repairBay: this.rover?.chargeKw() ?? 0,
     };
     this.power.updateDust(dt);
@@ -103,6 +106,7 @@ export class Simulation {
 
     this.lifeSupport.update(this.power.served, dt);
     this.food.update(this.power.served, dt);
+    this.kitchen?.update(this.power.served, dt);
     this.crew.update(dt, this.radiation?.crewDamage());
     this.radiation?.update(clock, dt);
     this.electronics?.update(this.time.tick, dt);

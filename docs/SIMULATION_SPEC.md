@@ -238,12 +238,24 @@ Without recycling, total use ≈ 0.30 L/h, ≈ 50 L per run, which loses. With r
 | Watering | `hydro:water { trayId, liters }` from the hose (0.25 L/s while the trigger is held and aimed at a tray, range 1.6 m). The liters leave the tank at once; moisture is capped at 1 (the excess spills) |
 | Growth | Advances only while `hydro` is served **and** moisture is inside **[0.20, 0.85]** |
 | Initial state | Tray 1: lettuce at 12 h with moisture 0.8 ⇒ first harvest ready on day 2, 06:00 without watering. Trays 2–4 empty |
-| Harvest | `food:harvest { trayId }`: + that crop's kcal, the tray becomes **empty** (sow again) |
+| Harvest | `food:harvest { trayId }`: the crop goes **raw to the pantry** (§3.6.1, no kcal yet), the tray becomes **empty** (sow again) |
 | Spoilage (D18) | A ready crop **not harvested within 12 h spoils**. A growing crop **without light (`noLight`), dry (`noWater`) or flooded (`overwatered`) for 6 continuous hours dies**. Lights are off 22:00–06:00, so a tray flooded at night does not drain and rots. All ⇒ `food:spoiled`, the tray empties |
-| Spirulina bioreactor | No watering. Grows only under light: ready after **16 lit hours** ⇒ +300 kcal (`food:harvest { trayId: 'bioreactor' }`, the cycle restarts). While lit: **+0.3 % O₂/h** and −0.02 L/h of water. Waits without spoiling when ready |
+| Spirulina bioreactor | No watering. Grows only under light: ready after **16 lit hours** ⇒ a 300 kcal pantry lot (`food:harvest { trayId: 'bioreactor' }`, the cycle restarts). While lit: **+0.3 % O₂/h** and −0.02 L/h of water. Waits without spoiling when ready |
 | At 0 | **−2 health/h** (§4) |
 
 Without hydro, rations run out on day 5, 06:00 and starvation kills around day 7, 08:00. **Hydro is required.** `npm run sim`, competent policy (sows the best kcal/h crop that still fits, waters back to 0.6 below 0.4, harvests): food bottoms at ≈ 3 800 kcal on day 4 and it survives with 100 health; the tank ends at ≈ 19 L (warning at 15). The greedy gardener (only lettuce, floods dry trays) still loses by power.
+
+### 3.6.1 Pantry and food processor (`src/systems/Kitchen.js`, Hidroponía south extension)
+| Item | Value |
+| :-- | :-- |
+| Pantry | Every `food:harvested` becomes a raw lot `{ itemId, kind, kcal, ageHours }`. Kind per item in `balance/hydro.json` → `kitchen.items`: soybean, quinoa, spirulina = `protein`; carrot, sweet potato = `carb`; lettuce, tomato = `fresh` |
+| Raw spoilage | A lot older than **36 h** (`rawShelfHours`) is lost ⇒ `kitchen:spoiled`. No refrigeration modelled |
+| Recipes | `kitchen.recipes`: **Barra energética** 1 protein + 1 carb ×1.4, 2 h, 0.3 kW · **Barra proteica** 2 protein ×1.3, 2 h, 0.3 kW · **Ración fresca** 2 fresh ×1.2, 1 h, 0.2 kW · **Barrita simple** 1 protein ×1.15, 1 h, 0.2 kW. kcal = sum of the lots used (oldest first) × multiplier, added to `food` when the job ends |
+| Processing | `kitchen:select { recipeId }` then `kitchen:process {}`. One job at a time; it draws on the `hydro` circuit and **pauses (keeps progress) while `hydro` is not served**. Rejections: `missing`, `busy`, `noPower`, `empty` |
+| Eat raw | `kitchen:eat {}`: every lot at 100 % kcal now, no power. Emergency path; the bonus is lost |
+| Trade-off | Bars are worth 15–40 % more kcal and never spoil, but cost hydro-circuit energy and time; raw food is free but must be eaten within 36 h |
+
+`npm run sim` (competent policy also processes the best recipe while battery > 5 kWh and eats raw what is about to spoil): survives, food ends ≈ 2 400 kcal (≈ 2 300 before the kitchen). Greedy eats every harvest raw (same result as before).
 
 ### 3.7 Spares (`spares`)
 Start **3**. Up to **5** failures can require a spare (4 scripted + `relay_main` if it burns from 3 trips or the CME). At least two must be worked around or left unfixed. That is intentional.
@@ -488,7 +500,7 @@ Ver **`AGENTS.md` §4.2** para el contrato de eventos y payloads (baseline + pro
 | Item | Value |
 | :-- | :-- |
 | Ceiling height | 2.6 m |
-| Layout | **Hub and spokes** (v2, 2026-11-14). Sala central · Herramientas (hub, 6 × 5 m) in the middle. North hall → Telecom (5 × 4) and Sala de control (6 × 6, spawn, main PC/time controls, bio panel, rover console). West corridor → Personal (5 × 4, crew quarters + radiation shelter). South hall → Hidroponía · Agricultura (5 × 4) and Energía y oxígeno (6 × 5) |
+| Layout | **Hub and spokes** (v2, 2026-11-14). Sala central · Herramientas (hub, 6 × 5 m) in the middle. North hall → Telecom (5 × 4) and Sala de control (6 × 6, spawn, main PC/time controls, bio panel, rover console). West corridor → Personal (5 × 4, crew quarters + radiation shelter). South hall → Hidroponía · Agricultura (5 × 6, with kitchen) and Energía y oxígeno (8 × 7, rounded solar window) |
 | Corridors | 1.8 m wide, straight (L-shaped where the sketch was diagonal); emissive fixtures + conduits, no point lights |
 | Layout | Coordinates, doors, panel walls and teleport anchors: **`docs/FLOOR_PLAN.md`** (authoritative) |
 | Doorways | 0.8 × 2.0 m clear opening |

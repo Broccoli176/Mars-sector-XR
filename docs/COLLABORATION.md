@@ -22,10 +22,10 @@ Plano y coordenadas de las salas: `docs/FLOOR_PLAN.md`.
 | Colocación de estaciones | `src/data/stations/{personal,hydro,hub}.json` | `src/data/stations/{telecom,control,energy}.json` |
 | Textos (español) | `src/data/strings/es/{personal,hydro,hub}.json` | `src/data/strings/es/{telecom,control,energy}.json` |
 | Números de balance | `src/data/balance/hydro.json` (comida, agua) | `src/data/balance/{energy,telecom}.json` (energía, circuitos, soporte vital, térmica, telecom) |
-| Sistemas de simulación | `src/systems/Food.js` (+ futuros de Personal / entrenamiento) | `src/systems/{PowerGrid,LifeSupport,Telecom}.js` |
+| Sistemas de simulación | `src/systems/Food.js`, `src/systems/Kitchen.js` (+ futuros de Personal / entrenamiento) | `src/systems/{PowerGrid,LifeSupport,Telecom}.js` |
 | Datos reales (NASA/CSA) | `src/data/real/{radlab,csa_food,osdr_health,donki_recent}.json`, `scripts/fetch-{radlab,osdr,donki}.js`, `src/systems/Radiation.js`, `src/rooms/personal/spaceWeatherLive.js` | (futuro) `src/data/spaceWeather.json` (DONKI para incidentes). **Aviso:** DONKI ya se muestra en vivo en Personal («El Sol ahora»); se puede reutilizar `spaceWeatherLive.js` pidiéndolo. Sugerencia: Mars Trek para la ventana de Telecom |
 | Herramientas (Sala central) | `src/rooms/hub/{tools,toolRules,controllerDiag,electronics,electronicsRules}.js`, `src/systems/Electronics.js`, `src/data/balance/hub.json` (herramientas + tabla de componentes §6.1) | Fase 2 (reparar componentes de sus salas): coordinar. Se acerca la herramienta a un componente y se mantiene; necesita el sistema Electronics y `repair:*` |
-| Tests | `tests/hydro.test.js`, `tests/hydroRules.test.js`, `tests/electronics.test.js`, `tests/electronicsRules.test.js`, `tests/radiation.test.js`, `tests/tools.test.js`, `tests/spaceweather.test.js`, `tests/controllers.test.js` | `tests/power.test.js`, `tests/telecom.test.js` |
+| Tests | `tests/hydro.test.js`, `tests/hydroRules.test.js`, `tests/kitchen.test.js`, `tests/electronics.test.js`, `tests/electronicsRules.test.js`, `tests/radiation.test.js`, `tests/tools.test.js`, `tests/spaceweather.test.js`, `tests/controllers.test.js` | `tests/power.test.js`, `tests/telecom.test.js` |
 
 > **Nota (14/11/2026):** a petición del usuario, Persona A hizo la ventana del campo solar en Energía (`src/world/SolarField.js`, `energy_solar_view`) y la consola del rover en la Sala de control (`src/rooms/control/rover.js`, `src/systems/Rover.js`, `src/data/balance/rover.json`). Persona B revisa el PR.
 

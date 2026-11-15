@@ -70,7 +70,7 @@ describe('Hydroponics trays', () => {
     expect(darkEvents[0]).toMatchObject({ trayId: 'tray_1', reason: 'noLight' });
   });
 
-  it('harvest adds that crop\'s kcal and leaves the tray empty for the next sowing', () => {
+  it('harvest sends the crop raw to the pantry (no kcal yet) and leaves the tray empty', () => {
     const sim = newSim({ events: [] });
     const harvested = collect(sim, 'food:harvested');
     const tray = sim.food.tray('tray_1');
@@ -80,7 +80,8 @@ describe('Hydroponics trays', () => {
     expect(tray.ready).toBe(true);
     const food = sim.resources.value('food');
     sim.bus.emit('food:harvest', { trayId: 'tray_1' });
-    expect(sim.resources.value('food')).toBeCloseTo(food + 700);
+    expect(sim.resources.value('food')).toBeCloseTo(food);
+    expect(sim.kitchen.pantry).toEqual([{ itemId: 'lettuce', kind: 'fresh', kcal: 700, ageHours: 0 }]);
     expect(harvested[0]).toEqual({ trayId: 'tray_1', cropId: 'lettuce', kcal: 700 });
     expect(tray.cropId).toBeNull();
   });
@@ -93,7 +94,8 @@ describe('Hydroponics trays', () => {
     expect(sim.food.bioreactor.o2Total).toBeCloseTo(0.3 * 16, 1);
     const food = sim.resources.value('food');
     sim.bus.emit('food:harvest', { trayId: 'bioreactor' });
-    expect(sim.resources.value('food')).toBeCloseTo(food + 300);
+    expect(sim.resources.value('food')).toBeCloseTo(food);
+    expect(sim.kitchen.pantry[0]).toMatchObject({ itemId: 'spirulina', kind: 'protein', kcal: 300 });
     expect(sim.food.bioreactor.ready).toBe(false);
 
     const dark = newSim({ events: [] });

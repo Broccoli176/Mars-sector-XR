@@ -11,7 +11,7 @@ const EPS = 1e-6;
 /**
  * Rations + hydroponics (SIMULATION_SPEC §3.6): 4 sowable trays watered by hand (moisture band),
  * plus a spirulina bioreactor that only needs light. Owns no resource: it adds rates/deltas through
- * the ResourceManager (food, water, oxygen).
+ * the ResourceManager (food consumption, water, oxygen). Harvests become raw pantry lots (Kitchen.js).
  */
 export class Food {
   /**
@@ -109,14 +109,13 @@ export class Food {
   /** @param {Tray} tray */
   #harvestTray(tray) {
     const crop = this.crops[/** @type {string} */ (tray.cropId)];
-    this.resources.add('food', crop.kcal);
+    // The produce goes raw to the pantry (src/systems/Kitchen.js listens to food:harvested); no kcal yet.
     this.bus.emit('food:harvested', { trayId: tray.id, cropId: crop.id, kcal: crop.kcal });
     this.#empty(tray);
   }
 
   #harvestBio() {
     const { kcal } = this.cfg.bioreactor;
-    this.resources.add('food', kcal);
     this.bioreactor.ready = false;
     this.bioreactor.growthHours = 0;
     this.bus.emit('food:harvested', { trayId: 'bioreactor', cropId: 'spirulina', kcal });

@@ -25,14 +25,14 @@ export const builders = {
    */
   energy_solar_view(g, station, kit) {
     const { t, sim, game } = kit;
-    // Desk under the window (sill 1.1 m): top at 0.78 m.
+    // Desk under the window (sill 1.05 m): top at 0.78 m.
     const deskTop = 0.78 - station.y;
     kit.addBox(g, 1.6, 0.74, 0.6, 0, deskTop - 0.39, 0.33, '#3a4048');
     kit.addBox(g, 1.64, 0.04, 0.64, 0, deskTop - 0.01, 0.33, '#2a2f35');
     // Production strip standing on the back of the desk, below the sill.
     const strip = kit.addPanel(g, 1.4, 0.24, 0, deskTop + 0.15);
     // Info panel on the wall beside the window, left of the solar field and flush to the wall.
-    const info = kit.addPanel(g, 1.0, 0.72, -1.9, 0.6);
+    const info = kit.addPanel(g, 1.0, 0.72, -2.4, 0.6);
 
     /** @param {string} label @param {number} x @param {() => void} onSelect */
     const deskButton = (label, x, onSelect) => {
