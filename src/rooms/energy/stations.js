@@ -40,6 +40,22 @@ export function batteryCharge(batt, t) {
   return { key: 'idle', text: t('energy.breakers.steady'), color: COLORS.dim };
 }
 
+/**
+ * Readouts for the physical battery bank's digital display.
+ * @param {{ value: number, max: number, ratePerHour: number, status: string }} batt
+ * @param {number} generationKw @param {number} consumptionKw @param {Function} t
+ * @returns {import('../../ui/InfoSheet.js').Line[]}
+ */
+export function batteryStorageLines(batt, generationKw, consumptionKw, t) {
+  const charge = batteryCharge(batt, t);
+  return [
+    { text: t('solar.storage.amount', { value: batt.value.toFixed(1), max: batt.max.toFixed(1) }), color: statusColor(batt.status), size: 1.1 },
+    { text: t('solar.storage.generation', { kw: generationKw.toFixed(2) }), size: 0.85 },
+    { text: t('solar.storage.consumption', { kw: consumptionKw.toFixed(2) }), size: 0.85 },
+    { text: charge.text, color: charge.color, size: 0.8 },
+  ];
+}
+
 /** @type {Record<string, (g: import('three').Group, station: any, kit: import('../../ui/StationKit.js').StationKit) => void>} */
 export const builders = {
   /**
@@ -56,8 +72,68 @@ export const builders = {
     kit.addBox(g, 1.64, 0.04, 0.64, 0, deskTop - 0.01, 0.33, '#2a2f35');
     // Production strip standing on the back of the desk, below the sill.
     const strip = kit.addPanel(g, 1.4, 0.24, 0, deskTop + 0.15, SHARP);
+    /** @param {string} label @param {number} x @param {() => void} onSelect */
+    const deskButton = (label, x, onSelect) => {
+      const button = new Button({ width: 0.27, height: 0.1, label, color: BUTTON.action, onSelect });
+      const holder = new THREE.Group();
+      holder.position.set(x, deskTop + 0.01, 0.15);
+      holder.rotation.x = -Math.PI / 2;
+      holder.add(button.mesh);
+      g.add(holder);
+      return kit.registerButton(button);
+    };
+    // Physical battery bank with a live digital readout, mounted beside the solar controls.
+    kit.addBox(g, 0.88, 0.86, 0.56, 1.35, -0.52, 0.34, '#394650');
+    const storage = kit.addPanel(g, 0.9, 0.58, 1.35, -0.52, SHARP);
+    storage.mesh.position.z = 0.63;
     // Top-view panel on the wall beside the window, left of the solar field.
     const view = kit.addPanel(g, 1.0, 0.72, -2.4, 0.6, SHARP);
+
+    // ---- MARS-CLEANER Station & Minigame Panel ----
+    const cleanerPanel = kit.addPanel(g, 1.05, 0.72, 1.35, 0.70, SHARP);
+    const selectedPanels = new Set([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]);
+
+    addInfo(g, kit, {
+      bx: 1.35, by: 0.25, px: 1.35, py: 0.75, w: 1.25, h: 0.88,
+      title: () => 'ROVER DE MANTENIMIENTO MARS-CLEANER',
+      lines: () => [
+        { text: 'MARS-CLEANER: Vehículo Autónomo de Mantenimiento', bold: true, size: 0.85 },
+        { text: 'Batería: 2.400 Wh (Li-Ion). Recarga por inducción en muelle exterior (300 W).', size: 0.78 },
+        { text: 'Consumo: 150 W en marcha, 280 W en cepillado fotovoltaico.', size: 0.78 },
+        { text: 'Misión: Limpieza de polvo en los 12 módulos solares exteriores.', size: 0.78 },
+        { text: 'No utiliza Telecom para electricidad; la recarga consume del circuito Taller.', color: COLORS.info, size: 0.75 },
+      ],
+    });
+
+    // 12 panel selector push buttons (2 rows of 6)
+    const panelButtons = [];
+    for (let k = 0; k < 12; k++) {
+      const row = Math.floor(k / 6);
+      const col = k % 6;
+      const bx = 1.35 + (col - 2.5) * 0.16;
+      const by = 0.25 - row * 0.10;
+      const pIdx = k;
+      const pBtn = new Button({
+        width: 0.13, height: 0.075, label: `P${k + 1}`,
+        color: BUTTON.action,
+        onSelect: () => {
+          if (selectedPanels.has(pIdx)) selectedPanels.delete(pIdx);
+          else selectedPanels.add(pIdx);
+        },
+      });
+      pBtn.mesh.position.set(bx, by, 0.02);
+      g.add(pBtn.mesh);
+      kit.registerButton(pBtn);
+      panelButtons.push(pBtn);
+    }
+
+    // Dispatch and recall buttons
+    const btnDispatch = deskButton(t('cleaner.btn.dispatch'), 1.15, () => {
+      game.intent('cleaner:dispatch', { panels: Array.from(selectedPanels) });
+    });
+    const btnRecall = deskButton(t('cleaner.btn.return'), 1.55, () => {
+      game.intent('cleaner:return', {});
+    });
     addInfo(g, kit, {
       bx: -2.4, by: 0.15, px: -2.4, py: 0.66, w: 1.2, h: 0.86,
       title: () => t('energy.info.solar.title'),
@@ -84,16 +160,6 @@ export const builders = {
       },
     });
 
-    /** @param {string} label @param {number} x @param {() => void} onSelect */
-    const deskButton = (label, x, onSelect) => {
-      const button = new Button({ width: 0.27, height: 0.1, label, color: BUTTON.action, onSelect });
-      const holder = new THREE.Group();
-      holder.position.set(x, deskTop + 0.01, 0.15);
-      holder.rotation.x = -Math.PI / 2;
-      holder.add(button.mesh);
-      g.add(holder);
-      return kit.registerButton(button);
-    };
     const left = deskButton(t('solar.btn.left'), -0.54, () => game.intent('solar:turn', { dir: -1 }));
     const right = deskButton(t('solar.btn.right'), -0.18, () => game.intent('solar:turn', { dir: 1 }));
     const stow = deskButton(t('solar.btn.stow'), 0.18, () => game.intent('solar:stow', { on: sim().solarTracker?.mode !== 'stow' }));
@@ -110,6 +176,12 @@ export const builders = {
       const dust = 1 - s.power.dustFactor;
       const align = tr ? tr.factor(clock.hourFloat) : 1;
       const mode = tr?.mode ?? 'manual';
+      const batt = s.resources.get('power');
+      storage.renderLines(
+        t('solar.storage.title'),
+        batteryStorageLines(batt, s.power.generationKw, s.power.servedLoadKw, t),
+        { border: statusColor(batt.status) },
+      );
       const [msgKey, msgColor] = storm && mode !== 'stow' ? ['energy.solar.msg_storm', COLORS.critical]
         : mode === 'stow' ? ['energy.solar.msg_stowed', COLORS.warning]
         : !day ? ['energy.solar.msg_night', COLORS.dim]
@@ -148,6 +220,60 @@ export const builders = {
       right.setState(t('solar.btn.right'), off ? BUTTON.off : BUTTON.action);
       stow.setState(t('solar.btn.stow'), tr?.mode === 'stow' ? BUTTON.warn : storm ? BUTTON.danger : BUTTON.off);
       clean.setState(t('solar.btn.clean'), dust < 0.01 || storm || off ? BUTTON.off : dust > 0.2 ? BUTTON.warn : BUTTON.action);
+
+      // MARS-CLEANER update
+      const cleaner = s.cleaner;
+      const cStatus = cleaner?.status ?? 'docked';
+      const cBattPct = Math.round(cleaner?.batteryPct ?? 100);
+
+      panelButtons.forEach((btn, k) => {
+        const isSel = selectedPanels.has(k);
+        const isTarget = cleaner?.currentTargetIdx === k;
+        const panelColor = isTarget ? COLORS.nominal : isSel ? BUTTON.action : BUTTON.off;
+        btn.setState(`P${k + 1}`, panelColor);
+      });
+
+      const canDispatch = cStatus === 'docked' || cStatus === 'ready';
+      btnDispatch.setState(t('cleaner.btn.dispatch'), canDispatch && selectedPanels.size > 0 ? BUTTON.action : BUTTON.off);
+      btnRecall.setState(t('cleaner.btn.return'), !cleaner?.isDocked && cStatus !== 'broken' ? BUTTON.warn : BUTTON.off);
+
+      cleanerPanel.renderCustom(`${cStatus}|${cBattPct}|${selectedPanels.size}|${cleaner?.currentTargetIdx ?? -1}`, (ctx, W, H) => {
+        icon.frame(ctx, W, H, cStatus === 'broken' ? COLORS.critical : COLORS.border);
+        icon.text(ctx, 'MARS-CLEANER · MANTENIMIENTO', W * 0.04, H * 0.12, { size: H * 0.08, color: COLORS.title, bold: true });
+
+        const statusCol = cStatus === 'broken' ? COLORS.critical : cStatus === 'cleaning' ? COLORS.warning : COLORS.nominal;
+        icon.tile(ctx, W * 0.58, H * 0.03, W * 0.38, H * 0.13, '#11161c', statusCol, 4);
+        icon.text(ctx, t(`cleaner.status.${cStatus}`), W * 0.77, H * 0.11, { size: H * 0.065, color: statusCol, bold: true, align: 'center', maxWidth: W * 0.36 });
+
+        // Battery level
+        icon.text(ctx, `Batería: ${cBattPct}%`, W * 0.05, H * 0.28, { size: H * 0.07, color: COLORS.text, bold: true });
+        icon.bar(ctx, W * 0.38, H * 0.22, W * 0.56, H * 0.08, cBattPct / 100, cBattPct < 25 ? COLORS.critical : COLORS.nominal);
+
+        // Selection info
+        icon.text(ctx, `Paneles seleccionados: ${selectedPanels.size} / 12`, W * 0.05, H * 0.42, { size: H * 0.065, color: COLORS.dim });
+        icon.text(ctx, 'Selecciona en la botonera inferior los paneles a limpiar:', W * 0.05, H * 0.54, { size: H * 0.06, color: COLORS.text });
+
+        // Mini preview of the 12 panels (2 rows x 6 cols)
+        const pw = W * 0.12;
+        const ph = H * 0.14;
+        for (let k = 0; k < 12; k++) {
+          const row = Math.floor(k / 6);
+          const col = k % 6;
+          const px = W * 0.05 + col * (pw + W * 0.032);
+          const py = H * 0.64 + row * (ph + H * 0.04);
+          const isSel = selectedPanels.has(k);
+          const isTarget = cleaner?.currentTargetIdx === k;
+          ctx.fillStyle = isTarget ? '#22c55e' : isSel ? '#0284c7' : '#1f2937';
+          ctx.fillRect(px, py, pw, ph);
+          ctx.strokeStyle = isTarget ? '#86efac' : isSel ? '#38bdf8' : '#374151';
+          ctx.lineWidth = 2;
+          ctx.strokeRect(px, py, pw, ph);
+          ctx.fillStyle = '#ffffff';
+          ctx.font = `bold ${Math.round(H * 0.065)}px sans-serif`;
+          ctx.textAlign = 'center';
+          ctx.fillText(`P${k + 1}`, px + pw / 2, py + ph * 0.7);
+        }
+      });
     });
   },
 

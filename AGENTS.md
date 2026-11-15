@@ -19,7 +19,7 @@ Datos reales embebidos (sin «en vivo»), ver `docs/SIMULATION_SPEC.md` §6.5:
 - `src/data/real/solar_dust.json` (Mars Pathfinder MAE, 0,28 %/sol) → polvo en los paneles (`PowerGrid.dustFactor`, spec §2.5).
 - `src/data/real/csa_food.json` (CSA) y `src/data/real/bioregen_crops.json` (NASA NTRS: quinua y espirulina en CELSS) → Hidroponía.
 - `src/data/real/osdr_health.json` (NASA OSDR, estudios OSD-924/343/812) → panel «Salud del astronauta» de Personal.
-- NASA DONKI **en vivo** (`src/rooms/personal/spaceWeatherLive.js`, solo presentación, nunca alimenta la simulación) → «El Sol ahora» de Personal; sin red usa el registro `src/data/real/donki_recent.json` y lo dice.
+- NASA CCMC DONKI histórico (`src/data/real/escenarios_nasa.json`, solo presentación, nunca alimenta la simulación) → «Historial del Sol» de Personal; días 1–2 calmado, 3–4 moderado y 5–7 extremo, con selección manual 1/2/3 y conteos UTC acumulativos.
 - Todos se atribuyen en el panel «Fuentes científicas» del hub. Resumen: `docs/DATA_SOURCES.md`.
 
 Telecom básico implementado (`src/systems/Telecom.js`: señal según alineación, deriva en tormenta, ajuste con botones izquierda/derecha y alineación, motor averiado limita a 40). Hidroponía ampliada a 5 × 6 m con cocina (despensa, procesador de barras y dispensador; `src/systems/Kitchen.js`). Electrónica: banco de la Sala central que repara la fuente del receptor de Telecom (`src/systems/Electronics.js`, ver spec §6.6). Cola de mensajes con retraso de luz y enlace <20 % implementados (`src/systems/Comms.js`). Pendiente: niveles 30/50 % de la cola, apagones de radio y CME (no existe `src/data/spaceWeather.json` y nada emite el impacto `cme`), derrota por cascada, reparaciones del resto de componentes (las herramientas y fundas existen, pero la simulación aún no las consume), fugas, banco de entrenamiento (solo T1; faltan T2–T5), alarmas sonoras, guardado, CI y assets. **Desviaciones del prototipo:**
@@ -371,6 +371,7 @@ npm run data:radlab    # descarga un día real de NASA OSDR RadLab (MSL RAD + IS
 npm run data:radlab:sep # tormenta solar real del 20/05/2024 (3 días) → src/data/real/radlab_sep.json
 npm run data:osdr      # metadatos de estudios OSDR → src/data/real/osdr_health.json
 npm run data:donki     # registro de respaldo DONKI (7 días) → src/data/real/donki_recent.json
+npm run data:escenarios # escenarios históricos DONKI (CME/GST/SEP/FLR); descarga manual, no durante la partida
 ```
 
 Parámetros de URL solo de desarrollo:

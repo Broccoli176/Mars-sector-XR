@@ -16,6 +16,10 @@
   "hint.o2tank.opened": "Tanque de O₂ abierto: +{boost} %.",
   "hint.o2tank.empty": "Ese tanque ya está vacío.",
   "solar.now": "Generación solar ahora: {kw} kW (máx. {max} kW)",
+  "solar.storage.title": "BATERÍA PRINCIPAL",
+  "solar.storage.amount": "Energía: {value} / {max} kWh",
+  "solar.storage.generation": "Generación: {kw} kW",
+  "solar.storage.consumption": "Consumo: {kw} kW",
   "solar.rover": "Rover: {state}",
   "solar.rover.docked": "en la base, cargando",
   "solar.rover.away": "de expedición",
@@ -112,5 +116,16 @@
   "energy.info.solar.1": "Un panel produce más cuanto más de frente le da el Sol: la producción es proporcional al coseno del ángulo entre el panel y el Sol.",
   "energy.info.solar.2": "Marte recibe ≈ 43 % de la luz solar que llega a la Tierra. Además, el polvo que se posa tapa los paneles: Mars Pathfinder midió ≈ 0,28 % menos por sol (día marciano).",
   "energy.info.solar.clean": "«Limpiar» activa un escudo eléctrico que empuja el polvo fuera de los paneles (tecnología real de la NASA). Gasta {kwh} kWh y no sirve durante una tormenta.",
-  "energy.info.breakers.tradeoff": "Apagar ahorra batería, pero cuesta: sin luz no recuperas salud, con frío los cultivos crecen lento y sin Telecom no llegan avisos."
+  "energy.info.breakers.tradeoff": "Apagar ahorra batería, pero cuesta: sin luz no recuperas salud, con frío los cultivos crecen lento y sin Telecom no llegan avisos.",
+  "cleaner.title": "ROVER MARS-CLEANER",
+  "cleaner.btn.dispatch": "Despachar",
+  "cleaner.btn.return": "Retornar",
+  "cleaner.btn.all": "Todos",
+  "cleaner.status.docked": "Estacionado en dock",
+  "cleaner.status.ready": "Listo para misión",
+  "cleaner.status.traveling": "Desplazándose...",
+  "cleaner.status.cleaning": "Limpiando panel...",
+  "cleaner.status.returning": "Regresando al dock...",
+  "cleaner.status.charging": "Cargando (300 W)...",
+  "cleaner.status.broken": "Varado / Sin batería"
 }
