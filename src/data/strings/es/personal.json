@@ -24,5 +24,15 @@
   "personal.health.osd343": "El cuerpo cambia: las mitocondrias (las «baterías» de las células) y el reloj del día y la noche funcionan distinto.",
   "personal.health.osd812": "Las células defensoras NK atacaron mucho peor a células enfermas. Por eso es tan importante protegerse de la radiación.",
   "personal.health.source": "Fuente: NASA Open Science Data Repository (OSDR) · consultado {date} · registro, no en vivo",
-  "personal.health.no_data": "Sin estudios de salud (ejecuta: npm run data:osdr)"
+  "personal.health.no_data": "Sin estudios de salud (ejecuta: npm run data:osdr)",
+  "personal.sep.title": "⚠ TORMENTA SOLAR · VE AL REFUGIO",
+  "personal.sep.rate": "Radiación fuera ahora: {rate} µGy/h (normal ≈ {normal})",
+  "personal.sep.shelter_ok": "Estás en el refugio (Personal: muro de tanques de agua).",
+  "personal.sep.shelter_go": "¡Fuera del refugio! Vuelve a Personal.",
+  "personal.sep.calm": "La tormenta amaina: ya puedes salir del refugio.",
+  "personal.sep.storm_dose": "Dosis en superficie desde el inicio: {dose}",
+  "personal.sep.exposed": "Tiempo fuera del refugio en lo peor: {min} min",
+  "personal.sep.real": "Perfil REAL: tormenta del 20/05/2024 medida por Curiosity (NASA OSDR RadLab).",
+  "personal.sep.nasa": "Límites NASA: 250 mSv por tormenta solar · 600 mSv en toda la carrera.",
+  "personal.shelter.sign": "REFUGIO ANTIRRADIACIÓN · muro de agua"
 }

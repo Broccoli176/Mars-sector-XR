@@ -95,5 +95,8 @@
   "hint.elec.cap_swollen": "Un condensador de poco voltaje se hinchó: el voltaje de la fuente era mayor que su máximo.",
   "hint.elec.repaired": "Fuente del receptor reparada: Telecom vuelve a recibir bien.",
   "hub.sources.use.perseverance": "Velocidad (152 m/h), generador MMRTG (≈110 W) y 43 tubos de muestras del rover Perseverance → consola del rover (Sala de control)",
-  "hub.sources.use.rover_photos": "Fotos reales de Ingenuity, HiRISE y Mastcam-Z (escudo trasero, paracaídas, Séítah, delta) y la última NavCam → NAVCAM del rover (Sala de control)"
+  "hub.sources.use.rover_photos": "Fotos reales de Ingenuity, HiRISE y Mastcam-Z (escudo trasero, paracaídas, Séítah, delta) y la última NavCam → NAVCAM del rover (Sala de control)",
+  "hub.sources.use.orbits": "Órbitas de la Tierra y Marte (NASA/JPL) → retraso real de los mensajes (Telecom)",
+  "hub.sources.use.radlab_sep": "Tormenta solar real del 20/05/2024 medida por Curiosity (RAD) → alerta y refugio (Personal)",
+  "hub.sources.use.solar_dust": "Polvo medido por Mars Pathfinder (0,28 % al día) → paneles solares (Energía)"
 }

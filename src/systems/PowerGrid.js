@@ -3,6 +3,8 @@ const EPSILON = 1e-9;
 /**
  * Power grid (SIMULATION_SPEC §2): battery + RTG + solar, binary breakers,
  * priority service at empty battery, overload relay trips.
+ * Dust on the solar panels (dustFactor, 1 = clean): slow real settling rate, heavy deposit in storms,
+ * cleaned by the electrodynamic dust shield ('solar:clean') or by a passing dust devil. See spec §2.5.
  */
 export class PowerGrid {
   /**
@@ -10,9 +12,14 @@ export class PowerGrid {
    * @param {Record<string, any>} circuits balance.circuits
    * @param {import('./ResourceManager.js').ResourceManager} resources
    * @param {import('mitt').Emitter<any>} bus
+   * @param {any} [dust] balance.dust (omitted ⇒ panels never get dusty)
    */
-  constructor(cfg, circuits, resources, bus) {
+  constructor(cfg, circuits, resources, bus, dust = null) {
     this.cfg = cfg;
+    this.dustCfg = dust;
+    /** Fraction of clean-panel output that still reaches the cells (1 = clean). */
+    this.dustFactor = dust?.initialFactor ?? 1;
+    this.lastDustPct = Math.round((1 - this.dustFactor) * 100);
     this.circuits = circuits;
     this.resources = resources;
     this.bus = bus;
@@ -41,6 +48,55 @@ export class PowerGrid {
       if (e && e.circuitId in this.breakers) this.breakers[e.circuitId] = Boolean(e.on);
     });
     bus.on('relay:resetRequest', () => this.resetRelay());
+    bus.on('solar:clean', () => this.cleanPanels());
+  }
+
+  /** Dust settles every tick: real calm rate per sol, much faster during a dust storm. @param {number} dtHours */
+  updateDust(dtHours) {
+    const d = this.dustCfg;
+    if (!d) return;
+    const loss = this.stormActive ? d.stormLossPerHour * dtHours : (d.calmLossPerSol / 24) * dtHours;
+    this.#setDust(this.dustFactor - loss);
+  }
+
+  /**
+   * Electrodynamic dust shield pass: costs battery energy, recovers part of the lost output.
+   * @returns {'ok' | 'noDust' | 'storm' | 'relay' | 'battery'}
+   */
+  cleanPanels() {
+    const d = this.dustCfg;
+    const reject = (/** @type {'noDust' | 'storm' | 'relay' | 'battery'} */ reason) => {
+      this.bus.emit('solar:rejected', { reason });
+      return reason;
+    };
+    if (!d || this.dustFactor >= d.cleanMinFactor) return reject('noDust');
+    if (this.stormActive) return reject('storm');
+    if (!this.relayClosed) return reject('relay');
+    if (this.resources.value('power') < d.cleanKwh) return reject('battery');
+    this.resources.add('power', -d.cleanKwh);
+    const gained = (1 - this.dustFactor) * d.cleanRecovery;
+    this.#setDust(this.dustFactor + gained);
+    this.bus.emit('solar:cleaned', { by: 'shield', gained, kwh: d.cleanKwh });
+    return 'ok';
+  }
+
+  /** A dust devil sweeps the panels (scripted event, observed for real by the Spirit rover). */
+  dustDevil() {
+    const d = this.dustCfg;
+    if (!d) return;
+    const gained = (1 - this.dustFactor) * d.devilRecovery;
+    this.#setDust(this.dustFactor + gained);
+    this.bus.emit('solar:cleaned', { by: 'devil', gained, kwh: 0 });
+  }
+
+  /** @param {number} f */
+  #setDust(f) {
+    this.dustFactor = Math.min(1, Math.max(this.dustCfg?.minFactor ?? 0, f));
+    const pct = Math.round((1 - this.dustFactor) * 100);
+    if (pct !== this.lastDustPct) {
+      this.lastDustPct = pct;
+      this.bus.emit('solar:dustChanged', { dustFactor: this.dustFactor });
+    }
   }
 
   get relayClosed() {
@@ -79,7 +135,7 @@ export class PowerGrid {
   /** @param {{ hourFloat: number }} clock */
   generation(clock) {
     const daylight = clock.hourFloat >= this.cfg.solarStartHour && clock.hourFloat < this.cfg.solarEndHour;
-    const solar = daylight ? this.cfg.solarKw * (this.stormActive ? this.cfg.stormSolarFactor : 1) : 0;
+    const solar = daylight ? this.cfg.solarKw * this.dustFactor * (this.stormActive ? this.cfg.stormSolarFactor : 1) : 0;
     return this.cfg.rtgKw + solar;
   }
 

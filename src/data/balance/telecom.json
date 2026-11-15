@@ -12,5 +12,11 @@
     "turnStepDeg": 2.5,
     "alignmentRangeDeg": 35,
     "linkThreshold": 20
+  },
+  "comms": {
+    "_about": "Mission calendar (real date of tick 0) for the Earth-Mars light time; conjunctionDeg: no link to Earth while the Sun-Earth-Mars angle is below this (NASA solar-conjunction moratorium, ~2°).",
+    "startDateUtc": "2026-11-14T06:00:00Z",
+    "conjunctionDeg": 2,
+    "geometryEveryTicks": 60
   }
 }

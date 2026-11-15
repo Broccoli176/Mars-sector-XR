@@ -101,7 +101,7 @@ const roverWorld = buildRoverWorld(scene, game, camera, dolly, layout);
 const interactive = [];
 const stations = buildStations({
   layout, rooms: basement.rooms, game, t, scene, interactive,
-  services: { scene, grab, holsters, floors: basement.floors, renderer, roverWorld },
+  services: { scene, grab, holsters, floors: basement.floors, renderer, roverWorld, locomotion },
 });
 
 // Interaction and locomotion

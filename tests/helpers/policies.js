@@ -35,6 +35,12 @@ export function competentPolicy(sim) {
     }
   }
 
+  // Solar storm: stay in the Personal shelter while the real rate is dangerous.
+  const shelter = Boolean(sim.radiation?.shelterNeeded);
+  if (sim.radiation && sim.radiation.sheltered !== shelter) bus.emit('crew:shelter', { inside: shelter });
+  // Clean the panels once the storm is over and enough dust has settled.
+  if (!power.stormActive && power.dustFactor < 0.9 && resources.value('power') > 2) bus.emit('solar:clean');
+
   const battery = resources.value('power');
   setBreaker(sim, 'telecom', !power.stormActive && battery > 30);
   setBreaker(sim, 'lighting', battery > 25);

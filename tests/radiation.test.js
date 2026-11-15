@@ -43,6 +43,41 @@ describe('Radiation replay (real MSL RAD data)', () => {
     expect(sim.resources.value('health')).toBe(100);
   });
 
+  it('replays the REAL May 2024 solar storm profile and hurts only an unsheltered player', () => {
+    const sep = gameData.real.radlab_sep;
+    expect(sep.event.peakUGyPerHour).toBeGreaterThan(250);
+    const sim = newSim({ events: [{ id: 'sep', day: 1, time: '07:00', type: 'sep', warnLeadHours: 1, durationHours: 48 }] });
+    /** @type {string[]} */
+    const seen = [];
+    sim.bus.on('spaceWeather:alert', (e) => seen.push(`alert:${e.kind}`));
+    sim.bus.on('spaceWeather:impact', (e) => seen.push(`impact:${e.kind}`));
+    sim.bus.emit('game:start');
+    runTicks(sim, 61);
+    expect(seen).toEqual(['alert:sep', 'impact:sep']);
+    runTicks(sim, 60); // close to the real peak (~35 min after onset)
+    const r = sim.radiation;
+    expect(r.stormActive).toBe(true);
+    expect(r.rate).toBeGreaterThan(150);
+    expect(r.shelterNeeded).toBe(true);
+    expect(sim.crew.activeCauses.radiation).toBe(gameData.balance.radiation.unshelteredDamagePerHour);
+    const hp = sim.resources.value('health');
+    sim.bus.emit('crew:shelter', { inside: true });
+    runTicks(sim, 60);
+    expect(sim.crew.activeCauses.radiation).toBeUndefined();
+    expect(sim.resources.value('health')).toBeGreaterThanOrEqual(hp - 1);
+    expect(r.exposedMinutes).toBeGreaterThan(55);
+    expect(r.exposedMinutes).toBeLessThan(70);
+  });
+
+  it('the storm fades as in the real record and the shelter alert clears', () => {
+    const sim = newSim({ events: [{ id: 'sep', day: 1, time: '07:00', type: 'sep', durationHours: 48 }] });
+    sim.bus.emit('game:start');
+    runTicks(sim, 60 + 20 * 60);
+    expect(sim.radiation.stormActive).toBe(true);
+    expect(sim.radiation.shelterNeeded).toBe(false);
+    expect(sim.radiation.rate).toBeLessThan(gameData.balance.radiation.shelterAboveUGyPerHour);
+  });
+
   it('the simulation works without the snapshot (radiation disabled)', () => {
     const sim = newSim({ events: [] });
     const bare = new (/** @type {any} */ (sim.constructor))({

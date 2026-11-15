@@ -13,13 +13,16 @@
 - **Greybox WebXR** del plano con paneles y botones en `src/world`, `src/ui`, `src/objects` y `src/vr`. El arranque está en `src/core/main.js`.
 
 Datos reales embebidos (sin «en vivo»), ver `docs/SIMULATION_SPEC.md` §6.5:
-- `src/data/real/radlab.json` (NASA OSDR RadLab, MSL RAD) → `systems/Radiation.js` (informativo, sin daño) y dosímetro de Personal.
+- `src/data/real/radlab.json` (NASA OSDR RadLab, MSL RAD) → `systems/Radiation.js` (fondo informativo, sin daño) y dosímetro de Personal.
+- `src/data/real/radlab_sep.json` (tormenta solar REAL del 20/05/2024 medida por RAD) → evento `sep` del día 6: refugio en Personal (spec §6.5).
+- `src/data/real/orbits.json` (JPL, elementos orbitales) → `systems/orbits.js` + `systems/Comms.js`: retraso real de luz Tierra–Marte (11 min al inicio), cola sin enlace, conjunción solar (spec §3.8.1).
+- `src/data/real/solar_dust.json` (Mars Pathfinder MAE, 0,28 %/sol) → polvo en los paneles (`PowerGrid.dustFactor`, spec §2.5).
 - `src/data/real/csa_food.json` (CSA) y `src/data/real/bioregen_crops.json` (NASA NTRS: quinua y espirulina en CELSS) → Hidroponía.
 - `src/data/real/osdr_health.json` (NASA OSDR, estudios OSD-924/343/812) → panel «Salud del astronauta» de Personal.
 - NASA DONKI **en vivo** (`src/rooms/personal/spaceWeatherLive.js`, solo presentación, nunca alimenta la simulación) → «El Sol ahora» de Personal; sin red usa el registro `src/data/real/donki_recent.json` y lo dice.
 - Todos se atribuyen en el panel «Fuentes científicas» del hub. Resumen: `docs/DATA_SOURCES.md`.
 
-Telecom básico implementado (`src/systems/Telecom.js`: señal según alineación, deriva en tormenta, ajuste con botones izquierda/derecha y alineación, motor averiado limita a 40). Electrónica: banco de la Sala central que repara la fuente del receptor de Telecom (`src/systems/Electronics.js`, ver spec §6.6). Pendiente: cola de mensajes/enlace <20 % y clima espacial, reparaciones del resto de componentes, fugas, herramientas/fundas, banco de entrenamiento (T1–T5), alarmas sonoras, guardado, CI y assets. **Desviaciones del prototipo:**
+Telecom básico implementado (`src/systems/Telecom.js`: señal según alineación, deriva en tormenta, ajuste con botones izquierda/derecha y alineación, motor averiado limita a 40). Electrónica: banco de la Sala central que repara la fuente del receptor de Telecom (`src/systems/Electronics.js`, ver spec §6.6). Cola de mensajes con retraso de luz y enlace <20 % implementados (`src/systems/Comms.js`). Pendiente: niveles 30/50 % de la cola, apagones de radio y CME, reparaciones del resto de componentes, fugas, herramientas/fundas, banco de entrenamiento (T1–T5), alarmas sonoras, guardado, CI y assets. **Desviaciones del prototipo:**
 - Los controles se pulsan con rayo + gatillo; el agarre directo llegará después.
 - Hay un modo escritorio de desarrollo (no es modo de juego).
 - Strings y balance siguen en un solo archivo cada uno.
@@ -227,6 +230,11 @@ Los tanques de O₂ de emergencia usan `valve:turn` (`valve_o2_tank_1/2`). Pendi
   - `rover_minigame` es una práctica local aislada con energía propia; no emite `rover:command` ni lee el estado del rover simulado.
 - **Usar lo que sostienes (compartido, `src/vr/Grab.js`):** `userData.grab.onUse(active, handId)`. Con un objeto así en la mano, el gatillo (XR) o la tecla F (escritorio) lo usan en vez del rayo. Lo usan la manguera de Hidroponía y el multímetro (cambia de modo). En escritorio, R gira lo que sostienes.
 - **Incidentes y avisos:** `incident:warning`/`triggered`, `weather:changed`, `comms:message`, `hint`.
+- **Enlace con la Tierra (`src/systems/Comms.js`):**
+  - Intent `comms:send { channel, key, params? }` (lo emiten IncidentRunner y el parte diario).
+  - Eventos `comms:message { channel, key, params, day, hour, minute, sentDay, sentHour, sentMinute, delayMin }` (llega tras el retraso de luz real), `comms:linkLost { reason: 'signal' | 'conjunction' }`, `comms:linkRestored {}`.
+- **Polvo en paneles (`PowerGrid`):** intent `solar:clean {}`; eventos `solar:dustChanged { dustFactor }`, `solar:cleaned { by: 'shield' | 'devil', gained, kwh }`, `solar:rejected { reason: 'noDust' | 'storm' | 'relay' | 'battery' }`. Evento de guion `dustDevil`.
+- **Tormenta solar (`Radiation`):** `spaceWeather:alert { kind: 'sep', etaHours }` y `spaceWeather:impact { kind: 'sep', durationHours }` (IncidentRunner, evento `sep`); intent `crew:shelter { inside }` (presentación, según la posición de la cabeza en Personal); `crew:damage { cause: 'radiation' }` fuera del refugio en lo peor de la tormenta.
 - **Telecom:** `antenna:align`, `antenna:turnLeft`, `antenna:turnRight` (intents); escucha `component:damaged`/`system:repaired` para `antenna_motor`.
 - **Herramientas (presentación, fase 1):**
   - `item:grab { itemId, hand }`
@@ -346,6 +354,7 @@ npm test               # vitest run (simulación headless)
 npm run test:watch     # vitest
 npm run sim            # informe headless de balance: políticas idle/greedy/competent (`npm run sim -- competent`)
 npm run data:radlab    # descarga un día real de NASA OSDR RadLab (MSL RAD + ISS) → src/data/real/radlab.json
+npm run data:radlab:sep # tormenta solar real del 20/05/2024 (3 días) → src/data/real/radlab_sep.json
 npm run data:osdr      # metadatos de estudios OSDR → src/data/real/osdr_health.json
 npm run data:donki     # registro de respaldo DONKI (7 días) → src/data/real/donki_recent.json
 ```
@@ -357,6 +366,8 @@ Parámetros de URL solo de desarrollo:
 - `?debug`: expone `window.__marte`.
 
 Agarre: botón de agarre (grip) del mando en XR, tecla **G** en escritorio (`src/vr/Grab.js`). Hay dos fundas en el cinturón (`src/vr/Holsters.js`): **B/Y** (tecla **H** en escritorio) guarda la herramienta en la funda de ese lado y, con la mano vacía, la saca. También se puede soltar junto al anillo: se ilumina verde cuando está a tiro. El cinturón solo gira con el cuerpo (zona muerta de 35°), no con cada mirada.
+
+`kit.services.locomotion` (solo lectura: `headWorld`) permite a una sala saber dónde está la cabeza del jugador (refugio de Personal).
 
 **Diagnóstico de mandos:** panel «Prueba de mandos» en la Sala central (muro norte, a la derecha de la puerta; `src/rooms/hub/controllerDiag.js`). Dentro del visor muestra lo que llega de cada mando (gatillo, agarre, A/B/X/Y, stick, eventos select/squeeze) y tiene un botón para probar el rayo. Lee `renderer.xr` mediante `kit.services.renderer` (solo lectura).
 
