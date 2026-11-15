@@ -69,7 +69,7 @@
   "comms.storm.forecast": "Previsión: tormenta de polvo en {hours} h. Duración estimada {duration} h.",
   "comms.storm.start": "Tormenta activa: solar al 20 %.",
   "comms.storm.end": "Tormenta finalizada.",
-  "dev.help": "Teclado (escritorio y emulador): W/S avanzar/retroceder · A/D lateral · Q/E o ←/→ girar · G coger/soltar · F (mantén) usar lo que sostienes · R girar lo que sostienes · H cinturón (guardar/sacar). Ratón: arrastra para mirar · clic para usar o teletransportarte. En el visor: botón «ENTER VR».",
+  "dev.help": "Ares Uno — Operación en Navegador y WebXR\n• Teclado: W/A/S/D o Flechas (desplazamiento) · Q/E (girar vista).\n• Ratón: Arrastra para mirar · Clic para accionar botones o teletransportarte.\n• Herramientas: G (coger/soltar) · F (mantén para usar manguera/soldador) · R (rotar pieza) · H (guardar en cinturón).\n• En visor VR: Pulsa «ENTER VR» (Meta Quest 2/3 / Quest Pro).",
   "ui.log.comms_sent": "(enviado {time}, {min} min por el camino)",
   "ui.log.link_lost.signal": "Enlace con la Tierra perdido: señal por debajo del 20 %. Los mensajes esperan en cola.",
   "ui.log.link_lost.conjunction": "Conjunción solar: el Sol tapa la Tierra. Sin enlace hasta que pase.",

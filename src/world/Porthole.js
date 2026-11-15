@@ -1,11 +1,14 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import { MARS, marsLook, paintSky, bakeShade, groundVariation } from './marsLook.js';
 
 /**
  * Panoramic window in the Telecom room with a real 3D Mars diorama outside (original design: teammate B).
  * - Industrial frame with rivets and a centre beam, tinted glass.
  * - Procedural dunes + faceted rocks, a dish antenna that turns with sim.telecom.angle,
  *   a blinking beacon, day/night sun, stars + Phobos at night, wind-blown dust (faster in storms).
+ * - Ground, rocks, sky and day/night light come from the shared Mars look (src/world/marsLook.js),
+ *   the same as the Energía solar field and the Control rover world.
  *
  * Quest budget notes (AGENTS.md §7):
  * - NO extra dynamic lights: terrain and rocks use baked vertex shading (fixed sun direction) on
@@ -101,8 +104,8 @@ export function buildPorthole(scene, getSim, win = { center: [0, 1.6, 0], width:
     pos.setY(i, Math.max(-0.25, elevation));
   }
   terrainGeo.computeVertexNormals();
-  const terrainMat = new THREE.MeshBasicMaterial({ vertexColors: true });
-  const terrain = new THREE.Mesh(bake(terrainGeo, 0xb0522c), terrainMat);
+  const terrainMat = new THREE.MeshBasicMaterial({ vertexColors: true, toneMapped: false });
+  const terrain = new THREE.Mesh(bakeShade(terrainGeo, MARS.ground, SUN_DIR, 0.55, groundVariation), terrainMat);
   terrain.position.set(0, 0, -12.3); // south edge 0.3 m behind the window
   exterior.add(terrain);
 
@@ -115,9 +118,10 @@ export function buildPorthole(scene, getSim, win = { center: [0, 1.6, 0], width:
     { x: -0.2, z: -4.6, s: 0.6, rot: 1.7 },
     { x: 0.6, z: -5.3, s: 1.6, rot: 2.9 },
   ];
-  const rockGeo = bake(new THREE.DodecahedronGeometry(0.3, 1).toNonIndexed(), 0x7e3418, 0.3);
+  const rockGeo = new THREE.DodecahedronGeometry(0.3, 1).toNonIndexed();
   rockGeo.computeVertexNormals();
-  const rockMat = new THREE.MeshBasicMaterial({ vertexColors: true });
+  bakeShade(rockGeo, MARS.rock, SUN_DIR, 0.35);
+  const rockMat = new THREE.MeshBasicMaterial({ vertexColors: true, toneMapped: false });
   const rocks = new THREE.InstancedMesh(rockGeo, rockMat, rockCoords.length);
   rockCoords.forEach((rc, i) => {
     tmp.position.set(rc.x, 0.15 * rc.s, rc.z);
@@ -186,8 +190,11 @@ export function buildPorthole(scene, getSim, win = { center: [0, 1.6, 0], width:
   pitchPivot.add(receiver, dishBowl);
 
   // ---------------------------------------------------------------------------
-  // 4. Sky: sun, stars, Phobos
+  // 4. Sky: gradient backdrop (shared Mars look), sun, stars, Phobos
   // ---------------------------------------------------------------------------
+  const skyGeo = paintSky(new THREE.PlaneGeometry(64, 36, 1, 10).translate(0, 16, -24.5), 0, 30);
+  const skyMat = new THREE.MeshBasicMaterial({ vertexColors: true, toneMapped: false });
+  exterior.add(new THREE.Mesh(skyGeo, skyMat));
   const sunMesh = new THREE.Mesh(new THREE.SphereGeometry(0.8, 16, 12), new THREE.MeshBasicMaterial({ color: 0xffeedd, toneMapped: false }));
   const sunGlow = new THREE.Mesh(
     new THREE.SphereGeometry(1.6, 16, 12),
@@ -230,14 +237,12 @@ export function buildPorthole(scene, getSim, win = { center: [0, 1.6, 0], width:
   }
   const dustGeo = new THREE.BufferGeometry();
   dustGeo.setAttribute('position', new THREE.BufferAttribute(dustPositions, 3));
-  const dustMat = new THREE.PointsMaterial({ color: 0xd47e4b, size: 0.045, transparent: true, opacity: 0.45, depthWrite: false });
+  const dustMat = new THREE.PointsMaterial({ color: MARS.dust, size: 0.045, transparent: true, opacity: 0.45, depthWrite: false });
   exterior.add(new THREE.Points(dustGeo, dustMat));
 
   // ---------------------------------------------------------------------------
   // 6. Per-frame update
   // ---------------------------------------------------------------------------
-  const TINT = { day: new THREE.Color(1, 1, 1), storm: new THREE.Color(0.55, 0.38, 0.3), night: new THREE.Color(0.16, 0.13, 0.18) };
-  const tint = new THREE.Color();
   let totalTime = 0;
 
   return {
@@ -255,17 +260,10 @@ export function buildPorthole(scene, getSim, win = { center: [0, 1.6, 0], width:
       const dayProgress = (hour - 6) / 12;
       const sunAngle = Math.PI - dayProgress * Math.PI;
       sunMesh.position.set(Math.cos(sunAngle) * 16.0, Math.sin(sunAngle) * 13.0, -13.1);
-      if (storm) {
-        tint.copy(TINT.storm);
-      } else if (isDay) {
-        // Warmer and dimmer near sunrise/sunset.
-        const noon = Math.sin(dayProgress * Math.PI);
-        tint.setRGB(0.75 + 0.25 * noon, 0.6 + 0.4 * noon, 0.5 + 0.5 * noon);
-      } else {
-        tint.copy(TINT.night);
-      }
-      terrainMat.color.copy(tint);
-      rockMat.color.copy(tint);
+      const look = marsLook(hour, storm, sim.power.cfg);
+      skyMat.color.setRGB(...look.sky);
+      terrainMat.color.setScalar(look.ground);
+      rockMat.color.setScalar(look.ground);
       sunMesh.visible = isDay && !storm;
       stars.visible = !isDay && !storm;
       phobos.visible = !isDay && !storm;

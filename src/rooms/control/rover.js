@@ -7,6 +7,12 @@ import { COLORS, BUTTON } from '../../ui/StationKit.js';
 import { Panel } from '../../ui/Panel.js';
 import { Button } from '../../objects/Button.js';
 import { photoForRover, photoRect, photosReceived } from './roverPhotos.js';
+import { MARS, cssColor, skyFactor } from '../../world/marsLook.js';
+
+/** Mid-morning Mars sky (marsLook at ≈ 10:00) for the simulated NavCam. */
+const NAVCAM_SKY = /** @type {[number, number, number]} */ ([0.78, 0.6, 0.45]);
+/** @param {[number, number, number]} a @param {[number, number, number]} b */
+const mul = (a, b) => /** @type {[number, number, number]} */ ([a[0] * b[0], a[1] * b[1], a[2] * b[2]]);
 
 const FOV_HALF = (35 * Math.PI) / 180;
 
@@ -207,13 +213,13 @@ function drawMap(
   const ox = (W - (m.xMax - m.xMin) * s) / 2;
   const X = (/** @type {number} */ x) => ox + (x - m.xMin) * s;
   const Y = (/** @type {number} */ y) => H - (y - m.yMin) * s;
-  ctx.fillStyle = '#8a5a3a';
+  ctx.fillStyle = cssColor(MARS.ground, 0.85);
   ctx.fillRect(0, 0, W, H);
-  ctx.fillStyle = '#d8b46a';
+  ctx.fillStyle = cssColor(MARS.sand);
   for (const z of cfg.sand) {
     ctx.beginPath(); ctx.arc(X(z.x), Y(z.y), z.r * s, 0, Math.PI * 2); ctx.fill();
   }
-  ctx.fillStyle = '#3a2f2a';
+  ctx.fillStyle = cssColor(MARS.rock, 0.8);
   for (const k of cfg.rocks) {
     ctx.beginPath(); ctx.arc(X(k.x), Y(k.y), Math.max(2, k.r * s), 0, Math.PI * 2); ctx.fill();
   }
@@ -268,13 +274,14 @@ function drawNavCam(
   }
   const horizon = H * 0.42;
   const sky = ctx.createLinearGradient(0, 0, 0, horizon);
-  sky.addColorStop(0, '#b98a62');
-  sky.addColorStop(1, '#e2b98a');
+  // Same daytime sky and regolith as the other exterior views (src/world/marsLook.js).
+  sky.addColorStop(0, cssColor(mul(NAVCAM_SKY, skyFactor(1))));
+  sky.addColorStop(1, cssColor(mul(NAVCAM_SKY, skyFactor(0))));
   ctx.fillStyle = sky;
   ctx.fillRect(0, 0, W, horizon);
   const ground = ctx.createLinearGradient(0, horizon, 0, H);
-  ground.addColorStop(0, '#a8714a');
-  ground.addColorStop(1, '#6e4630');
+  ground.addColorStop(0, cssColor(MARS.ground, 0.95));
+  ground.addColorStop(1, cssColor(MARS.ground, 0.65));
   ctx.fillStyle = ground;
   ctx.fillRect(0, horizon, W, H - horizon);
   const camH = 2; // mast height (m)

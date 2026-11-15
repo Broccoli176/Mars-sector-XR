@@ -112,9 +112,12 @@ export function createStationKit({ game, t, interactive, services = {} }) {
       return registerButton(b);
     },
 
-    /** @param {THREE.Object3D} parent @param {number} w @param {number} h @param {number} [x] @param {number} [y] */
-    addPanel(parent, w, h, x = 0, y = 0) {
-      const p = new Panel(w, h);
+    /**
+     * @param {THREE.Object3D} parent @param {number} w @param {number} h @param {number} [x] @param {number} [y]
+     * @param {{ pxPerMeter?: number }} [opts] canvas resolution (pictogram panels use ≈ 560)
+     */
+    addPanel(parent, w, h, x = 0, y = 0, opts = {}) {
+      const p = new Panel(w, h, opts);
       p.mesh.position.set(x, y, 0);
       parent.add(p.mesh);
       return p;

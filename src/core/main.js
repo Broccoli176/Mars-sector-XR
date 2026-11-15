@@ -134,11 +134,23 @@ wristBio.mesh.position.set(0, 0.035, 0.05);
 wristBio.mesh.rotation.x = -Math.PI / 2.6;
 xr.onLeftGrip = (grip) => grip.add(wristBio.mesh);
 
-// Dev overlay (desktop only)
-const help = /** @type {HTMLElement} */ (document.getElementById('dev-help'));
+// Onboarding overlay and aiming crosshair (desktop/browser mode)
+const onboarding = document.getElementById('onboarding-panel');
+const onboardingContent = document.getElementById('onboarding-content');
+const onboardingToggle = document.getElementById('onboarding-toggle');
 const crosshair = /** @type {HTMLElement} */ (document.getElementById('crosshair'));
-help.textContent = t('dev.help');
-crosshair.style.display = 'none';
+
+if (onboardingContent) onboardingContent.textContent = t('dev.help');
+if (onboardingToggle && onboardingContent) {
+  let minimized = false;
+  onboardingToggle.addEventListener('click', () => {
+    minimized = !minimized;
+    onboardingContent.style.display = minimized ? 'none' : 'block';
+    onboardingToggle.textContent = minimized ? 'Ayuda [?]' : 'Minimizar';
+  });
+}
+// Show aiming crosshair in desktop/browser mode for easy interaction with 3D buttons
+if (crosshair) crosshair.style.display = 'block';
 
 document.body.appendChild(VRButton.createButton(renderer));
 
@@ -147,14 +159,16 @@ document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'hidden') game.intent('time:autoPause');
 });
 renderer.xr.addEventListener('sessionstart', () => {
-  help.style.display = 'none';
+  if (onboarding) onboarding.style.display = 'none';
+  if (crosshair) crosshair.style.display = 'none';
   const session = renderer.xr.getSession();
   session?.addEventListener('visibilitychange', () => {
     if (session.visibilityState !== 'visible') game.intent('time:autoPause');
   });
 });
 renderer.xr.addEventListener('sessionend', () => {
-  help.style.display = '';
+  if (onboarding) onboarding.style.display = 'block';
+  if (crosshair) crosshair.style.display = 'block';
   camera.position.set(0, layout.eyeHeight, 0);
   camera.rotation.set(0, 0, 0);
 });
