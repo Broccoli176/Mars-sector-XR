@@ -110,17 +110,19 @@ export function buildToolWall(g, kit, hubState) {
       ctx.setLineDash([]);
       ctx.fillStyle = COLORS.text;
       ctx.fillText(fitLine(ctx, t(tool.nameKey), W * 0.24, H * 0.052, true), cx, H * 0.62);
-      ctx.fillStyle = COLORS.dim;
-      ctx.font = font(H * 0.042);
-      const repairs = components.filter((c) => c.toolId === tool.id).map((c) => t(c.nameKey));
-      repairs.forEach((name, j) => ctx.fillText(fitLine(ctx, name, W * 0.24, H * 0.042), cx, H * (0.71 + j * 0.065)));
+      // Only repairs that can really happen in this build (components[].inGame); a tool without any is
+      // labelled as not used yet, so the wall never promises a mechanic that does not exist.
+      const repairs = components.filter((c) => c.toolId === tool.id && c.inGame).map((c) => t(c.nameKey));
+      ctx.fillStyle = repairs.length ? COLORS.nominal : COLORS.dim;
+      if (repairs.length === 0) ctx.fillText(fitLine(ctx, t('hub.toolwall.unused'), W * 0.24, H * 0.042), cx, H * 0.71);
+      repairs.forEach((name, j) => ctx.fillText(fitLine(ctx, t('hub.toolwall.repairs', { name }), W * 0.24, H * 0.042), cx, H * (0.71 + j * 0.065)));
     });
   });
 
   const raycaster = new THREE.Raycaster();
   let now = performance.now() / 1000;
 
-  /** @type {{ id: string, mesh: THREE.Mesh, slot: THREE.Object3D, place: string, holster: number | null, landedAt: number | null, vy: number, floorY: number, forceHolster: number | null }[]} */
+  /** @type {{ id: string, mesh: THREE.Mesh, slot: THREE.Object3D, place: string, hand: string, holster: number | null, landedAt: number | null, vy: number, floorY: number, forceHolster: number | null }[]} */
   const items = tools.map((tool, i) => {
     const slot = new THREE.Group();
     slot.position.set(HOOK_XS[i], HOOK_Y, HOOK_Z);
@@ -137,7 +139,7 @@ export function buildToolWall(g, kit, hubState) {
     }
     slot.add(mesh);
     kit.registerInteractive(mesh);
-    const item = { id: tool.id, mesh, slot, place: 'wall', holster: /** @type {number | null} */ (null), landedAt: /** @type {number | null} */ (null), vy: 0, floorY: 0, forceHolster: /** @type {number | null} */ (null) };
+    const item = { id: tool.id, mesh, slot, place: 'wall', hand: 'right', holster: /** @type {number | null} */ (null), landedAt: /** @type {number | null} */ (null), vy: 0, floorY: 0, forceHolster: /** @type {number | null} */ (null) };
     mesh.userData.toolId = tool.id;
     mesh.userData.holsterable = true; // belt rings light up while it is held
     mesh.userData.grab = {
@@ -162,6 +164,7 @@ export function buildToolWall(g, kit, hubState) {
     if (item.holster !== null) holsters.slots[item.holster].item = null;
     item.holster = null;
     item.place = 'hand';
+    item.hand = hand;
     item.landedAt = null;
     item.mesh.raycast = noRaycast; // a held tool must not block the ray (desktop camera / the other hand)
     updateT1(hubState.t1, 'grab', { wasOnFloor });
@@ -233,6 +236,18 @@ export function buildToolWall(g, kit, hubState) {
     grab.grab(item.mesh, hand, handId);
     return true;
   };
+
+  // A restart creates a new Simulation that knows nothing about the tools already in hand or on the belt:
+  // tell it again, so carried tools keep counting for repairs (src/systems/Toolbelt.js).
+  let syncedSim = kit.sim();
+  kit.onRefresh(() => {
+    if (kit.sim() === syncedSim) return;
+    syncedSim = kit.sim();
+    for (const item of items) {
+      if (item.place === 'hand') game.intent('item:grab', { itemId: item.id, hand: item.hand });
+      else if (item.place === 'holster' && item.holster !== null) game.intent('item:socket', { itemId: item.id, slot: holsters.slots[item.holster].id });
+    }
+  });
 
   kit.onFrame((dt) => {
     // Real wall-clock seconds (spec: "returns after 10 real s"); frame dt is clamped on slow frames.

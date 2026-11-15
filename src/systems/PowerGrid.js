@@ -36,6 +36,8 @@ export class PowerGrid {
     /** @type {Record<string, number>} */
     this.demand = Object.fromEntries(this.order.map((id) => [id, 0]));
 
+    /** @type {import('./Toolbelt.js').Toolbelt | null} set by Simulation: what the player carries */
+    this.tools = null;
     this.relayTripped = false;
     this.relayBurned = false;
     this.guidedTrip = false;
@@ -132,12 +134,19 @@ export class PowerGrid {
     this.bus.emit('relay:tripped', { guided, burned: this.relayBurned });
   }
 
-  /** Re-arms a tripped relay. A burned one is replaced first, which costs spare parts (`relayRepairSpares`). */
+  /**
+   * Re-arms a tripped relay. A burned one is replaced first: it needs its tool in hand or on the belt
+   * (`components[relay_main].toolId`, via `this.tools`) and costs spare parts (`relayRepairSpares`).
+   */
   resetRelay() {
     if (!this.relayTripped && !this.relayBurned) return;
     if (this.relayBurned) {
       const cost = this.cfg.relayRepairSpares;
       if (cost === undefined) return; // not repairable without the rule
+      if (this.tools && !this.tools.canRepair('relay_main')) {
+        this.bus.emit('relay:rejected', { reason: 'noTool', toolId: this.tools.toolFor('relay_main') });
+        return;
+      }
       if (this.resources.value('spares') < cost) {
         this.bus.emit('relay:rejected', { reason: 'noSpare' });
         return;

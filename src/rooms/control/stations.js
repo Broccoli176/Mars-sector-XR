@@ -132,5 +132,6 @@ function summaryLines(s, t) {
     return { text: `${t(`ui.resource.${id}`)}: ${fmt(r.value, id === 'temperature' ? 1 : 0)} ${r.unit}`, color: statusColor(r.status), size: 0.85 };
   });
   lines.push({ text: t('summary.filters_used', { used, left: s.inventory.filters }), color: COLORS.dim, size: 0.85 });
+  if (s.rover) lines.push({ text: t('summary.rover', { cores: s.rover.delivered.cores, spares: s.rover.delivered.spares }), color: COLORS.info, size: 0.85 });
   return lines;
 }

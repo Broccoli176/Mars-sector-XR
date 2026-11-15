@@ -12,9 +12,9 @@ A realistic, stationary **VR survival and management game** set in the first hum
 
 - **Actual (v0.1):**
   - Hecho: tiempo acelerado (4 ticks/s a 1×), red eléctrica con breakers, relé y tormenta, soporte vital con termostato, filtro y tanques de O₂, hidroponía con cosecha y putrefacción, salud, derrota por energía o salud y victoria en el día 7.
-  - Escena: base en estrella con 6 salas alrededor de la Sala central · Herramientas, según [`docs/FLOOR_PLAN.md`](docs/FLOOR_PLAN.md). Tiene paneles diegéticos, ventana a Marte en Telecom y biomonitor en la muñeca.
-  - Pendiente: telecom/clima espacial, reparaciones, fugas, herramientas, tutorial T1–T5, audio y guardado.
-- **Objetivo MVP:** partida completa de 7 días acelerados con gestión de energía, soporte vital, comida/agua, telecomunicaciones y reparaciones; victoria al llegar al final del día 7 con vida; derrota por fallo de salud (asfixia, hipotermia, deshidratación o inanición), pérdida total de energía o cascada irrecuperable.
+  - Escena: base en estrella con 6 salas contando la Sala central · Herramientas (5 a su alrededor), según [`docs/FLOOR_PLAN.md`](docs/FLOOR_PLAN.md). Tiene paneles diegéticos, ventana a Marte en Telecom y biomonitor en la muñeca.
+  - Pendiente: CME y apagones de radio, derrota por cascada, reparaciones con herramientas (existen, pero la simulación aún no las usa), fugas, tutorial T2–T5, audio y guardado.
+- **Objetivo MVP:** partida completa de 7 días acelerados con gestión de energía, soporte vital, comida/agua, telecomunicaciones y reparaciones; victoria al llegar al final del día 7 con vida; derrota por fallo de salud (asfixia, hipotermia, deshidratación o inanición), pérdida total de energía o cascada irrecuperable (esta última, planificada: aún no está implementada).
 - **Idioma (objetivo):** texto de jugador en **español**; código y documentación en inglés.
 
 Reglas numéricas: [`docs/SIMULATION_SPEC.md`](docs/SIMULATION_SPEC.md). Intención de diseño: [`docs/AGENT_CONTEXT.md`](docs/AGENT_CONTEXT.md).
@@ -44,7 +44,7 @@ npm run build && npm run preview
 
 **Sin extensión:** abre `http://localhost:5173/?iwer`. Usa el runtime de emulación de Meta (IWER, Quest 3) y basta con pulsar «ENTER VR».
 
-Apareces en la **Sala de control**, frente al ordenador principal y los controles de tiempo, ambos en la pared norte. Pulsa «Iniciar turno» para empezar. En la misma sala están el biomonitor (pared sur), la consola del rover (mapa y conducción, pared este) y un panel de estado vital del rover sin telemetría (pared norte). **Personal** es la habitación de la tripulación y el refugio contra la radiación. Los breakers y el relé están en **Energía y oxígeno** (al sur, pasando por la Sala central). A las 09:00 del día 1 salta el relé: rearma desde allí.
+Apareces en la **Sala de control**, frente al ordenador principal y los controles de tiempo, ambos en la pared norte. Pulsa «Iniciar turno» para empezar. En la misma sala están el biomonitor (pared sur), la consola del rover (mapa y conducción, pared este) y un panel de telemetría del rover, con datos de la simulación y datos reales de Perseverance (pared norte). **Personal** es la habitación de la tripulación y el refugio contra la radiación. Los breakers y el relé están en **Energía y oxígeno** (al sur, pasando por la Sala central). A las 09:00 del día 1 salta el relé: rearma desde allí.
 
 Parámetros de desarrollo (combinables con `&`):
 - `?view=x,z,grados`: coloca al jugador.
@@ -92,7 +92,7 @@ Comprobar `navigator.xr.isSessionSupported('immersive-vr')` antes de mostrar el 
 | Electrónica (Sala central · Herramientas) | Repuestos, reparaciones y banco de entrenamiento (tutorial) |
 | Clima espacial | CME y fulguraciones basadas en datos reales de NASA DONKI (snapshot estático) |
 
-## Estructura objetivo del repositorio (por crear)
+## Estructura del repositorio
 
 - `src/core/` — arranque/motor/composición (planificado)
 - `src/systems/` — simulación headless y propiedad del estado (planificado)
@@ -108,7 +108,7 @@ Comprobar `navigator.xr.isSessionSupported('immersive-vr')` antes de mostrar el 
 | :-- | :-- |
 | [`AGENTS.md`](AGENTS.md) | Contratos/reglas para agentes: arquitectura, eventos, save, presupuestos (baseline) |
 | [`docs/AGENT_CONTEXT.md`](docs/AGENT_CONTEXT.md) | Contexto de diseño, sistemas, riesgos |
-| [`docs/SIMULATION_SPEC.md`](docs/SIMULATION_SPEC.md) | Especificación numérica de simulación (baseline, no implementada) |
+| [`docs/SIMULATION_SPEC.md`](docs/SIMULATION_SPEC.md) | Especificación numérica de simulación (implementada en parte; cada sección indica su estado) |
 | [`docs/DEVELOPMENT_WORKFLOW.md`](docs/DEVELOPMENT_WORKFLOW.md) | Flujo de desarrollo, pruebas y profiling (objetivo) |
 | [`docs/ASSET_CREATION_WORKFLOW.md`](docs/ASSET_CREATION_WORKFLOW.md) | Pipeline de assets y validación VR (objetivo) |
 | [`docs/ASSET_REGISTRY.md`](docs/ASSET_REGISTRY.md) | Registro de assets/licencias y fuentes de datos |

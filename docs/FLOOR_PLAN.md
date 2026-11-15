@@ -22,19 +22,20 @@
    │ (servidor W)      │          10 × 1.8 m              │ (spawn, PC, rover)│
    └───────────────────┘              ║                    └──────────────────┘ z=-2.5
  z=-7.5…-3.5                   north connector
- ┌──────────────────┐                ║
- │    PERSONAL      │          ┌─────╨──────┐ z=-2.5
- │      5 × 4       ├┤ ├═ west ═┤ ├  HUB /  │
- │ (crew, refugio)  │ corridor │HERRAMIENTAS│
- └──────────────────┘          │  7.5 × 5   │
- z=-2…2                        └─────╥──────┘ z=2.5
+                                     ║
+ ┌──────────────────┐┌───────────────╨──────┐ z=-2.5
+ │    PERSONAL      ├┤       HUB /          │
+ │      5 × 4       ├┤    HERRAMIENTAS      │
+ │ (crew, refugio)  ││      7.5 × 5         │
+ └──────────────────┘└───────────────╥──────┘ z=2.5
+ z=-2…2   (shared wall + door, no corridor)
                                south connector
-   ┌──────────────────┐              ║                      ┌──────────────────┐ z=4.5
+   ┌──────────────────┐              ║                      ┌──────────────────┐ z=3.5
    │   HIDROPONÍA ·   ├┤ ├═══════ south hall ══════════┤ ├──┤  ENERGÍA Y       │
-   │   AGRICULTURA    │           12 × 1.8 m                │  OXÍGENO  6 × 5  │
-   │      5 × 4       │                                     │                  │
-   └──────────────────┘ z=5…9                               └──────────────────┘ z=9.5
-   x=-10            x=-5     x=-0.9  x=0.9                  x=7               x=13
+   │   AGRICULTURA    │           12 × 1.8 m                │  OXÍGENO  8 × 7  │
+   │  5 × 6 (cocina)  │                                     │ [VENTANA solar E]│
+   └──────────────────┘ z=5…11                              └──────────────────┘ z=10.5
+   x=-10            x=-5     x=-0.9  x=0.9                  x=7               x=15
 
    ┤ ├ = door 0.8 m      ║ / ═ = corridor (1.8 m wide)      [VENTANA] = panoramic window
 ```
@@ -62,7 +63,7 @@ Panel centres at 1.2–1.5 m height.
 
 | Room | Wall → elements |
 | :-- | :-- |
-| Sala de control | **N:** main PC (`main_pc`, x ≈ 6.8; monitoring + "Iniciar turno"/"Continuar"), time lever (`time_lever`, x ≈ 8.6) and disconnected rover vitals panel (`rover_vitals`, x ≈ 10.05). **E**, centred opposite the entrance: rover map/NavCam console (`rover_console`, z ≈ −5.5) in a futuristic multi-monitor housing. **S:** bio panel (`bio_panel`, x ≈ 7.0). Settings panel and log terminal pending |
+| Sala de control | **N:** main PC (`main_pc`, x ≈ 6.8; monitoring + "Iniciar turno"/"Continuar"), time lever (`time_lever`, x ≈ 8.6) and rover telemetry panel (`rover_vitals`, x ≈ 10.05; reads the simulation, read-only). **E**, centred opposite the entrance: rover map/NavCam console (`rover_console`, z ≈ −5.5) in a futuristic multi-monitor housing. **S:** bio panel (`bio_panel`, x ≈ 7.0). Settings panel and log terminal pending |
 | Energía y oxígeno | Laid out as a flow. Every panel is a pictogram for young players (circuit icons, dial gauges, thermometers, tanks, filter, solar top view) with one short message and an «Info» button that opens the rigorous text with the numbers (`src/rooms/energy/energyIcons.js`, `src/ui/InfoSheet.js`). **N (distribution):** breaker wall (6 breakers + relay reset + battery charge line, `breakers`, x ≈ 10.4, 2.3 m wide) and O₂/CO₂/pressure/temperature gauges (`ls_gauges`, x ≈ 13.6, 1.3 m wide); both dashboards are drawn ×1.35 (`BIG` in `src/rooms/energy/stations.js`). **E (generation):** **rounded** window onto the solar field (z 5.6–8.4, sill 1.05 m, top 2.3 m, corner radius 0.6 m; `view: "solar"`; the wall fills the corners and the frame/glass are rounded); **solar console** under it (`energy_solar_view`, along 7; «Campo solar» info panel on the wall at z ≈ 4.6): desk (top 0.78 m) with four push buttons ◀ IZQUIERDA · DERECHA ▶ · PROTEGER · LIMPIAR (electrodynamic dust shield: a blue wave sweeps the panels in the window), panels start facing the window and turn on their vertical axis, production strip and «Campo solar» info panel. The field has 2 rows × 6 solar panels (back row offset to show between the front ones) and an inverter box; no other props. South wall x ≈ 13.9 is free. **S (life support):** CO₂ scrubber (along 11.4) with filter socket; 2 emergency O₂ tanks + electrolyzer (along 9.1). **W (climate, by the door):** thermostat (z ≈ 8.4) |
 | Hidroponía · Agricultura | **W:** soilless growing bench (`hydro_racks`): **4 white channels** with rockwool cubes, a water sight tube per channel (good zone in green), nutrient manifold + pump, **pink LED grow lights** overhead (lit only when the hydro lights are on), plants in 3 stages (sprout → young → mature), one **pictogram panel** per channel (crop icon, growth bar, water gauge, one short message) and one «Sembrar/Cosechar» button on the front lip; **seed kiosk** on the wall south of the bench («Semilla ▶», time/food dots). **N:** wall guide «¿Qué hago ahora?» (`hydro_cropguide`, x ≈ −9.05: 4 pictogram steps, the current one lit), water tank + **nutrient reservoir** («Nutrientes +», `hydro_water`, x ≈ −7.5), **hose reel** with a grabbable nozzle (`hydro_hose`, x ≈ −5.6). **S:** food processor (`hydro_processor`, x ≈ −8.9: machine with hopper and status lamp, pictogram panel, single «Hacer barra» button), rations + kcal (`hydro_food`, x ≈ −7.5), **spirulina bioreactor** (`hydro_bioreactor`, x ≈ −5.9). **Kitchen (south extension):** pantry cabinet with one crate per raw lot + freshness traffic-light panel + «Comer» (`hydro_pantry`, W wall, z ≈ 9.95); bar dispenser with the finished bars stacked in its tray (`hydro_bars`, E wall, z ≈ 9.7). Every station has an «Info» button that opens a text sheet with the rigorous explanation (NFT, pH/EC, photosynthesis, recipes, real crop data) |
 | Telecomunicaciones | **N:** panoramic window (opening x −8.4…−6.6, y 1.1…2.1; 3D Mars diorama `src/world/Porthole.js`) with the operator console under it (signal/alignment panel and left/right antenna controls) and the antenna motor unit. **W:** communications distribution panel with uplink/signal status and data ports, replacing the former airlock hatch at the same station position |
@@ -71,7 +72,7 @@ Panel centres at 1.2–1.5 m height.
 
 ## 5) Teleport, spawn and flow
 
-- **Spawn:** Sala de control, in front of the main PC at (9, −5.5), facing east. The time lever is beside the PC; the training bench is in the Sala central (hub).
+- **Spawn:** Sala de control, in front of the main PC at (6.8, −6.4), facing north (`layout.json` → `spawn`). The time lever is beside the PC; the training bench is in the Sala central (hub).
 - Teleport works on any floor (`COL_Floor_*`, merged). There are no fixed anchors yet.
 - Typical routes from the hub: Control ≈ 13 m, Telecom ≈ 11 m, Energy ≈ 14 m, Hydro ≈ 12 m, Personal ≈ 4 m (door straight from the hub).
 - Keyboard collision (`src/vr/Collision.js`) uses the same walls, the door frames and the solid furniture, with door assist.

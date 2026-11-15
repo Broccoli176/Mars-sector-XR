@@ -26,7 +26,7 @@
 
 ## 2) Player fantasy and core loop
 
-The player never leaves the basement. Locomotion is a short teleport between rooms; the "world" is six rooms around a central hub.
+The player never leaves the basement. Locomotion is a short teleport between rooms; the "world" is six rooms: a central hub and five rooms around it.
 
 ```
    ┌─[WINDOW]─┐                                ┌──────────────┐
@@ -44,7 +44,7 @@ The player never leaves the basement. Locomotion is a short teleport between roo
                                                └──────────────┘
 ```
 
-Hub-and-spokes base: six rooms around the Sala central · Herramientas, linked by straight corridors. The dimensioned plan, coordinates, panel placement and teleport anchors are in `docs/FLOOR_PLAN.md` (authoritative); sizes also in `docs/SIMULATION_SPEC.md` §9. Keep this diagram consistent with them.
+Hub-and-spokes base: six rooms counting the Sala central · Herramientas (five around it), linked by straight corridors (Personal shares a wall with the hub). The dimensioned plan, coordinates, panel placement and teleport anchors are in `docs/FLOOR_PLAN.md` (authoritative); sizes also in `docs/SIMULATION_SPEC.md` §9. Keep this diagram consistent with them.
 
 Core loop, repeated each in-game day:
 
@@ -115,7 +115,7 @@ A pump failure forces the solar array's stored power to be split between the hea
 
 ### 4.7 Fail and win resolution
 - **Win:** alive at the end of day 7.
-- **Lose:** player health reaches 0 (damage comes from critical oxygen, CO₂, pressure, temperature, water or food), total power loss, or cascading shutdown.
+- **Lose:** player health reaches 0 (damage comes from critical oxygen, CO₂, pressure, temperature, water or food), total power loss, or cascading shutdown (planned; not implemented yet).
 - Game over is diegetic: emergency lighting, a final status panel, and a short cause-of-failure summary the player can learn from.
 
 ---
@@ -195,7 +195,7 @@ Early first-pass numbers (kept for context only; units/threshold semantics diffe
 
 | Room | Contents | Primary interactions |
 | :-- | :-- | :-- |
-| Control room (Sala de control) | Spawn; main computer, time lever, bio panel; rover map/NavCam console with driving controls, disconnected vital-status panel, local practice minigame | Read telemetry, start/restart, set time speed, monitor health; operate the rover; practice on the minigame |
+| Control room (Sala de control) | Spawn; main computer, time lever, bio panel; rover map/NavCam console with driving controls, rover telemetry panel (reads the simulation), local practice minigame | Read telemetry, start/restart, set time speed, monitor health; operate the rover; practice on the minigame |
 | Energy & oxygen (Energía y oxígeno) | Breaker wall + relay, electrolyzer, scrubber, O₂ tanks, thermostat | Reroute power, reset relay, open O₂ tank valves, swap filters, set thermostat |
 | Hydro / farming (Hidroponía · Agricultura) | Racks, water tank, ration locker, recycler valve | Harvest before it spoils, unstick recycler, read water/food |
 | Telecomunicaciones | Console under the panoramic window (the only direct view outside), steerable antenna, communications distribution panel | Improve antenna alignment, inspect uplink/signal status, read comms and space-weather alerts |

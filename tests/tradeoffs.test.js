@@ -38,7 +38,7 @@ describe('trade-offs', () => {
     expect(chilly.growth).toBeGreaterThan(0);
   });
 
-  it('a burned relay is replaced with a spare, and refused without one', () => {
+  it('a burned relay is replaced with its tool and a spare, and refused without either', () => {
     const sim = newSim({ events: [] });
     /** @type {string[]} */
     const seen = [];
@@ -49,14 +49,16 @@ describe('trade-offs', () => {
     sim.power.relayBurned = true;
 
     sim.resources.get('spares').value = 0;
-    sim.bus.emit('relay:resetRequest');
+    sim.bus.emit('relay:resetRequest'); // no screwdriver yet
+    sim.bus.emit('item:socket', { itemId: 'screwdriver', slot: 'SKT_Holster_L' }); // on the belt counts
+    sim.bus.emit('relay:resetRequest'); // no spare
     expect(sim.power.relayClosed).toBe(false);
 
     sim.resources.get('spares').value = 2;
     sim.bus.emit('relay:resetRequest');
     expect(sim.power.relayClosed).toBe(true);
     expect(sim.resources.value('spares')).toBe(2 - gameData.balance.power.relayRepairSpares);
-    expect(seen).toEqual(['rejected:noSpare', 'repaired:relay_main', 'reset']);
+    expect(seen).toEqual(['rejected:noTool', 'rejected:noSpare', 'repaired:relay_main', 'reset']);
   });
 
   it('cleaning the panels costs real battery and leaves dust behind, so stowing in a storm pays off', () => {
@@ -70,5 +72,38 @@ describe('trade-offs', () => {
   it('skipping the shelter in a solar storm outpaces regeneration by a wide margin', () => {
     const { radiation, health } = gameData.balance;
     expect(radiation.unshelteredDamagePerHour).toBeGreaterThanOrEqual(health.regenPerHour * 5);
+  });
+});
+
+describe('tools carried (hand or belt) decide which repairs are possible', () => {
+  it('tracks the tool-wall intents', () => {
+    const sim = newSim({ events: [] });
+    sim.bus.emit('item:grab', { itemId: 'wrench', hand: 'right' });
+    sim.bus.emit('item:socket', { itemId: 'solder_iron', slot: 'SKT_Holster_R' });
+    expect([...sim.tools.carried].sort()).toEqual(['solder_iron', 'wrench']);
+    sim.bus.emit('item:release', { itemId: 'wrench' }); // dropped on the floor
+    sim.bus.emit('item:socket', { itemId: 'solder_iron', slot: 'toolwall' }); // hung back on the wall
+    expect(sim.tools.carried.size).toBe(0);
+  });
+
+  it('only components that can break in this build need a tool', () => {
+    const sim = newSim({ events: [] });
+    expect(sim.tools.toolFor('relay_main')).toBe('screwdriver');
+    expect(sim.tools.toolFor('rx_psu')).toBe('solder_iron');
+    expect(sim.tools.toolFor('hull_seal')).toBeNull();
+  });
+
+  it('the electronics bench refuses to solder without the soldering iron', () => {
+    const sim = newSim({ events: [] });
+    /** @type {any[]} */
+    const rejected = [];
+    sim.bus.on('electronics:rejected', (e) => rejected.push(e));
+    const slot = sim.electronics.slots[0];
+    sim.bus.emit('electronics:heat', { slotId: slot.id });
+    expect(slot.soldered).toBe(true);
+    expect(rejected[0]).toMatchObject({ slotId: slot.id, reason: 'noTool', toolId: 'solder_iron' });
+    sim.bus.emit('item:grab', { itemId: 'solder_iron', hand: 'right' });
+    sim.bus.emit('electronics:heat', { slotId: slot.id });
+    expect(slot.soldered).toBe(false);
   });
 });

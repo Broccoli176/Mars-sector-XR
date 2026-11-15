@@ -103,7 +103,7 @@ Each mission has `stepN` keys for multi-step hints (e.g. `tutorial.t3.step2` = "
 | `summary.cause.dehydration` | "Causa: deshidratación." |
 | `summary.cause.starvation` | "Causa: inanición." |
 | `summary.cause.powerLoss` | "Causa: pérdida total de energía." |
-| `summary.cause.cascade` | "Causa: fallo en cascada irrecuperable." |
+| `summary.cause.cascade` | "Causa: fallo en cascada irrecuperable." (planned: the cascade lose rule is not implemented yet) |
 | `summary.decisions.title` | "Las 3 decisiones con más efecto" |
 
 ## 6) Pending

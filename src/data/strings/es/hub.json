@@ -30,7 +30,7 @@
   "hub.t1.drop": "Suéltala lejos: cae al suelo",
   "hub.t1.recover": "Recógela del suelo (vuelve sola a la pared en 10 s). Para sacarla del cinturón: B/Y con la mano vacía",
   "hub.t1.rest": "T2–T5: próximamente",
-  "hub.toolwall.hint": "Agarre (G): coger · B/Y (H): cinturón · suéltala en su silueta para colgarla",
+  "hub.toolwall.hint": "Agarre (G): coger · B/Y (H): cinturón · llévala encima para reparar",
   "hub.sources.use.osdr_health": "Estudios reales de salud en el espacio (músculo, hueso, defensas) → Salud del astronauta (Personal)",
   "hub.sources.use.donki_recent": "Clima espacial: EN VIVO desde api.nasa.gov si hay conexión; si no, este registro → El Sol ahora (Personal)",
   "hub.ctrl.title": "PRUEBA DE MANDOS · META QUEST",
@@ -66,7 +66,7 @@
   "hub.elec.part.C470u25V": "470 µF 25 V",
   "hub.elec.part.C10u25V": "10 µF 25 V",
   "hub.elec.part.C1000u6V": "1000 µF 6,3 V",
-  "hint.elec.guided": "Telecom tiene ruido: la fuente del receptor falla. Ve al banco de electrónica de la Sala central y pulsa «Escanear».",
+  "hint.elec.guided": "Telecom tiene ruido: la fuente del receptor falla. Coge el soldador de la pared de herramientas y ve al banco de electrónica de la Sala central: pulsa «Escanear».",
   "hint.elec.surge": "La tormenta provocó una sobretensión: un diodo de la fuente del receptor se quemó. Telecom está sin señal.",
   "hint.elec.cme": "La eyección de masa coronal dañó un diodo de la fuente del receptor.",
   "hint.elec.weak_diode": "Un diodo demasiado pequeño se calentó y se abrió: usa uno de 1 A (1N4007).",
@@ -125,5 +125,8 @@
   "hub.spares.use.filters": "Cambiar el filtro del depurador de CO₂ en Energía y oxígeno.",
   "hub.spares.use.sealant": "Sellar fugas del casco con la pistola de sellador.",
   "hub.spares.use.o2": "Oxígeno de emergencia: se abren con las válvulas de Energía y oxígeno.",
-  "hub.spares.elec_hint": "¿Buscas diodos o condensadores? Están en el banco de electrónica (pared oeste)."
+  "hub.spares.elec_hint": "¿Buscas diodos o condensadores? Están en el banco de electrónica (pared oeste).",
+  "hub.elec.msg.need_iron": "Necesitas el soldador: cógelo de la pared de herramientas (o llévalo en el cinturón)",
+  "hub.toolwall.unused": "Sin uso por ahora",
+  "hub.toolwall.repairs": "{name}"
 }

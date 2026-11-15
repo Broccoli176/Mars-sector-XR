@@ -156,7 +156,7 @@ Presentation: on `solar:cleaned { by: 'shield' }` the solar window plays a blue 
 | PROTEGER (stow) | `solar:stow { on }`: panels edge-on (90°), output 0; storm dust settles × 0.25. Leaving stow ⇒ MANUAL |
 | Events | `solar:tracker { mode, angleDeg, targetDeg }` on every mode change or manual step |
 
-The physical console exposes manual left/right orientation and PROTEGER; stowing in a storm gives up the storm's 20 % output to keep the panels clean for after. The headless balance policy may still use AUTO, but the day-1 hint teaches manual orientation.
+The physical console exposes manual left/right orientation, **«Auto»** (2026-11-15), PROTEGER and LIMPIAR. Trade-off of AUTO: its motor costs ≈ 0.6 kWh per sol, while manual turning is free but needs the player back at the console every few hours (attention vs energy). Stowing in a storm gives up the storm's 20 % output to keep the panels clean for after. The day-1 hint mentions both.
 
 ---
 
@@ -305,7 +305,8 @@ Events: `comms:message { channel, key, params, day, hour, minute, sentDay, sentH
 | Hazards | Rock within its radius + 1.5 m ⇒ stops before it (`obstacle`). Soft sand ⇒ `stuck`: forward and turns refused until «back» |
 | Energy | Battery 2 000 Wh. −4 Wh/m driving, −0.3 Wh/° turning, −100 Wh per sample. −60 W load, +110 W MMRTG. At 0 ⇒ `stranded` until the MMRTG refills 10 % |
 | Dock | Within 6 m of the base and not moving ⇒ docked: delivers cargo and charges at 0.4 kW through the `repairBay` circuit (priority 6, «Taller · Rover»). It starts docked and full, so an idle rover changes nothing |
-| Sites | 2 rock cores (science counter) and 2 landing-debris sites (+1 `spares` each when delivered). Sample = 1 game hour within 8 m |
+| Sites | 2 rock cores and 2 landing-debris sites (+1 `spares` each when delivered; spares replace a burned relay). Sample = 1 game hour within 8 m |
+| Cores = science | Cores do **not** help survival (honest: a few grams of rock give no usable water). On delivery the base reports them to Earth (`comms:send`, key `comms.science.cores`), the reply arrives with the real light delay, and the post-run summary shows samples and rescued spares |
 | NavCam images (presentation only) | Within 8 m of a site the NAVCAM shows its real NASA image (`src/data/real/rover_photos.json`); docked, the latest real Perseverance NavCam frame; otherwise a drawn view labelled «vista simulada». Snapshots, never presented as live |
 
 ## 4) Player health (`health`)
@@ -521,7 +522,7 @@ Ver **`AGENTS.md` §4.2** para el contrato de eventos y payloads (baseline + pro
 
 | Room | Panels / interactables |
 | :-- | :-- |
-| Sala de control | Main PC (pages: Estado, Energía, Comms, Resumen; "Iniciar turno" / "Continuar") and time lever; bio panel (biomonitor mirror); rover map/NavCam console with driving controls in a futuristic multi-monitor housing; `rover_vitals` panel with disconnected telemetry placeholders |
+| Sala de control | Main PC (pages: Estado, Energía, Comms, Resumen; "Iniciar turno" / "Continuar") and time lever; bio panel (biomonitor mirror); rover map/NavCam console with driving controls in a futuristic multi-monitor housing; `rover_vitals` panel with live telemetry read from the simulation (link, rover battery, distance, samples) plus real Perseverance figures |
 | Energía y oxígeno | Breaker wall (6 breakers + relay reset lever + demand meter kW vs 3.0 limit); O₂, CO₂ and pressure gauges; thermostat dial; filter socket; `valve_o2_tank_1`, `valve_o2_tank_2`; electrolyzer |
 | Hidroponía · Agricultura | Water tank gauge; kcal counter + ration locker; crop lights (growing / ready / spoiling); harvest rack; `valve_recycler` |
 | Telecomunicaciones | N: window + console (signal/alignment/azimuth/motor panel and left/right turn controls). W: communications distribution panel with uplink/signal status. Pending: message printer |
@@ -533,6 +534,8 @@ Ver **`AGENTS.md` §4.2** para el contrato de eventos y payloads (baseline + pro
 Every threshold in §3.0 must be readable on at least one of these panels. Wall-by-wall placement: `docs/FLOOR_PLAN.md` §4.
 
 ### 9.3 Interaction, tools and alarms
+
+**Tools in the simulation (implemented 2026-11-15, `src/systems/Toolbelt.js`):** the tool-wall intents (`item:grab`, `item:socket`, `item:release`) tell the simulation what the player carries (hand or belt holster). Only components that can break in this build (`components[].inGame`) need their tool: replacing a burned `relay_main` needs the **screwdriver** (plus 1 spare) and soldering at the electronics bench (`rx_psu`) needs the **soldering iron**. Without it: `relay:rejected` / `electronics:rejected` with `reason: 'noTool'`, a log line and a bench message. The wrench and the sealant gun are labelled «Sin uso por ahora» on the wall until their faults exist. Two holsters for four tools makes «what do I carry» a real choice.
 
 **Valves:** `valve_recycler` (stuck fault, unstick with wrench), `valve_o2_tank_1`, `valve_o2_tank_2` (`valve:turn { valveId, open }`).
 

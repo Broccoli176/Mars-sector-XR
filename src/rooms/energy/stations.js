@@ -73,7 +73,7 @@ export const builders = {
         if (tr) {
           lines.push({ text: t(`solar.mode.${tr.mode}`), size: 0.8 });
           lines.push({ text: t('solar.angle', { panel: angleLabel(tr.angleDeg, t), sun: day ? angleLabel(SolarTracker.sunAngle(clock.hourFloat), t) : t('solar.sun_down'), pct: Math.round(tr.factor(clock.hourFloat) * 100) }), color: COLORS.info, size: 0.8 });
-          if (tr.mode === 'auto') lines.push({ text: t('solar.auto_cost', { kw: tr.cfg.autoKw }), size: 0.78 });
+          lines.push({ text: t('solar.auto_cost', { kw: tr.cfg.autoKw, kwh: fmt(tr.cfg.autoKw * (cfg.solarEndHour - cfg.solarStartHour), 1) }), color: tr.mode === 'auto' ? COLORS.warning : COLORS.text, size: 0.78 });
         }
         lines.push({ text: t('solar.dust', { pct: Math.round((1 - s.power.dustFactor) * 100), factor: s.power.dustFactor.toFixed(2) }), size: 0.8 });
         lines.push({ text: t('energy.info.solar.1'), size: 0.78 });
@@ -86,7 +86,7 @@ export const builders = {
 
     /** @param {string} label @param {number} x @param {() => void} onSelect */
     const deskButton = (label, x, onSelect) => {
-      const button = new Button({ width: 0.27, height: 0.1, label, color: BUTTON.action, onSelect });
+      const button = new Button({ width: 0.23, height: 0.1, label, color: BUTTON.action, onSelect });
       const holder = new THREE.Group();
       holder.position.set(x, deskTop + 0.01, 0.15);
       holder.rotation.x = -Math.PI / 2;
@@ -94,10 +94,13 @@ export const builders = {
       g.add(holder);
       return kit.registerButton(button);
     };
-    const left = deskButton(t('solar.btn.left'), -0.54, () => game.intent('solar:turn', { dir: -1 }));
-    const right = deskButton(t('solar.btn.right'), -0.18, () => game.intent('solar:turn', { dir: 1 }));
-    const stow = deskButton(t('solar.btn.stow'), 0.18, () => game.intent('solar:stow', { on: sim().solarTracker?.mode !== 'stow' }));
-    const clean = deskButton(t('solar.btn.clean'), 0.54, () => game.intent('solar:clean', {}));
+    // Five desk buttons: turn left/right (manual, free), AUTO (follows the sun, its motor costs energy),
+    // PROTEGER (edge-on in a storm) and LIMPIAR (electrodynamic shield).
+    const left = deskButton(t('solar.btn.left'), -0.56, () => game.intent('solar:turn', { dir: -1 }));
+    const right = deskButton(t('solar.btn.right'), -0.28, () => game.intent('solar:turn', { dir: 1 }));
+    const auto = deskButton(t('solar.btn.auto'), 0, () => game.intent('solar:auto', { on: sim().solarTracker?.mode !== 'auto' }));
+    const stow = deskButton(t('solar.btn.stow'), 0.28, () => game.intent('solar:stow', { on: sim().solarTracker?.mode !== 'stow' }));
+    const clean = deskButton(t('solar.btn.clean'), 0.56, () => game.intent('solar:clean', {}));
 
     kit.onRefresh(() => {
       const s = sim();
@@ -146,6 +149,7 @@ export const builders = {
       const off = !s.power.relayClosed;
       left.setState(t('solar.btn.left'), off ? BUTTON.off : BUTTON.action);
       right.setState(t('solar.btn.right'), off ? BUTTON.off : BUTTON.action);
+      auto.setState(t('solar.btn.auto'), tr?.mode === 'auto' ? BUTTON.on : off ? BUTTON.off : BUTTON.action);
       stow.setState(t('solar.btn.stow'), tr?.mode === 'stow' ? BUTTON.warn : storm ? BUTTON.danger : BUTTON.off);
       clean.setState(t('solar.btn.clean'), dust < 0.01 || storm || off ? BUTTON.off : dust > 0.2 ? BUTTON.warn : BUTTON.action);
     });
@@ -183,7 +187,7 @@ export const builders = {
               name: t(`ui.circuit.${id}`),
               kw: id === 'lifeSupport'
                 ? t('energy.info.breakers.ls_kw', { e: bal.lifeSupport.electrolyzerKw, s: bal.lifeSupport.scrubberKw })
-                : `${bal.circuits[id].drawKw} kW`,
+                : `${String(bal.circuits[id].drawKw).replace('.', ',')} kW`,
             }),
             color: COLORS.info,
             size: 0.75,

@@ -198,6 +198,9 @@ export function buildElectronicsBench(g, station, kit) {
     anim = { kind: 'scan', t: 0 };
   }
 
+  /** Desoldering and soldering need the soldering iron in a hand or on the belt (src/systems/Toolbelt.js). */
+  const hasIron = () => sim().tools?.canRepair('rx_psu') ?? true;
+
   /** @param {string} slotId */
   function onSlot(slotId) {
     if (anim) return;
@@ -206,10 +209,12 @@ export function buildElectronicsBench(g, station, kit) {
     if (step.step === 'ok') return say('hub.elec.msg.all_good');
     if (step.step === 'scan') return say('hub.elec.msg.scan_first');
     if (step.step === 'solder' && step.slotId === slotId) {
+      if (!hasIron()) return say('hub.elec.msg.need_iron');
       game.intent('electronics:heat', { slotId });
       return;
     }
     if (s?.partId && isBroken(s, defaults[slotId])) {
+      if (!hasIron()) return say('hub.elec.msg.need_iron');
       anim = { kind: 'remove', t: 0, slotId };
       return;
     }
@@ -231,6 +236,7 @@ export function buildElectronicsBench(g, station, kit) {
       return say('hub.elec.msg.wrong');
     }
     if ((el.stock[partId] ?? 0) <= 0) return say('hub.elec.msg.no_stock');
+    if (!hasIron()) return say('hub.elec.msg.need_iron');
     board.worldToLocal(cardMesh.getWorldPosition(_a));
     anim = { kind: 'insert', t: 0, slotId: slot.id, partId, from: _a.clone().setZ(0.03) };
     flyer.geometry = partGeometry(partId);
