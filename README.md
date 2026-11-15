@@ -44,7 +44,7 @@ npm run build && npm run preview
 
 **Sin extensión:** abre `http://localhost:5173/?iwer`. Usa el runtime de emulación de Meta (IWER, Quest 3) y basta con pulsar «ENTER VR».
 
-Apareces en **Personal**, frente al ordenador y junto a los controles de tiempo. Pulsa «Iniciar turno» para empezar. En la **Sala de control**, el rover conserva su consola de mapa y conducción; el panel de estado vital no recibe telemetría y la práctica local es un minijuego desconectado. Los breakers y el relé están en la sala **Energía y oxígeno** (al sur, pasando por la Sala central). A las 09:00 del día 1 salta el relé: rearma desde allí.
+Apareces en la **Sala de control**, frente al ordenador principal (muro este) y junto a los controles de tiempo. Pulsa «Iniciar turno» para empezar. En la misma sala están el biomonitor (muro sur), la consola del rover (mapa y conducción, muro norte), un panel de estado vital del rover sin telemetría y una práctica local desconectada (muro sur). **Personal** es la habitación de la tripulación y el refugio contra la radiación. Los breakers y el relé están en la sala **Energía y oxígeno** (al sur, pasando por la Sala central). A las 09:00 del día 1 salta el relé: rearma desde allí.
 
 Parámetros de desarrollo (combinables con `&`):
 - `?view=x,z,grados`: coloca al jugador.

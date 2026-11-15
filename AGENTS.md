@@ -76,7 +76,7 @@ Decisiones/objetivos iniciales (a confirmar al arrancar):
 | Interacción | Agarre directo para controles físicos; ray solo para controles diegéticos pequeños si aplica |
 | Input | Mandos primero; sin hand tracking en MVP salvo decisión explícita |
 | UI | Paneles/indicadores diegéticos. **Sin HUD head-locked** |
-| Entorno | Base en estrella alrededor de la **Sala central · Herramientas** (hub). Al norte: Telecom y Sala de control (consola de mapa, panel vital y minijuego local del rover). Al oeste: Personal (spawn, ordenador y controles de tiempo). El biomonitor mural está en la Sala central. Al sur: Hidroponía · Agricultura y Energía y oxígeno. Ver `docs/FLOOR_PLAN.md`. Base subterránea con **dos ventanas al exterior**: la panorámica de Telecom (`src/world/Porthole.js`) y la del campo solar en Energía (`src/world/SolarField.js`, muro este). En `layout.json` cada muro con ventana lleva `view: "telecom" | "solar"` |
+| Entorno | Base en estrella alrededor de la **Sala central · Herramientas** (hub). Al norte: Telecom y Sala de control (spawn, ordenador principal, controles de tiempo, biomonitor, consola del rover, panel vital y práctica local del rover). Al oeste: Personal (habitación, dosímetro y refugio antirradiación). Al sur: Hidroponía · Agricultura y Energía y oxígeno. Ver `docs/FLOOR_PLAN.md`. Base subterránea con **dos ventanas al exterior**: la panorámica de Telecom (`src/world/Porthole.js`) y la del campo solar en Energía (`src/world/SolarField.js`, muro este). En `layout.json` cada muro con ventana lleva `view: "telecom" | "solar"` |
 | Persistencia | Guardado versionado con migraciones (cuando se implemente) |
 
 ### Principio de diseño

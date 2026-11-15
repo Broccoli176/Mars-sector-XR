@@ -7,13 +7,6 @@
     "y": 1.5
   },
   {
-    "id": "bio_panel",
-    "room": "room_hub",
-    "wall": "east",
-    "along": 1.5,
-    "y": 1.45
-  },
-  {
     "id": "hub_sources",
     "room": "room_hub",
     "wall": "north",
