@@ -1,0 +1,19 @@
+{
+  "_about": "Curated REAL facts (static, not live) about NASA Perseverance, verified on the NASA pages below on 2026-11-14. The game rover is \"Perseverance-class\", not the real rover.",
+  "source": {
+    "institution": "NASA",
+    "product": "Mars 2020 Perseverance rover — rover components",
+    "url": "https://science.nasa.gov/mission/mars-2020-perseverance/rover-components/",
+    "retrievedAt": "2026-11-14"
+  },
+  "topSpeedMPerHour": 152,
+  "mmrtgWattsAtLaunch": 110,
+  "batteries": "two lithium-ion rechargeable batteries for peak demands",
+  "sampleTubes": 43,
+  "hazcams": 6,
+  "landing": {
+    "site": "Jezero Crater",
+    "date": "2021-02-18",
+    "url": "https://science.nasa.gov/mission/mars-2020-perseverance/"
+  }
+}

@@ -33,5 +33,12 @@
     "wall": "west",
     "along": 8.6,
     "y": 1.4
+  },
+  {
+    "id": "energy_solar_view",
+    "room": "room_energy",
+    "wall": "east",
+    "along": 8.5,
+    "y": 0.82
   }
 ]

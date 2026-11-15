@@ -19,5 +19,12 @@
     "wall": "south",
     "along": 8,
     "y": 1.45
+  },
+  {
+    "id": "rover_console",
+    "room": "room_control",
+    "wall": "north",
+    "along": 8,
+    "y": 1.45
   }
 ]

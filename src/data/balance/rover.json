@@ -1,0 +1,52 @@
+{
+  "rover": {
+    "_source": "speedMPerHour 152 and mmrtgW 110 are real Perseverance values (NASA, see src/data/real/perseverance.json). Battery size, energy per metre and the map are game values.",
+    "speedMPerHour": 152,
+    "turnDegPerHour": 360,
+    "forwardStepM": 10,
+    "backStepM": 5,
+    "turnStepDeg": 30,
+    "radiusM": 1.5,
+    "batteryWh": 2000,
+    "driveWhPerM": 4,
+    "turnWhPerDeg": 0.3,
+    "coreWh": 100,
+    "coreHours": 1,
+    "loadW": 60,
+    "mmrtgW": 110,
+    "strandedResumeFraction": 0.1,
+    "dockChargeKw": 0.4,
+    "dockRadiusM": 6,
+    "siteRadiusM": 8,
+    "minSignal": 20,
+    "trailStepM": 5,
+    "map": { "xMin": -200, "xMax": 200, "yMin": -20, "yMax": 300 },
+    "start": { "x": 0, "y": 0, "headingDeg": 0 },
+    "sites": [
+      { "id": "seitah", "kind": "core", "nameKey": "rover.site.seitah", "x": -90, "y": 170 },
+      { "id": "delta", "kind": "core", "nameKey": "rover.site.delta", "x": 120, "y": 235 },
+      { "id": "backshell", "kind": "salvage", "nameKey": "rover.site.backshell", "x": 150, "y": 90, "spares": 1 },
+      { "id": "parachute", "kind": "salvage", "nameKey": "rover.site.parachute", "x": -140, "y": 60, "spares": 1 }
+    ],
+    "rocks": [
+      { "x": 0, "y": 45, "r": 4 },
+      { "x": -30, "y": 95, "r": 6 },
+      { "x": 40, "y": 120, "r": 5 },
+      { "x": -60, "y": 140, "r": 7 },
+      { "x": 90, "y": 60, "r": 5 },
+      { "x": 110, "y": 180, "r": 6 },
+      { "x": -110, "y": 100, "r": 5 },
+      { "x": 20, "y": 200, "r": 8 },
+      { "x": -150, "y": 200, "r": 6 },
+      { "x": 160, "y": 140, "r": 4 },
+      { "x": -20, "y": 255, "r": 6 },
+      { "x": 70, "y": 270, "r": 5 }
+    ],
+    "sand": [
+      { "x": 55, "y": 80, "r": 12 },
+      { "x": -80, "y": 70, "r": 10 },
+      { "x": 75, "y": 205, "r": 14 },
+      { "x": -110, "y": 230, "r": 12 }
+    ]
+  }
+}

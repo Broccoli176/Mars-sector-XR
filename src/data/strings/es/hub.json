@@ -93,5 +93,6 @@
   "hint.elec.cme": "La eyección de masa coronal dañó un diodo de la fuente del receptor.",
   "hint.elec.weak_diode": "Un diodo demasiado pequeño se calentó y se abrió: usa uno de 1 A (1N4007).",
   "hint.elec.cap_swollen": "Un condensador de poco voltaje se hinchó: el voltaje de la fuente era mayor que su máximo.",
-  "hint.elec.repaired": "Fuente del receptor reparada: Telecom vuelve a recibir bien."
+  "hint.elec.repaired": "Fuente del receptor reparada: Telecom vuelve a recibir bien.",
+  "hub.sources.use.perseverance": "Velocidad (152 m/h), generador MMRTG (≈110 W) y 43 tubos de muestras del rover Perseverance → consola del rover (Sala de control)"
 }

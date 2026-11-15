@@ -5,6 +5,7 @@ import { createTranslator } from '../utils/strings.js';
 import { Game } from './Game.js';
 import { buildBasement } from '../world/Basement.js';
 import { buildPorthole } from '../world/Porthole.js';
+import { buildSolarField } from '../world/SolarField.js';
 import { buildStations, renderBio } from '../ui/Stations.js';
 import { Panel } from '../ui/Panel.js';
 import { Interaction } from '../vr/Interaction.js';
@@ -72,13 +73,22 @@ if (viewParam) {
 // World + stations
 const basement = buildBasement(layout, t);
 scene.add(basement.group);
-// Telecom panoramic window: the first wall with a "windows" entry (exterior lies to its -z side).
-const windowWall = layout.walls.find((/** @type {any} */ w) => w.windows?.length);
+// Telecom panoramic window: the wall tagged view "telecom" (exterior lies to its -z side).
+const windowWall = layout.walls.find((/** @type {any} */ w) => w.view === 'telecom');
 const [ws0, ws1, wy0, wy1] = windowWall.windows[0];
 const porthole = buildPorthole(scene, () => game.sim, {
   center: [(ws0 + ws1) / 2, (wy0 + wy1) / 2, windowWall.from[1] + 0.02],
   width: ws1 - ws0,
   height: wy1 - wy0 - 0.04,
+});
+// Energía window onto the solar field: the wall tagged view "solar" (exterior lies to its +x side).
+const solarWall = layout.walls.find((/** @type {any} */ w) => w.view === 'solar');
+const [ss0, ss1, sy0, sy1] = solarWall.windows[0];
+const solarField = buildSolarField(scene, () => game.sim, {
+  center: [solarWall.from[0], (sy0 + sy1) / 2, (ss0 + ss1) / 2],
+  width: ss1 - ss0,
+  height: sy1 - sy0 - 0.04,
+  outward: [1, 0],
 });
 // Hand-held objects (tools) and the two hip holsters (spec §9.3). Created before the stations so
 // room builders can use them through kit.services.
@@ -180,6 +190,7 @@ renderer.setAnimationLoop((timestamp) => {
   holsters.update();
   stations.animate(dt);
   porthole.update(dt);
+  solarField.update(dt);
 
   refreshTimer += dt;
   if (refreshTimer >= PANEL_REFRESH_SECONDS) {

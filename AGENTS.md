@@ -73,7 +73,7 @@ Decisiones/objetivos iniciales (a confirmar al arrancar):
 | Interacción | Agarre directo para controles físicos; ray solo para controles diegéticos pequeños si aplica |
 | Input | Mandos primero; sin hand tracking en MVP salvo decisión explícita |
 | UI | Paneles/indicadores diegéticos. **Sin HUD head-locked** |
-| Entorno | Base en estrella alrededor de la **Sala central · Herramientas** (hub). Al norte: Telecom y Sala de control. Al oeste: Personal (vacía). Al sur: Hidroponía · Agricultura y Energía y oxígeno. Ver `docs/FLOOR_PLAN.md`. Base subterránea; la única vista exterior es la ventana de Telecom |
+| Entorno | Base en estrella alrededor de la **Sala central · Herramientas** (hub). Al norte: Telecom y Sala de control. Al oeste: Personal (vacía). Al sur: Hidroponía · Agricultura y Energía y oxígeno. Ver `docs/FLOOR_PLAN.md`. Base subterránea con **dos ventanas al exterior**: la panorámica de Telecom (`src/world/Porthole.js`) y la del campo solar en Energía (`src/world/SolarField.js`, muro este). En `layout.json` cada muro con ventana lleva `view: "telecom" | "solar"` |
 | Persistencia | Guardado versionado con migraciones (cuando se implemente) |
 
 ### Principio de diseño
@@ -218,6 +218,10 @@ Los tanques de O₂ de emergencia usan `valve:turn` (`valve_o2_tank_1/2`). Pendi
   - Eventos: `component:damaged { componentId: 'rx_psu', reason, slotId, signalCap, quality }`, `system:repaired { systemId: 'telecom_rx', partId: 'rx_psu' }`, `electronics:rejected { slotId, partId?, reason: 'soldered' | 'occupied' | 'wrongKind' | 'noStock' }`, `electronics:changed { quality }`.
   - Escucha `weather:changed` (tormenta ⇒ diodo en corto) y `spaceWeather:impact { kind: 'cme' }` (diodo abierto; lo emitirá Persona B).
   - `Telecom` limita la señal a `signalCap` mientras la fuente falla.
+- **Rover tipo Perseverance (`src/systems/Rover.js`, consola en la Sala de control):**
+  - Intent: `rover:command { cmd: 'forward' | 'back' | 'left' | 'right' | 'stop' | 'sample' }` (avanza 10 m, atrás 5 m, gira 30°, muestra a ≤ 8 m de un sitio). Necesita enlace: señal ≥ 20 %.
+  - Eventos: `rover:rejected { cmd, reason: 'noLink' | 'battery' | 'stuck' | 'noSite' | 'busy' }`, `rover:stopped { reason: 'obstacle' | 'sand' | 'battery' | 'edge' }`, `rover:sampled { siteId, kind: 'core' | 'salvage' }`, `rover:delivered { cores, spares }`.
+  - Se recarga en la base por el circuito `repairBay` («Taller · Rover»). Los restos del aterrizaje que trae dan +1 `spares` cada uno.
 - **Usar lo que sostienes (compartido, `src/vr/Grab.js`):** `userData.grab.onUse(active, handId)`. Con un objeto así en la mano, el gatillo (XR) o la tecla F (escritorio) lo usan en vez del rayo. Lo usan la manguera de Hidroponía y el multímetro (cambia de modo). En escritorio, R gira lo que sostienes.
 - **Incidentes y avisos:** `incident:warning`/`triggered`, `weather:changed`, `comms:message`, `hint`.
 - **Telecom:** `antenna:align` (intent); escucha `component:damaged`/`system:repaired` para `antenna_motor`.

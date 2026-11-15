@@ -7,6 +7,25 @@ const CIRCUITS = ['lifeSupport', 'heating', 'lighting', 'telecom', 'hydro', 'rep
 
 /** @type {Record<string, (g: import('three').Group, station: any, kit: import('../../ui/StationKit.js').StationKit) => void>} */
 export const builders = {
+  /** Label under the solar-field window (src/world/SolarField.js): live solar generation. */
+  energy_solar_view(g, _station, kit) {
+    const { t, sim } = kit;
+    const panel = kit.addPanel(g, 1.0, 0.26);
+    kit.onRefresh(() => {
+      const s = sim();
+      const clock = s.time.clock();
+      const solar = Math.max(0, s.power.generation(clock) - s.power.cfg.rtgKw);
+      const cfg = s.power.cfg;
+      const day = clock.hourFloat >= cfg.solarStartHour && clock.hourFloat < cfg.solarEndHour;
+      const state = !day ? 'solar.night' : s.power.stormActive ? 'solar.storm' : 'solar.sun';
+      panel.renderLines(t('solar.title'), [
+        { text: t('solar.now', { kw: solar.toFixed(2), max: cfg.solarKw.toFixed(1) }), color: !day ? COLORS.dim : s.power.stormActive ? COLORS.warning : COLORS.nominal, size: 0.95 },
+        { text: t(state, { factor: cfg.stormSolarFactor }), size: 0.8 },
+        { text: t('solar.rover', { state: t(s.rover?.docked ? 'solar.rover.docked' : 'solar.rover.away') }), color: COLORS.dim, size: 0.75 },
+      ]);
+    });
+  },
+
   breakers(g, _station, kit) {
     const { t, game, sim } = kit;
     const panel = kit.addPanel(g, 1.7, 0.42, 0, 0.12);

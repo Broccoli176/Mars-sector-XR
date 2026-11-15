@@ -235,6 +235,19 @@ Start **3**. Up to **5** failures can require a spare (4 scripted + `relay_main`
 
 ---
 
+### 3.9 Rover (Perseverance-class), Sala de control
+
+`src/systems/Rover.js`, tunables in `balance/rover.json`. Real values (NASA, `src/data/real/perseverance.json`): top speed **152 m/h**, MMRTG **≈ 110 W**. Battery size, energy per metre and the map are game values.
+
+| Item | Rule |
+| :-- | :-- |
+| Commands | `rover:command`: forward 10 m, back 5 m, turn ±30° (360°/h), stop, sample. Discrete, like real rover driving; they run in game time |
+| Link | Commands need `signal` ≥ 20 %, otherwise `rover:rejected { reason: noLink }` (Telecom matters) |
+| Hazards | Rock within its radius + 1.5 m ⇒ stops before it (`obstacle`). Soft sand ⇒ `stuck`: forward and turns refused until «back» |
+| Energy | Battery 2 000 Wh. −4 Wh/m driving, −0.3 Wh/° turning, −100 Wh per sample. −60 W load, +110 W MMRTG. At 0 ⇒ `stranded` until the MMRTG refills 10 % |
+| Dock | Within 6 m of the base and not moving ⇒ docked: delivers cargo and charges at 0.4 kW through the `repairBay` circuit (priority 6, «Taller · Rover»). It starts docked and full, so an idle rover changes nothing |
+| Sites | 2 rock cores (science counter) and 2 landing-debris sites (+1 `spares` each when delivered). Sample = 1 game hour within 8 m |
+
 ## 4) Player health (`health`)
 
 `health` is a regular resource owned by `ResourceManager`. A headless `systems/Crew` module computes its rate each tick. **The player loses when health reaches 0.**
