@@ -226,7 +226,14 @@
       "heatSeconds": 1.5,
       "scanSeconds": 1.2,
       "flySeconds": 0.4,
-      "cards": ["1N4007", "C470u25V"]
+      "cards": [
+        "1N4007",
+        "C470u25V"
+      ]
     }
+  },
+  "sparesLocker": {
+    "doorSeconds": 0.5,
+    "doorOpenDeg": 100
   }
 }

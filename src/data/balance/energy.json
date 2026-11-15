@@ -8,7 +8,8 @@
     "busLimitKw": 3,
     "overloadTicks": 5,
     "relayBurnTrips": 3,
-    "relayTripWindowTicks": 1440
+    "relayTripWindowTicks": 1440,
+    "relayRepairSpares": 1
   },
   "circuits": {
     "lifeSupport": {
@@ -70,8 +71,8 @@
     "stormLossPerHour": 0.008,
     "minFactor": 0.4,
     "cleanMinFactor": 0.99,
-    "cleanKwh": 0.3,
-    "cleanRecovery": 0.9,
+    "cleanKwh": 1.5,
+    "cleanRecovery": 0.6,
     "devilRecovery": 0.6
   },
   "tracker": {
@@ -84,15 +85,10 @@
     "autoKw": 0.05,
     "stowDustFactor": 0.25
   },
-  "rover2": {
-    "_about": "Manual third-person solar-panel cleaning rover. Controls and work-area limits are presentation balance.",
-    "start": { "x": 9.4, "z": -10.4, "headingRad": -1.35 },
-    "moveSpeedMps": 2.5,
-    "turnSpeedRadPerSec": 1.8,
-    "cleanRangeM": 1.8,
-    "bounds": { "minX": -11, "maxX": 11, "minZ": -16, "maxZ": -6 },
-    "followDistanceM": 4,
-    "followHeightM": 2.8,
-    "followPitchRad": -0.28
+  "cleanFx": {
+    "_about": "Presentation only: electrodynamic-shield wave seen through the solar window after LIMPIAR (real seconds). Panel i starts stepS after panel i-1; the shown dust fades at fadeSoilPerS.",
+    "durationS": 2.4,
+    "stepS": 0.25,
+    "fadeSoilPerS": 0.6
   }
 }

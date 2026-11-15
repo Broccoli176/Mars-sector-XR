@@ -4,5 +4,5 @@
   { "id": "d1_solar_hint", "day": 1, "time": "07:00", "type": "hint", "hintKey": "hint.solar.manual" },
   { "id": "d4_storm", "day": 4, "time": "06:00", "type": "storm", "durationHours": 36, "warnLeadHours": 12 },
   { "id": "d6_dust_devil", "day": 6, "time": "13:00", "type": "dustDevil", "hintKey": "hint.dust.devil" },
-  { "id": "d6_sep", "day": 6, "time": "10:00", "type": "sep", "warnLeadHours": 1, "durationHours": 48, "hintKey": "hint.sep.impact" }
+  { "id": "d6_sep", "day": 6, "time": "10:00", "type": "sep", "warnLeadHours": 3, "durationHours": 48, "hintKey": "hint.sep.impact" }
 ]

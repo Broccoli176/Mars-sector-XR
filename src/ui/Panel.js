@@ -1,38 +1,7 @@
 import * as THREE from 'three';
+import { COLORS, TYPE, font, wrapLines, ellipsize } from './theme.js';
 
-export const COLORS = {
-  background: '#11161c',
-  border: '#3a4652',
-  text: '#d8e1e8',
-  dim: '#8b98a5',
-  title: '#ffcf66',
-  nominal: '#8fe08f',
-  warning: '#ffbf3f',
-  critical: '#ff6b5c',
-  info: '#7cc4ff',
-};
-
-/**
- * Greedy word wrap with the current canvas font.
- * @param {CanvasRenderingContext2D} ctx @param {string} text @param {number} maxWidth
- */
-function wrap(ctx, text, maxWidth) {
-  if (ctx.measureText(text).width <= maxWidth) return [text];
-  /** @type {string[]} */
-  const out = [];
-  let current = '';
-  for (const word of text.split(' ')) {
-    const candidate = current ? `${current} ${word}` : word;
-    if (current && ctx.measureText(candidate).width > maxWidth) {
-      out.push(current);
-      current = word;
-    } else {
-      current = candidate;
-    }
-  }
-  if (current) out.push(current);
-  return out;
-}
+export { COLORS };
 
 /**
  * Diegetic panel: a world-space plane with a CanvasTexture.
@@ -42,12 +11,17 @@ export class Panel {
   /**
    * @param {number} width metres
    * @param {number} height metres
-   * @param {{ pxPerMeter?: number }} [opts]
+   * @param {{ pxPerMeter?: number, minEm?: number }} [opts] resolution is never below the theme default;
+   *   `minEm` (metres) is the smallest body text, by default the theme minimum (scaled down on tiny panels).
    */
-  constructor(width, height, { pxPerMeter = 420 } = {}) {
+  constructor(width, height, { pxPerMeter = TYPE.pxPerMeter, minEm } = {}) {
+    // Same density on both axes (square texels), capped by the longest side.
+    const density = Math.min(Math.max(pxPerMeter, TYPE.pxPerMeter), TYPE.maxCanvas / Math.max(width, height));
+    this.pxPerMeter = density;
+    this.minEm = minEm ?? Math.min(TYPE.minEm, height / 10);
     this.canvas = document.createElement('canvas');
-    this.canvas.width = Math.min(1024, Math.round(width * pxPerMeter));
-    this.canvas.height = Math.min(1024, Math.round(height * pxPerMeter));
+    this.canvas.width = Math.round(width * density);
+    this.canvas.height = Math.round(height * density);
     const ctx = this.canvas.getContext('2d');
     if (!ctx) throw new Error('2D canvas unavailable');
     this.ctx = ctx;
@@ -58,11 +32,16 @@ export class Panel {
       new THREE.PlaneGeometry(width, height),
       new THREE.MeshBasicMaterial({ map: this.texture, toneMapped: false }),
     );
+    this.mesh.userData.panel = this; // dev diagnostics (?debug): find panels from the scene
     this.key = '';
+    /** True when the last `renderLines` had to cut text with «…» (dev diagnostics). */
+    this.truncated = false;
   }
 
   /**
    * Standard layout: title + lines. Each line: string or { text, color, size }.
+   * Text is scaled to fill the panel but never below `minEm`; a title wraps to two rows at most and
+   * whatever still does not fit ends in «…».
    * @param {string} title
    * @param {(string | { text: string, color?: string, size?: number })[]} lines
    * @param {{ border?: string }} [opts]
@@ -76,24 +55,51 @@ export class Panel {
     const W = canvas.width;
     const H = canvas.height;
     const items = lines.map((line) => (typeof line === 'string' ? { text: line } : line));
+    const minPx = this.minEm * this.pxPerMeter;
+    const minUnit = minPx / TYPE.body;
 
-    // Fit the text block to the panel: start from the unwrapped estimate, shrink until wrapped text fits.
-    const lineUnits = items.reduce((sum, item) => sum + 0.8 * (item.size ?? 1) * 1.3 * item.text.split('\n').length, 0);
-    let unit = Math.min(H / ((title ? 1.35 : 0) + lineUnits + 1.2), W / 14);
-    for (let attempt = 0; attempt < 8; attempt++) {
-      const padTry = unit * 0.6;
-      let height = padTry + (title ? unit * 1.35 : 0);
-      for (const item of items) {
-        const size = unit * 0.8 * (item.size ?? 1);
-        ctx.font = `${Math.round(size)}px system-ui, sans-serif`;
-        const rows = item.text.split('\n').flatMap((p) => wrap(ctx, p, W - padTry * 2)).length;
-        height += rows * size * 1.3;
+    /**
+     * Wraps everything for a given layout unit.
+     * @param {number} unit
+     */
+    const layout = (unit) => {
+      const pad = unit * TYPE.pad;
+      const maxWidth = W - pad * 2;
+      ctx.font = font(unit * TYPE.title, true);
+      const titleRows = title ? wrapLines(ctx, title, maxWidth) : [];
+      if (titleRows.length > 2) {
+        titleRows.length = 2;
+        titleRows[1] = ellipsize(ctx, titleRows[1], maxWidth, true);
       }
-      if (height <= H - padTry * 0.5) break;
-      unit *= 0.9;
-    }
-    const pad = unit * 0.6;
+      const titleHeight = title ? unit * (TYPE.titleBlock + (titleRows.length - 1) * TYPE.title * 1.15) : 0;
+      /** @type {{ text: string, size: number, color: string, gap: number }[]} */
+      const rows = [];
+      let height = pad + titleHeight;
+      for (const item of items) {
+        const size = Math.max(minPx, unit * TYPE.body * (item.size ?? 1));
+        ctx.font = font(size);
+        const parts = wrapLines(ctx, item.text, maxWidth);
+        parts.forEach((text, i) => {
+          // A wrapped paragraph gets a little air after it so blocks read as blocks.
+          const gap = parts.length > 1 && i === parts.length - 1 ? size * 0.25 : 0;
+          rows.push({ text, size, color: item.color ?? COLORS.text, gap });
+          height += size * TYPE.lineHeight + gap;
+        });
+      }
+      return { pad, maxWidth, titleRows, titleHeight, rows, height };
+    };
 
+    // Start from the unwrapped estimate and shrink until the wrapped text fits or the minimum is reached.
+    const lineUnits = items.reduce((sum, item) => sum + TYPE.body * (item.size ?? 1) * TYPE.lineHeight * item.text.split('\n').length, 0);
+    let unit = Math.max(minUnit, Math.min(H / ((title ? TYPE.titleBlock : 0) + lineUnits + 1.2), W / 14));
+    let plan = layout(unit);
+    while (plan.height > H - plan.pad * 0.5 && unit > minUnit) {
+      unit = Math.max(minUnit, unit * 0.94);
+      plan = layout(unit);
+    }
+    const { pad, maxWidth, titleRows, rows } = plan;
+
+    ctx.textAlign = 'left';
     ctx.fillStyle = COLORS.background;
     ctx.fillRect(0, 0, W, H);
     ctx.strokeStyle = border;
@@ -104,20 +110,25 @@ export class Panel {
     ctx.textBaseline = 'top';
     if (title) {
       ctx.fillStyle = COLORS.title;
-      ctx.font = `bold ${Math.round(unit * 0.95)}px system-ui, sans-serif`;
-      ctx.fillText(title, pad, y, W - pad * 2);
-      y += unit * 1.35;
+      ctx.font = font(unit * TYPE.title, true);
+      titleRows.forEach((row, i) => ctx.fillText(row, pad, y + i * unit * TYPE.title * 1.15));
+      y += plan.titleHeight;
+      // Thin rule: separates the title from the body.
+      ctx.fillStyle = border;
+      ctx.fillRect(pad, y - unit * 0.2, maxWidth, Math.max(2, unit * 0.05));
     }
-    const maxWidth = W - pad * 2;
-    for (const item of items) {
-      const size = unit * 0.8 * (item.size ?? 1);
-      ctx.font = `${Math.round(size)}px system-ui, sans-serif`;
-      ctx.fillStyle = item.color ?? COLORS.text;
-      for (const part of item.text.split('\n').flatMap((p) => wrap(ctx, p, maxWidth))) {
-        if (y + size > H - pad * 0.5) break;
-        ctx.fillText(part, pad, y, maxWidth);
-        y += size * 1.3;
-      }
+    const bottom = H - pad * 0.5;
+    this.truncated = false;
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i];
+      if (y + row.size > bottom) break;
+      ctx.font = font(row.size);
+      ctx.fillStyle = row.color;
+      const next = rows[i + 1];
+      const lastThatFits = next && y + row.size * TYPE.lineHeight + row.gap + next.size > bottom;
+      if (lastThatFits) this.truncated = true;
+      ctx.fillText(lastThatFits ? ellipsize(ctx, row.text, maxWidth, true) : row.text, pad, y);
+      y += row.size * TYPE.lineHeight + row.gap;
     }
     this.texture.needsUpdate = true;
   }

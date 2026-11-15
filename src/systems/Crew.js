@@ -20,13 +20,16 @@ export class Crew {
     /** @type {Record<string, number>} cause → damage per hour this tick */
     this.activeCauses = {};
     this.activeKey = '';
+    /** Why health is not regenerating right now (read-only for the biomonitor): null | 'dark' | 'needs'. */
+    this.regenBlocked = /** @type {null | 'dark' | 'needs'} */ (null);
   }
 
   /**
    * @param {number} dtHours
    * @param {Record<string, number>} [extraCauses] damage per hour from other systems (e.g. { radiation } from Radiation)
+   * @param {boolean} [lit] whether the lighting circuit is served; in the dark the crew cannot rest or work, so health does not regenerate
    */
-  update(dtHours, extraCauses = {}) {
+  update(dtHours, extraCauses = {}, lit = true) {
     const rm = this.resources;
     /** @type {Record<string, number>} */
     const causes = {};
@@ -46,8 +49,11 @@ export class Crew {
     for (const [cause, perHour] of Object.entries(extraCauses)) causes[cause] = (causes[cause] ?? 0) + perHour;
     const damage = Object.values(causes).reduce((a, b) => a + b, 0);
     const blocked = this.cfg.regenBlockers.some((id) => rm.get(id).status === 'critical');
-    const canRegen = !blocked && rm.value('food') > 0 && rm.value('water') > 0;
-    rm.addRate('health', (canRegen ? this.cfg.regenPerHour : 0) - damage);
+    const needsMet = !blocked && rm.value('food') > 0 && rm.value('water') > 0;
+    const dark = !lit && (this.cfg.darkRegenFactor ?? 1) < 1;
+    this.regenBlocked = !needsMet ? 'needs' : dark ? 'dark' : null;
+    const regen = needsMet ? this.cfg.regenPerHour * (lit ? 1 : this.cfg.darkRegenFactor ?? 1) : 0;
+    rm.addRate('health', regen - damage);
 
     /** @type {Record<string, number>} */
     const tickDamage = {};

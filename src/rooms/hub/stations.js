@@ -1,9 +1,10 @@
 // OWNER: Persona A (Personal · Hidro · Hub) — see docs/COLLABORATION.md
 // Sala central · Herramientas (hub): training bench (+ mission T1), tool wall, spares locker,
 // component status board and the "Fuentes científicas" board. Placement: src/data/stations/hub.json
-import { COLORS, statusColor, startButtonState } from '../../ui/StationKit.js';
+import { COLORS, startButtonState } from '../../ui/StationKit.js';
 import { buildToolWall } from './tools.js';
 import { buildElectronicsBench } from './electronics.js';
+import { buildSparesLocker } from './spares.js';
 import { createT1, isT1Done } from './toolRules.js';
 import { Panel } from '../../ui/Panel.js';
 import { describeInputSource, createInputCounters, handLines } from './controllerDiag.js';
@@ -50,22 +51,9 @@ export const builders = {
     buildElectronicsBench(g, station, kit);
   },
 
-  /** Spares locker with live counters (resource `spares` + consumable inventory). */
+  /** Spares locker: tap the doors to open it and see the stock (resource `spares` + consumable inventory). */
   hub_spares(g, station, kit) {
-    const { t, sim } = kit;
-    kit.addBox(g, 0.7, 1.8, 0.45, 0, 0.9 - station.y, 0.225, '#56606b'); // locker
-    const panel = kit.addPanel(g, 0.58, 0.42, 0, 0.15);
-    panel.mesh.position.z = 0.46; // on the locker door
-    kit.onRefresh(() => {
-      const s = sim();
-      const spares = s.resources.get('spares');
-      panel.renderLines(t('hub.spares.title'), [
-        { text: t('hub.spares.spares', { n: Math.round(spares.value) }), color: statusColor(spares.status), size: 1.1 },
-        t('hub.spares.filters', { n: s.inventory.filters }),
-        t('hub.spares.sealant', { n: s.inventory.sealantCharges }),
-        t('hub.spares.o2', { n: s.inventory.o2Tanks }),
-      ]);
-    });
+    buildSparesLocker(g, station, kit);
   },
 
   /** Component status board: state of each repairable component and the tool it needs (spec §6.1). */
@@ -101,11 +89,13 @@ export const builders = {
     /** @type {{ text: string, color?: string, size?: number }[]} */
     const lines = [];
     for (const [id, d] of datasets) {
-      lines.push({ text: `${d.source.institution} — ${d.source.product}`, color: COLORS.info, size: 0.85 });
-      lines.push({ text: t(`hub.sources.use.${id}`), size: 0.75 });
-      lines.push({ text: t('hub.sources.meta', { date: formatDay(d.source.retrievedAt), url: shortUrl(d.source.url) }), color: COLORS.dim, size: 0.7 });
+      // Two rows per source (institution · site, then what it feeds): three rows pushed the list below the legible minimum.
+      lines.push({ text: `${d.source.institution} · ${shortUrl(d.source.url)}`, color: COLORS.info, size: 0.85 });
+      lines.push({ text: t(`hub.sources.use.${id}`), size: 0.78 });
     }
     if (datasets.length === 0) lines.push({ text: t('hub.sources.none'), color: COLORS.warning });
+    const latest = datasets.map(([, d]) => String(d.source.retrievedAt)).sort().pop();
+    if (latest) lines.push({ text: t('hub.sources.meta', { date: formatDay(latest) }), color: COLORS.dim, size: 0.75 });
     lines.push({ text: t('hub.sources.disclaimer'), color: COLORS.title, size: 0.75 });
     panel.renderLines(t('hub.sources.title'), lines);
   },

@@ -4,7 +4,7 @@ const EPSILON = 1e-9;
  * Power grid (SIMULATION_SPEC §2): battery + RTG + solar, binary breakers,
  * priority service at empty battery, overload relay trips.
  * Dust on the solar panels (dustFactor, 1 = clean): slow real settling rate, heavy deposit in storms,
- * cleaned by the electrodynamic dust shield ('solar:clean'), Rover 2, or a passing dust devil. See spec §2.5.
+ * cleaned by the electrodynamic dust shield ('solar:clean', LIMPIAR button) or a passing dust devil. See spec §2.5.
  */
 export class PowerGrid {
   /**
@@ -52,7 +52,7 @@ export class PowerGrid {
       if (e && e.circuitId in this.breakers) this.breakers[e.circuitId] = Boolean(e.on);
     });
     bus.on('relay:resetRequest', () => this.resetRelay());
-    bus.on('solar:clean', (e) => this.cleanPanels(e?.by === 'rover2' ? 'rover2' : 'shield'));
+    bus.on('solar:clean', () => this.cleanPanels());
   }
 
   /** Dust settles every tick: real calm rate per sol, much faster during a dust storm. @param {number} dtHours */
@@ -69,9 +69,8 @@ export class PowerGrid {
   /**
    * Cleaning pass: costs battery energy and recovers part of the lost solar output.
    * @returns {'ok' | 'noDust' | 'storm' | 'relay' | 'battery'}
-   * @param {'shield' | 'rover2'} [by]
    */
-  cleanPanels(by = 'shield') {
+  cleanPanels() {
     const d = this.dustCfg;
     const reject = (/** @type {'noDust' | 'storm' | 'relay' | 'battery'} */ reason) => {
       this.bus.emit('solar:rejected', { reason });
@@ -84,7 +83,7 @@ export class PowerGrid {
     this.resources.add('power', -d.cleanKwh);
     const gained = (1 - this.dustFactor) * d.cleanRecovery;
     this.#setDust(this.dustFactor + gained);
-    this.bus.emit('solar:cleaned', { by, gained, kwh: d.cleanKwh });
+    this.bus.emit('solar:cleaned', { by: 'shield', gained, kwh: d.cleanKwh });
     return 'ok';
   }
 
@@ -133,8 +132,21 @@ export class PowerGrid {
     this.bus.emit('relay:tripped', { guided, burned: this.relayBurned });
   }
 
+  /** Re-arms a tripped relay. A burned one is replaced first, which costs spare parts (`relayRepairSpares`). */
   resetRelay() {
-    if (!this.relayTripped || this.relayBurned) return;
+    if (!this.relayTripped && !this.relayBurned) return;
+    if (this.relayBurned) {
+      const cost = this.cfg.relayRepairSpares;
+      if (cost === undefined) return; // not repairable without the rule
+      if (this.resources.value('spares') < cost) {
+        this.bus.emit('relay:rejected', { reason: 'noSpare' });
+        return;
+      }
+      this.resources.add('spares', -cost);
+      this.relayBurned = false;
+      this.tripTicks = [];
+      this.bus.emit('system:repaired', { systemId: 'power', partId: 'relay_main' });
+    }
     this.relayTripped = false;
     this.guidedTrip = false;
     this.bus.emit('relay:reset', {});

@@ -4,10 +4,13 @@ import { roundedRectGeometry, roundedRingGeometry } from './roundedRect.js';
 import { MARS, marsLook, skyFactor } from './marsLook.js';
 
 /**
- * Window in the Energía room looking out at the base solar field (one row × 6 panels), Rover 2 and a Tesla
- * coil. Reacts to the simulation: panels shine by day (same hours as PowerGrid solar), go dark at
- * night and get a dust layer during storms; Rover 2 can be driven from the energy console. The panels turn
- * east–west with the sun tracker (sim.solarTracker.angleDeg; vertical-axis yaw, 0° faces the window).
+ * Window in the Energía room looking out at the base solar field (2 rows × 6 panels; visual only, the
+ * simulated peak is balance.power.solarKw whatever the count).
+ * Reacts to the simulation: panels shine by day (same hours as PowerGrid solar), go dark at night and get a
+ * dust layer during storms. The panels turn east–west with the sun tracker (sim.solarTracker.angleDeg;
+ * vertical-axis yaw, 0° faces the window). When the electrodynamic dust shield fires (`solar:cleaned`
+ * by 'shield', LIMPIAR button on the solar desk) a blue wave sweeps the panels one after another and the
+ * dust fades out.
  * Budget: unlit materials with baked vertex colours (no extra lights), instanced panels, ≈ 9 draw calls.
  */
 
@@ -25,6 +28,22 @@ export function fieldLook(hour, storm, cfg, dustFactor = 1) {
 }
 
 const DUST_TINT = new THREE.Color(0xc06a34);
+/** Half the sweep length of the shield wave across a panel (local x, metres). */
+const WAVE_HALF_SPAN = 1.15;
+
+/**
+ * Pure timing of the shield wave on one panel column (tested). Column `i` starts `stepS` after column `i − 1`;
+ * each sweep lasts `durationS − stepS × 5` seconds (6 columns; both rows sweep together), fading in and out.
+ * @param {number} elapsedS real seconds since the clean @param {number} panelIndex column 0–5
+ * @param {{ durationS: number, stepS: number }} cfg balance.cleanFx
+ * @returns {{ active: boolean, x: number, opacity: number }} x in −1…1 across the panel
+ */
+export function shieldWave(elapsedS, panelIndex, cfg) {
+  const sweep = Math.max(0.1, cfg.durationS - cfg.stepS * 5);
+  const k = (elapsedS - panelIndex * cfg.stepS) / sweep;
+  if (k < 0 || k > 1) return { active: false, x: 0, opacity: 0 };
+  return { active: true, x: -1 + 2 * k, opacity: Math.sin(Math.PI * k) };
+}
 
 /** @param {THREE.BufferGeometry} geo @param {THREE.ColorRepresentation} color */
 function paint(geo, color) {
@@ -38,34 +57,13 @@ function paint(geo, color) {
   return g;
 }
 
-function buildTeslaCoil(scale = 2) {
-  const windingPoints = Array.from({ length: 97 }, (_, i) => {
-    const progress = i / 96;
-    const angle = progress * Math.PI * 10;
-    return new THREE.Vector3(Math.cos(angle) * 0.13, 0.2 + progress * 0.95, Math.sin(angle) * 0.13);
-  });
-  const geometry = mergeGeometries([
-    paint(new THREE.CylinderGeometry(0.3, 0.3, 0.12, 12).translate(0, 0.06, 0), '#39434d'),
-    paint(new THREE.CylinderGeometry(0.075, 0.075, 1.4, 8).translate(0, 0.77, 0), '#78838d'),
-    paint(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(windingPoints), 96, 0.018, 5, false), '#c98245'),
-    paint(new THREE.TorusGeometry(0.24, 0.045, 8, 18).rotateX(Math.PI / 2).translate(0, 1.43, 0), '#c98245'),
-    paint(new THREE.SphereGeometry(0.12, 12, 8).translate(0, 1.46, 0), '#7cc4ff'),
-  ]);
-  const coil = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({ vertexColors: true }));
-  coil.name = 'TeslaCoil_FieldProp';
-  coil.scale.setScalar(scale);
-  coil.position.set(0, 0, -12.3);
-  return coil;
-}
-
 /**
  * @param {THREE.Scene} scene
  * @param {() => any} getSim current Simulation (replaced on restart)
  * @param {{ center: [number, number, number], width: number, height: number, radius?: number, outward: [number, number] }} win
  *   window centre (world), size, corner radius, and the outward horizontal direction [x, z]
- * @param {{ camera: THREE.PerspectiveCamera, dolly: THREE.Group }} controlView
  */
-export function buildSolarField(scene, getSim, win, controlView) {
+export function buildSolarField(scene, getSim, win) {
   const root = new THREE.Group();
   root.name = 'SolarField_System';
   root.position.set(...win.center);
@@ -140,7 +138,7 @@ export function buildSolarField(scene, getSim, win, controlView) {
   const stars = new THREE.Points(starGeo, new THREE.PointsMaterial({ color: 0xffffff, size: 0.12 }));
   outside.add(stars);
 
-  // ---- Solar panels: one row × 6, tilted towards the sun (one instanced draw call) ----
+  // ---- Solar panels: 2 rows × 6, tilted towards the sun (one instanced draw call) ----
   const panelGeo = mergeGeometries([
     paint(new THREE.BoxGeometry(2.4, 0.05, 1.3), '#9aa3ad'), // frame
     paint(new THREE.BoxGeometry(2.3, 0.02, 1.2).translate(0, 0.03, 0), '#1d3a78'), // cells
@@ -149,8 +147,12 @@ export function buildSolarField(scene, getSim, win, controlView) {
   const legGeo = paint(new THREE.CylinderGeometry(0.05, 0.05, 1, 6).translate(0, 0.5, 0), '#6b737c');
   const panelMat = new THREE.MeshBasicMaterial({ vertexColors: true });
   const legMat = new THREE.MeshBasicMaterial({ vertexColors: true });
-  const PANELS = 6;
-  const PANEL_ROW_Z = -10;
+  const COLS = 6;
+  const ROWS = 2;
+  const PANELS = COLS * ROWS;
+  /** Row depth (z) and x offset: the back row sits between the front panels so it shows through the gaps. */
+  const ROW_Z = [-10, -13.5];
+  const ROW_X_OFFSET = [0, 1.5];
   const panels = new THREE.InstancedMesh(panelGeo, panelMat, PANELS);
   panels.name = 'SolarPanels';
   const legs = new THREE.InstancedMesh(legGeo, legMat, PANELS);
@@ -160,14 +162,16 @@ export function buildSolarField(scene, getSim, win, controlView) {
   const slots = [];
   let i = 0;
   for (let k = 0; k < PANELS; k++) {
-    const x = -7.5 + k * 3;
-    slots.push([x, PANEL_ROW_Z]);
-    tmp.position.set(x, 0.95, PANEL_ROW_Z);
+    const row = Math.floor(k / COLS);
+    const x = -7.5 + (k % COLS) * 3 + ROW_X_OFFSET[row];
+    const z = ROW_Z[row];
+    slots.push([x, z]);
+    tmp.position.set(x, 0.95, z);
     tmp.rotation.set(0, 0, 0); // tilted towards the window by the tracker in update()
     tmp.scale.setScalar(1);
     tmp.updateMatrix();
     panels.setMatrixAt(i, tmp.matrix);
-    tmp.position.set(x, 0, PANEL_ROW_Z);
+    tmp.position.set(x, 0, z);
     tmp.rotation.set(0, 0, 0);
     tmp.scale.set(1, 0.9, 1);
     tmp.updateMatrix();
@@ -189,36 +193,25 @@ export function buildSolarField(scene, getSim, win, controlView) {
   }
   outside.add(dustLayer);
 
-  // ---- Inverter box, cable trench to the base, rover charging pad + Rover 2 ----
+  // Electrodynamic shield wave: one thin glowing bar per panel, swept across it after a clean.
+  const wave = new THREE.InstancedMesh(
+    new THREE.BoxGeometry(0.22, 0.012, 1.22).translate(0, 0.06, 0),
+    new THREE.MeshBasicMaterial({ color: 0x7cc4ff, transparent: true, opacity: 0, depthWrite: false, toneMapped: false }),
+    PANELS,
+  );
+  wave.name = 'SolarPanelShieldWave';
+  wave.visible = false;
+  outside.add(wave);
+
+  // ---- Inverter box + cable trench to the base ----
   const props = new THREE.Mesh(
     mergeGeometries([
       paint(new THREE.BoxGeometry(1.2, 1.0, 0.8).translate(-4.5, 0.5, -3.2), '#c9cfd6'),
       paint(new THREE.BoxGeometry(0.15, 0.06, 2.8).translate(-4.5, 0.03, -1.6), '#2a2d31'),
-      paint(new THREE.CylinderGeometry(1.6, 1.6, 0.06, 24).translate(2.6, 0.03, -7.2), '#8a8f96'),
-      paint(new THREE.BoxGeometry(0.1, 0.07, 6).translate(2.6, 0.03, -3.4), '#2a2d31'),
     ]),
     new THREE.MeshBasicMaterial({ vertexColors: true }),
   );
   outside.add(props);
-  const wheel = (/** @type {number} */ x, /** @type {number} */ z) => paint(new THREE.CylinderGeometry(0.26, 0.26, 0.22, 12).rotateZ(Math.PI / 2).translate(x, 0.26, z), '#3a3a3c');
-  const roverGeo = mergeGeometries([
-    paint(new THREE.BoxGeometry(1.4, 0.45, 1.8).translate(0, 0.85, 0), '#e8e4dc'), // body
-    paint(new THREE.BoxGeometry(1.5, 0.08, 1.9).translate(0, 1.1, 0), '#b8b2a6'), // deck
-    paint(new THREE.CylinderGeometry(0.05, 0.05, 1.2, 6).translate(0.4, 1.7, 0.6), '#d0ccc4'), // mast
-    paint(new THREE.BoxGeometry(0.45, 0.22, 0.25).translate(0.4, 2.35, 0.6), '#d8d4cc'), // mast head (cameras)
-    paint(new THREE.BoxGeometry(0.6, 0.5, 0.4).rotateX(-0.5).translate(0, 1.15, -1.0), '#5a5f66'), // MMRTG
-    paint(new THREE.BoxGeometry(0.12, 0.12, 1.1).translate(-0.6, 0.95, 1.2), '#c9c5bd'), // arm
-    ...[-0.8, 0.8].flatMap((x) => [-0.75, 0, 0.75].map((z) => wheel(x, z))),
-  ]);
-  const rover2Mat = new THREE.MeshBasicMaterial({ vertexColors: true });
-  const rover2 = new THREE.Mesh(roverGeo, rover2Mat);
-  rover2.name = 'Rover2_Cleaning';
-  const rover2Cfg = getSim().balance.rover2;
-  rover2.position.set(rover2Cfg.start.x, 0.06, rover2Cfg.start.z);
-  rover2.rotation.y = rover2Cfg.start.headingRad;
-  rover2.scale.setScalar(0.85);
-  outside.add(rover2);
-  outside.add(buildTeslaCoil());
 
   // ---- Dust in the wind (storms) ----
   const DUST = 160;
@@ -234,82 +227,25 @@ export function buildSolarField(scene, getSim, win, controlView) {
     o.frustumCulled = false;
   });
 
-  const { camera, dolly } = controlView;
-  const controlKeys = new Set();
-  const savedDollyPosition = new THREE.Vector3();
-  const savedDollyRotation = new THREE.Euler();
-  const savedCameraRotation = new THREE.Euler();
-  let controllingRover2 = false;
-  let cleanWasPressed = false;
-  let exitWasPressed = false;
+  const fx = getSim().balance.cleanFx ?? { durationS: 2.4, stepS: 0.25, fadeSoilPerS: 0.6 };
+  /** Real seconds since the last shield clean; Infinity = idle. */
+  let cleanElapsed = Infinity;
+  /** Dust shown on the panels; follows the simulated dust at a limited rate so a clean fades it out. */
+  let shownSoil = NaN;
   let wiredBus = null;
-  const driveCodes = new Set(['KeyW', 'KeyS', 'KeyA', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight']);
-
-  const exitRover2Control = () => {
-    if (!controllingRover2) return;
-    controllingRover2 = false;
-    controlKeys.clear();
-    dolly.position.copy(savedDollyPosition);
-    dolly.rotation.copy(savedDollyRotation);
-    camera.rotation.copy(savedCameraRotation);
+  const onCleaned = (/** @type {any} */ e) => {
+    if (e?.by === 'shield') cleanElapsed = 0;
   };
-  const enterRover2Control = () => {
-    const sim = getSim();
-    if (sim.phase !== 'playing') {
-      sim.bus.emit('hint', { key: 'solar.rover2.not_playing' });
-      return;
-    }
-    controllingRover2 = true;
-    savedDollyPosition.copy(dolly.position);
-    savedDollyRotation.copy(dolly.rotation);
-    savedCameraRotation.copy(camera.rotation);
-  };
-  const toggleRover2Control = () => {
-    if (controllingRover2) exitRover2Control();
-    else enterRover2Control();
-  };
-  const cleanWithRover2 = () => {
-    const sim = getSim();
-    if (sim.phase !== 'playing') {
-      sim.bus.emit('hint', { key: 'solar.rover2.not_playing' });
-      return;
-    }
-    const nearest = Math.min(...slots.map(([x, z]) => Math.hypot(rover2.position.x - x, rover2.position.z - z)));
-    if (nearest > rover2Cfg.cleanRangeM) {
-      sim.bus.emit('hint', { key: 'solar.rover2.too_far' });
-      return;
-    }
-    sim.bus.emit('solar:clean', { by: 'rover2' });
-  };
-  const onControlIntent = () => toggleRover2Control();
-  const onCleanIntent = () => cleanWithRover2();
   const bindSimulationBus = () => {
     const bus = getSim().bus;
-    if (bus === wiredBus) return;
-    wiredBus?.off('rover2:control', onControlIntent);
-    wiredBus?.off('rover2:clean', onCleanIntent);
+    if (!bus || bus === wiredBus) return;
+    wiredBus?.off('solar:cleaned', onCleaned);
     wiredBus = bus;
-    wiredBus.on('rover2:control', onControlIntent);
-    wiredBus.on('rover2:clean', onCleanIntent);
-    exitRover2Control();
+    wiredBus.on('solar:cleaned', onCleaned);
+    cleanElapsed = Infinity;
   };
-
-  if (typeof window !== 'undefined') {
-    window.addEventListener('keydown', (event) => {
-      if (!controllingRover2) return;
-      if (driveCodes.has(event.code)) {
-        event.preventDefault();
-        controlKeys.add(event.code);
-      } else if (event.code === 'KeyE' && !event.repeat) {
-        event.preventDefault();
-        cleanWithRover2();
-      } else if (event.code === 'KeyQ' || event.code === 'Escape') {
-        event.preventDefault();
-        exitRover2Control();
-      }
-    });
-    window.addEventListener('keyup', (event) => controlKeys.delete(event.code));
-  }
+  const panelMatrix = new THREE.Matrix4();
+  const offset = new THREE.Matrix4();
 
   const tint = new THREE.Color();
   let shownAngle = NaN;
@@ -333,24 +269,26 @@ export function buildSolarField(scene, getSim, win, controlView) {
   };
   return {
     root,
-    get isControllingRover2() {
-      return controllingRover2;
+    /** True while the shield wave animation is playing. */
+    get isCleaning() {
+      return cleanElapsed < fx.durationS;
     },
-    /** @param {number} dt real seconds @param {{ drive?: number, turn?: number, cleanPressed?: boolean, exitPressed?: boolean }} [xrInput] */
-    update(dt, xrInput = {}) {
+    /** @param {number} dt real seconds */
+    update(dt) {
       bindSimulationBus();
       const sim = getSim();
-      if (controllingRover2 && sim.phase !== 'playing') exitRover2Control();
       const look = fieldLook(sim.time.clock().hourFloat, Boolean(sim.power.stormActive), sim.power.cfg, sim.power.dustFactor ?? 1);
       skyMat.color.setRGB(...look.sky);
       groundMat.color.setScalar(look.ground);
       tint.setScalar(look.panel);
       if (look.daylight && !look.dust) tint.setRGB(look.panel, look.panel, Math.min(1.25, look.panel * 1.2)); // blue glint
-      if (look.soil > 0) tint.lerp(DUST_TINT.clone().multiplyScalar(look.ground), Math.min(0.85, look.soil * 1.6)); // settled dust
+      // Shown dust drops gradually (shield clean) but rises instantly with the simulation.
+      if (Number.isNaN(shownSoil) || look.soil > shownSoil) shownSoil = look.soil;
+      else shownSoil = Math.max(look.soil, shownSoil - fx.fadeSoilPerS * dt);
+      if (shownSoil > 0) tint.lerp(DUST_TINT.clone().multiplyScalar(look.ground), Math.min(0.85, shownSoil * 1.6)); // settled dust
       panelMat.color.copy(tint);
       legMat.color.setScalar(look.ground);
       /** @type {THREE.MeshBasicMaterial} */ (props.material).color.setScalar(look.ground);
-      rover2Mat.color.setRGB(0.67, 0.78, 0.9).multiplyScalar(Math.max(0.25, look.ground));
       /** @type {THREE.MeshBasicMaterial} */ (dustLayer.material).opacity = 0.55 * look.dust;
       // Panels smoothly animate toward the tracker angle.
       const tracker = sim.solarTracker;
@@ -376,48 +314,23 @@ export function buildSolarField(scene, getSim, win, controlView) {
           }
         }
       }
-      if (controllingRover2) {
-        const drive = THREE.MathUtils.clamp(
-          Number(controlKeys.has('KeyW') || controlKeys.has('ArrowUp')) -
-            Number(controlKeys.has('KeyS') || controlKeys.has('ArrowDown')) + (xrInput.drive ?? 0),
-          -1,
-          1,
-        );
-        const turn = THREE.MathUtils.clamp(
-          Number(controlKeys.has('KeyD') || controlKeys.has('ArrowRight')) -
-            Number(controlKeys.has('KeyA') || controlKeys.has('ArrowLeft')) + (xrInput.turn ?? 0),
-          -1,
-          1,
-        );
-        rover2.rotation.y += turn * rover2Cfg.turnSpeedRadPerSec * dt;
-        const distance = drive * rover2Cfg.moveSpeedMps * dt;
-        const bounds = rover2Cfg.bounds;
-        rover2.position.x = THREE.MathUtils.clamp(
-          rover2.position.x + Math.sin(rover2.rotation.y) * distance,
-          bounds.minX,
-          bounds.maxX,
-        );
-        rover2.position.z = THREE.MathUtils.clamp(
-          rover2.position.z + Math.cos(rover2.rotation.y) * distance,
-          bounds.minZ,
-          bounds.maxZ,
-        );
-        if (xrInput.cleanPressed && !cleanWasPressed) cleanWithRover2();
-        if (xrInput.exitPressed && !exitWasPressed) exitRover2Control();
-        cleanWasPressed = Boolean(xrInput.cleanPressed);
-        exitWasPressed = Boolean(xrInput.exitPressed);
-      }
-      if (controllingRover2) {
-        const roverWorldPosition = rover2.getWorldPosition(new THREE.Vector3());
-        const forward = rover2.getWorldDirection(new THREE.Vector3());
-        const cameraYaw = Math.atan2(-forward.x, -forward.z);
-        dolly.position.set(
-          roverWorldPosition.x - forward.x * rover2Cfg.followDistanceM,
-          roverWorldPosition.y + rover2Cfg.followHeightM - camera.position.y,
-          roverWorldPosition.z - forward.z * rover2Cfg.followDistanceM,
-        );
-        dolly.rotation.set(0, cameraYaw, 0);
-        camera.rotation.set(rover2Cfg.followPitchRad, 0, 0);
+      // Shield wave: sweep each panel in turn, following the tracker angle (shownAngle).
+      if (cleanElapsed < fx.durationS) {
+        cleanElapsed += dt;
+        let peak = 0;
+        slots.forEach((_, j) => {
+          const w = shieldWave(cleanElapsed, j % COLS, fx);
+          panels.getMatrixAt(j, panelMatrix);
+          offset.makeTranslation(w.x * WAVE_HALF_SPAN, 0, 0);
+          if (!w.active) offset.makeScale(0, 0, 0);
+          wave.setMatrixAt(j, panelMatrix.multiply(offset));
+          peak = Math.max(peak, w.opacity);
+        });
+        wave.instanceMatrix.needsUpdate = true;
+        /** @type {THREE.MeshBasicMaterial} */ (wave.material).opacity = 0.9 * peak;
+        wave.visible = cleanElapsed < fx.durationS;
+      } else {
+        wave.visible = false;
       }
       // The window faces east: the morning sun climbs in view, after noon it is behind the base.
       const hour = sim.time.clock().hourFloat;

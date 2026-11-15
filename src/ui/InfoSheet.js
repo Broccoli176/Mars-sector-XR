@@ -1,8 +1,7 @@
 // SHARED (see docs/COLLABORATION.md): «Info» button + expandable text sheet for a station.
 // Pictogram panels stay simple for young players; the sheet holds the rigorous explanation and sources.
 // Presentation-only: opening a sheet never touches the simulation.
-import { COLORS } from './Panel.js';
-import { BUTTON } from './StationKit.js';
+import { COLORS, BUTTON } from './theme.js';
 
 /** @typedef {{ text: string, color?: string, size?: number }} Line */
 

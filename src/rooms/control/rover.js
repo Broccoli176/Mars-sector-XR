@@ -5,6 +5,7 @@
 import * as THREE from 'three';
 import { COLORS, BUTTON } from '../../ui/StationKit.js';
 import { Panel } from '../../ui/Panel.js';
+import { font, wrapLines, ellipsize } from '../../ui/theme.js';
 import { Button } from '../../objects/Button.js';
 import { photoForRover, photoRect, photosReceived } from './roverPhotos.js';
 import { MARS, cssColor, skyFactor } from '../../world/marsLook.js';
@@ -166,7 +167,7 @@ export function buildRoverConsole(g, station, kit) {
     const real = game.data.real?.perseverance;
     /** @type {{ text: string, color?: string, size?: number }[]} */
     const lines = [
-      { text: t(link ? 'rover.link.ok' : 'rover.link.none', { pct: Math.round(s.resources.value('signal')) }), color: link ? COLORS.nominal : COLORS.critical, size: 0.85 },
+      { text: t(link ? 'rover.link.ok' : 'rover.link.none', { pct: Math.round(s.resources.value('signal')), min: cfg.minSignal }), color: link ? COLORS.nominal : COLORS.critical, size: 0.85 },
       { text: t('rover.battery', { pct: Math.round(r.batteryPct), wh: Math.round(r.batteryWh) }), color: r.batteryPct < 20 ? COLORS.critical : r.batteryPct < 40 ? COLORS.warning : COLORS.text, size: 0.85 },
       { text: t('rover.mmrtg', { w: cfg.mmrtgW }), color: COLORS.dim, size: 0.72 },
       { text: t('rover.mode', { mode: t(`rover.mode.${r.mode}`) }), color: r.mode === 'stuck' || r.mode === 'stranded' ? COLORS.critical : COLORS.info, size: 0.85 },
@@ -177,7 +178,7 @@ export function buildRoverConsole(g, station, kit) {
     if (reach) lines.push({ text: t('rover.reach', { site: t(reach.nameKey) }), color: COLORS.warning, size: 0.8 });
     if (notice && noticeTtl > 0) {
       noticeTtl--;
-      lines.push({ text: t(notice), color: COLORS.critical, size: 0.8 });
+      lines.push({ text: t(notice, { min: cfg.minSignal }), color: COLORS.critical, size: 0.8 });
     }
     if (photoData) {
       const g = photosReceived(r.visited, photoData.photos);
@@ -223,7 +224,7 @@ function drawMap(
   for (const k of cfg.rocks) {
     ctx.beginPath(); ctx.arc(X(k.x), Y(k.y), Math.max(2, k.r * s), 0, Math.PI * 2); ctx.fill();
   }
-  ctx.font = `bold ${Math.round(H * 0.035)}px system-ui, sans-serif`;
+  ctx.font = font(H * 0.035, true);
   ctx.textAlign = 'center';
   for (const site of cfg.sites) {
     const done = r.visited.has(site.id);
@@ -257,7 +258,7 @@ function drawMap(
   ctx.fillRect(0, 0, W, pad);
   ctx.fillStyle = COLORS.title;
   ctx.textAlign = 'left';
-  ctx.font = `bold ${Math.round(pad * 0.6)}px system-ui, sans-serif`;
+  ctx.font = font(pad * 0.6, true);
   ctx.fillText(t('rover.map.title'), W * 0.02, pad * 0.75);
 }
 
@@ -312,7 +313,7 @@ function drawNavCam(
       ctx.fillStyle = r.visited.has(site.id) ? '#8b98a5' : site.kind === 'core' ? '#5fc8ff' : '#ff9f3f';
       ctx.fillRect(p.x, p.y - hgt, hgt * 0.5, hgt * 0.3);
       ctx.fillStyle = '#ffffff';
-      ctx.font = `bold ${Math.round(H * 0.04)}px system-ui, sans-serif`;
+      ctx.font = font(H * 0.04, true);
       ctx.textAlign = 'center';
       ctx.fillText(`${t(site.nameKey)} · ${Math.round(p.forward)} m`, p.x, p.y - hgt - 6);
     } });
@@ -329,13 +330,13 @@ function drawNavCam(
   ctx.fillRect(0, 0, W, H * 0.1);
   ctx.fillStyle = COLORS.title;
   ctx.textAlign = 'left';
-  ctx.font = `bold ${Math.round(H * 0.06)}px system-ui, sans-serif`;
+  ctx.font = font(H * 0.06, true);
   ctx.fillText(t('rover.cam.title', { deg: Math.round((r.heading * 180) / Math.PI) }), W * 0.02, H * 0.075);
   ctx.fillStyle = COLORS.dim;
   ctx.textAlign = 'right';
-  ctx.font = `${Math.round(H * 0.04)}px system-ui, sans-serif`;
+  ctx.font = font(H * 0.04);
   ctx.fillText(t('rover.cam.simulated'), W * 0.98, H * 0.07);
-  ctx.font = `bold ${Math.round(H * 0.06)}px system-ui, sans-serif`;
+  ctx.font = font(H * 0.06, true);
   if (r.lastStop === 'obstacle') {
     ctx.fillStyle = 'rgba(255,107,92,0.9)';
     ctx.textAlign = 'center';
@@ -352,7 +353,7 @@ function drawNoLink(/** @type {CanvasRenderingContext2D} */ ctx, /** @type {numb
   }
   ctx.fillStyle = COLORS.critical;
   ctx.textAlign = 'center';
-  ctx.font = `bold ${Math.round(H * 0.09)}px system-ui, sans-serif`;
+  ctx.font = font(H * 0.09, true);
   ctx.fillText(t('rover.cam.nolink'), W / 2, H / 2);
 }
 
@@ -370,7 +371,7 @@ function drawRealPhoto(
   ctx.fillRect(0, 0, W, H * 0.1);
   ctx.fillStyle = COLORS.title;
   ctx.textAlign = 'left';
-  ctx.font = `bold ${Math.round(H * 0.055)}px system-ui, sans-serif`;
+  ctx.font = font(H * 0.055, true);
   if (photo.kind === 'site') {
     const site = cfg.sites.find((/** @type {any} */ s) => s.id === photo.siteId);
     ctx.fillText(t('rover.cam.photo_title', { site: t(site.nameKey) }), W * 0.02, H * 0.07);
@@ -381,30 +382,21 @@ function drawRealPhoto(
   ctx.fillStyle = 'rgba(0,0,0,0.65)';
   ctx.fillRect(0, H * 0.8, W, H * 0.2);
   ctx.fillStyle = '#ffffff';
-  ctx.font = `${Math.round(H * 0.042)}px system-ui, sans-serif`;
+  ctx.font = font(H * 0.042);
   wrapText(ctx, caption, W * 0.02, H * 0.86, W * 0.96, H * 0.05, 2);
   ctx.fillStyle = COLORS.dim;
-  ctx.font = `${Math.round(H * 0.034)}px system-ui, sans-serif`;
+  ctx.font = font(H * 0.038);
   const date = p.date ?? String(p.dateTakenUtc).slice(0, 10);
-  ctx.fillText(t('rover.photo.credit', { credit: p.credit, date, id: p.pia ?? p.camera }), W * 0.02, H * 0.975, W * 0.96);
+  ctx.fillText(ellipsize(ctx, t('rover.photo.credit', { credit: p.credit, date, id: p.pia ?? p.camera }), W * 0.96), W * 0.02, H * 0.975);
 }
 
-/** Simple word wrap for the caption strip. */
+/** Word wrap for the caption strip (shared wrap; the last allowed row ends in «…» when cut). */
 function wrapText(
   /** @type {CanvasRenderingContext2D} */ ctx, /** @type {string} */ text, /** @type {number} */ x, /** @type {number} */ y,
   /** @type {number} */ maxW, /** @type {number} */ lineH, /** @type {number} */ maxLines,
 ) {
-  let line = '';
-  let n = 0;
-  for (const w of text.split(' ')) {
-    const test = line ? `${line} ${w}` : w;
-    if (ctx.measureText(test).width > maxW && line) {
-      ctx.fillText(line, x, y + n * lineH);
-      line = w;
-      if (++n >= maxLines) return;
-    } else {
-      line = test;
-    }
-  }
-  if (line) ctx.fillText(line, x, y + n * lineH);
+  const rows = wrapLines(ctx, text, maxW);
+  const shown = rows.slice(0, maxLines);
+  if (rows.length > shown.length) shown[shown.length - 1] = ellipsize(ctx, shown[shown.length - 1], maxW, true);
+  shown.forEach((row, n) => ctx.fillText(row, x, y + n * lineH));
 }

@@ -124,7 +124,6 @@ Each mission has `stepN` keys for multi-step hints (e.g. `tutorial.t3.step2` = "
 | `ui.telecom.earth_delay` / `in_transit` / `held` / `conjunction` / `rover_delay` | `strings/es/telecom.json` | Earth link panel (light-time delay, queue) |
 | `ui.log.comms_sent`, `ui.log.link_*`, `ui.log.solar_*`, `solar.dust` | `strings/es/common.json`, `energy.json` | Log lines for delayed messages, link loss, panel cleaning; dust on the solar label |
 | `solar.btn.*`, `solar.mode.*`, `solar.angle`, `solar.auto_cost`, `solar.dir.*`, `ui.log.solar_tracker.*`, `hint.solar.manual` | `strings/es/energy.json`, `common.json` | Manual left/right solar orientation and protection buttons, tracker status/logs, day-1 orientation hint |
-| `solar.rover2.*` | `strings/es/energy.json` | Rover 2 cleaning console: control state, dust status, third-person view, drive/clean/exit instructions and range/game-state feedback |
 | `rover.*` | `strings/es/control.json` | Rover console: screens, buttons, link/battery/mode/cargo, rejections, stops, sites, hints, NASA facts. `rover.photo.*` / `rover.cam.photo_title` / `rover.cam.latest_title`: real NASA image captions, credit line, gallery counter, «vista simulada» label |
 | `solar.*`, `ui.circuit.repairBay` | `strings/es/energy.json` | «Campo solar» label under the Energía window; breaker «Taller · Rover» |
 | `hub.ctrl.*` | `strings/es/hub.json` | «Prueba de mandos» panel: session line, per-hand buttons/stick/events, ray test button, legend of what each control does |
@@ -136,5 +135,5 @@ Each mission has `stepN` keys for multi-step hints (e.g. `tutorial.t3.step2` = "
 | :-- | :-- |
 | `hub.tool.*` | Tool names (wrench, screwdriver, soldering iron, sealant gun) |
 | `hub.comp.*` | Repairable components (spec §6.1) |
-| `hub.toolwall.*`, `hub.spares.*`, `hub.status.*` | Tool wall, spares locker, component status board |
+| `hub.toolwall.*`, `hub.spares.*`, `hub.status.*` | Tool wall, spares locker (sign, door panels, inside list `name.*`/`use.*`, electronics hint), component status board |
 | `hub.t1.*` | Training mission T1 checklist |

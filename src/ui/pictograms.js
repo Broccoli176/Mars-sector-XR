@@ -1,8 +1,6 @@
 // SHARED (see docs/COLLABORATION.md): canvas pictograms for diegetic panels (Panel.renderCustom).
 // Big drawings instead of text so young players can read a panel at a glance. Plain 2D canvas, no Three.js.
-import { COLORS } from './Panel.js';
-
-const FONT = 'system-ui, sans-serif';
+import { COLORS, font, wrapLines, ellipsize, fitLine } from './theme.js';
 
 /** Rounded rectangle path. */
 export function roundRect(/** @type {CanvasRenderingContext2D} */ ctx, x, y, w, h, r) {
@@ -35,25 +33,39 @@ export function frame(ctx, w, h, border = COLORS.border) {
 }
 
 /**
- * Single line of text, shrunk to fit `maxWidth`.
+ * Single line of text. Too wide for `maxWidth`: shrinks a little, then ends in «…».
  * @param {CanvasRenderingContext2D} ctx @param {string} str @param {number} x @param {number} y
  * @param {{ size: number, color?: string, bold?: boolean, align?: CanvasTextAlign, maxWidth?: number }} o
  */
 export function text(ctx, str, x, y, { size, color = COLORS.text, bold = false, align = 'left', maxWidth }) {
-  let px = size;
+  let label = String(str);
   ctx.textAlign = align;
   ctx.textBaseline = 'middle';
-  ctx.font = `${bold ? 'bold ' : ''}${Math.round(px)}px ${FONT}`;
-  if (maxWidth) {
-    const width = ctx.measureText(str).width;
-    if (width > maxWidth) {
-      px *= maxWidth / width;
-      ctx.font = `${bold ? 'bold ' : ''}${Math.round(px)}px ${FONT}`;
-    }
-  }
+  ctx.font = font(size, bold);
+  if (maxWidth) label = fitLine(ctx, label, maxWidth, size, bold);
   ctx.fillStyle = color;
-  ctx.fillText(str, x, y);
+  ctx.fillText(label, x, y);
   ctx.textAlign = 'left';
+}
+
+/**
+ * Word-wrapped paragraph from its top-left corner. Returns the y below the last row.
+ * @param {CanvasRenderingContext2D} ctx @param {string} str @param {number} x @param {number} y @param {number} maxWidth
+ * @param {{ size: number, color?: string, bold?: boolean, lineHeight?: number, maxRows?: number }} o
+ */
+export function paragraph(ctx, str, x, y, maxWidth, { size, color = COLORS.text, bold = false, lineHeight = 1.3, maxRows = Infinity }) {
+  ctx.font = font(size, bold);
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'top';
+  ctx.fillStyle = color;
+  const rows = wrapLines(ctx, str, maxWidth);
+  const shown = rows.slice(0, maxRows);
+  if (rows.length > shown.length && shown.length) shown[shown.length - 1] = ellipsize(ctx, shown[shown.length - 1], maxWidth, true);
+  for (const row of shown) {
+    ctx.fillText(row, x, y);
+    y += size * lineHeight;
+  }
+  return y;
 }
 
 /**

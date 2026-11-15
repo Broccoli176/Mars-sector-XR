@@ -1,12 +1,13 @@
 // OWNER: teammate (Telecom · Control · Energy) — see docs/COLLABORATION.md
 // Energía y oxígeno, laid out as a flow: N distribution (breakers + relay, life-support gauges) · E generation
-// (solar console under the window) · S life support (O₂ tanks + electrolyzer, CO₂ scrubber, Rover 2) · W climate.
+// (solar console under the window, LIMPIAR = dust shield) · S life support (O₂ tanks + electrolyzer, CO₂ scrubber) · W climate.
 // Panels are pictograms (energyIcons.js) for young players; each has an «Info» button that opens the rigorous
 // text with numbers (src/ui/InfoSheet.js). Placement: src/data/stations/energy.json
 import * as THREE from 'three';
 import { COLORS, BUTTON, statusColor } from '../../ui/StationKit.js';
 import { Button } from '../../objects/Button.js';
 import { addInfo } from '../../ui/InfoSheet.js';
+import { fmt } from '../../utils/strings.js';
 import { SolarTracker } from '../../systems/SolarTracker.js';
 import * as icon from './energyIcons.js';
 
@@ -21,16 +22,31 @@ const CIRCUITS = ['lifeSupport', 'heating', 'lighting', 'telecom', 'hydro', 'rep
 const STATE_COLORS = { on: COLORS.nominal, off: COLORS.dim, offline: COLORS.critical };
 /** Canvas resolution for pictogram panels. */
 const SHARP = { pxPerMeter: 560 };
+/** Scale of the two north-wall dashboards (ENERGÍA DE LA BASE, AIRE DE LA BASE). */
+const BIG = 1.35;
 
-/** @param {number} v @param {number} digits */
-const fmt = (v, digits = 1) => v.toFixed(digits).replace('.', ',');
+/**
+ * Battery charge line for the breaker panel: charging / discharging at the net rate (kWh per game hour = kW)
+ * with the time to full / empty, or «full».
+ * @param {{ value: number, max: number, ratePerHour: number }} batt @param {Function} t
+ * @returns {{ key: 'charging' | 'discharging' | 'full' | 'idle', text: string, color: string }}
+ */
+export function batteryCharge(batt, t) {
+  const rate = batt.ratePerHour ?? 0;
+  const hours = (/** @type {number} */ h) => (h >= 10 ? String(Math.round(h)) : fmt(h, 1));
+  if (batt.value >= batt.max - 0.05 && rate >= -0.01) return { key: 'full', text: t('energy.breakers.full'), color: COLORS.nominal };
+  if (rate > 0.01) return { key: 'charging', text: t('energy.breakers.charging', { kw: fmt(rate, 2), h: hours((batt.max - batt.value) / rate) }), color: COLORS.nominal };
+  if (rate < -0.01) return { key: 'discharging', text: t('energy.breakers.discharging', { kw: fmt(-rate, 2), h: hours(batt.value / -rate) }), color: COLORS.warning };
+  return { key: 'idle', text: t('energy.breakers.steady'), color: COLORS.dim };
+}
 
 /** @type {Record<string, (g: import('three').Group, station: any, kit: import('../../ui/StationKit.js').StationKit) => void>} */
 export const builders = {
   /**
    * Solar console under the solar-field window (src/world/SolarField.js): a desk with physical push buttons
-   * (◀ IZQUIERDA · DERECHA ▶ · PROTEGER) that drive the sun tracker (src/systems/SolarTracker.js), a production
-   * strip on the desk and a top-view panel on the wall.
+   * (◀ IZQUIERDA · DERECHA ▶ · PROTEGER) that drive the sun tracker (src/systems/SolarTracker.js), LIMPIAR
+   * (electrodynamic dust shield, `solar:clean`; the window plays the shield wave), a production strip on the
+   * desk and a top-view panel on the wall.
    */
   energy_solar_view(g, station, kit) {
     const { t, sim, game } = kit;
@@ -62,6 +78,7 @@ export const builders = {
         lines.push({ text: t('solar.dust', { pct: Math.round((1 - s.power.dustFactor) * 100), factor: s.power.dustFactor.toFixed(2) }), size: 0.8 });
         lines.push({ text: t('energy.info.solar.1'), size: 0.78 });
         lines.push({ text: t('energy.info.solar.2'), size: 0.78 });
+        if (s.power.dustCfg) lines.push({ text: t('energy.info.solar.clean', { kwh: fmt(s.power.dustCfg.cleanKwh) }), size: 0.78 });
         lines.push({ text: t('solar.rover', { state: t(s.rover?.docked ? 'solar.rover.docked' : 'solar.rover.away') }), color: COLORS.dim, size: 0.7 });
         return lines;
       },
@@ -77,9 +94,10 @@ export const builders = {
       g.add(holder);
       return kit.registerButton(button);
     };
-    const left = deskButton(t('solar.btn.left'), -0.45, () => game.intent('solar:turn', { dir: -1 }));
-    const right = deskButton(t('solar.btn.right'), 0, () => game.intent('solar:turn', { dir: 1 }));
-    const stow = deskButton(t('solar.btn.stow'), 0.45, () => game.intent('solar:stow', { on: sim().solarTracker?.mode !== 'stow' }));
+    const left = deskButton(t('solar.btn.left'), -0.54, () => game.intent('solar:turn', { dir: -1 }));
+    const right = deskButton(t('solar.btn.right'), -0.18, () => game.intent('solar:turn', { dir: 1 }));
+    const stow = deskButton(t('solar.btn.stow'), 0.18, () => game.intent('solar:stow', { on: sim().solarTracker?.mode !== 'stow' }));
+    const clean = deskButton(t('solar.btn.clean'), 0.54, () => game.intent('solar:clean', {}));
 
     kit.onRefresh(() => {
       const s = sim();
@@ -129,77 +147,24 @@ export const builders = {
       left.setState(t('solar.btn.left'), off ? BUTTON.off : BUTTON.action);
       right.setState(t('solar.btn.right'), off ? BUTTON.off : BUTTON.action);
       stow.setState(t('solar.btn.stow'), tr?.mode === 'stow' ? BUTTON.warn : storm ? BUTTON.danger : BUTTON.off);
-    });
-  },
-
-  /** Manual third-person control for Rover 2 and its solar-panel cleaning mission. */
-  energy_rover2(g, station, kit) {
-    const { t, sim, game, services } = kit;
-    const deskTop = 0.78 - station.y;
-    kit.addBox(g, 0.44, 0.72, 0.42, 0.3, deskTop - 0.38, 0.35, '#3a4048');
-    kit.addBox(g, 0.5, 0.04, 0.48, 0.3, deskTop - 0.02, 0.35, '#2a2f35');
-    kit.addBox(g, 0.14, 0.5, 0.32, 0.52, deskTop - 0.26, 0.35, '#4b535b');
-    kit.addBox(g, 0.66, 0.66, 0.08, 0.3, 0.28, -0.05, '#20272e');
-    const panel = kit.addPanel(g, 0.58, 0.58, 0.3, 0.28, SHARP);
-    const control = kit.addButton(g, {
-      width: 0.16,
-      height: 0.08,
-      label: t('solar.rover2.btn.control'),
-      color: BUTTON.action,
-      onSelect: () => game.intent('rover2:control'),
-    }, 0.2, deskTop + 0.06);
-    const clean = kit.addButton(g, {
-      width: 0.16,
-      height: 0.08,
-      label: t('solar.rover2.btn.clean'),
-      color: BUTTON.action,
-      onSelect: () => game.intent('rover2:clean'),
-    }, 0.4, deskTop + 0.06);
-    addInfo(g, kit, {
-      bx: 0.3, by: -0.1, px: 0.3, py: 0.28, w: 0.8, h: 0.6,
-      title: () => t('energy.info.rover2.title'),
-      lines: () => [
-        { text: t('solar.rover2.task'), size: 0.85 },
-        { text: t('solar.rover2.controls'), color: COLORS.info, size: 0.85 },
-        { text: t('solar.rover2.dust', { pct: Math.round((1 - (sim().power.dustFactor ?? 1)) * 100) }), size: 0.85 },
-        { text: t('energy.info.rover2.1'), size: 0.82 },
-      ],
-    });
-
-    kit.onRefresh(() => {
-      const s = sim();
-      const dust = 1 - (s.power.dustFactor ?? 1);
-      const dustPct = Math.round(dust * 100);
-      const controlling = Boolean(services.solarField?.isControllingRover2);
-      const [msgKey, msgColor] = controlling ? ['energy.rover2.msg_active', COLORS.nominal]
-        : dustPct <= 0 ? ['energy.rover2.msg_clean', COLORS.nominal] : ['energy.rover2.msg_ready', COLORS.info];
-      panel.renderCustom(`${controlling}|${dustPct}|${msgKey}`, (ctx, W, H) => {
-        icon.frame(ctx, W, H, controlling ? COLORS.nominal : COLORS.border);
-        icon.text(ctx, t('energy.rover2.title_short'), W / 2, H * 0.09, { size: H * 0.075, color: COLORS.title, bold: true, align: 'center', maxWidth: W * 0.92 });
-        icon.rover(ctx, W * 0.45, H * 0.36, W * 0.5, controlling);
-        icon.text(ctx, t('energy.solar.dust'), W * 0.08, H * 0.58, { size: H * 0.06, color: COLORS.dim });
-        icon.bar(ctx, W * 0.08, H * 0.63, W * 0.84, H * 0.08, dust, dust > 0.2 ? COLORS.warning : '#b5653a');
-        icon.dustSpecks(ctx, W * 0.08, H * 0.63, W * 0.84 * dust, H * 0.08, dust);
-        icon.text(ctx, t(msgKey), W / 2, H * 0.85, { size: H * 0.065, color: msgColor, bold: true, align: 'center', maxWidth: W * 0.92 });
-      });
-      control.setState(t('solar.rover2.btn.control'), s.phase === 'playing' ? BUTTON.action : BUTTON.off);
-      clean.setState(t('solar.rover2.btn.clean'), dustPct > 0 ? BUTTON.action : BUTTON.off);
+      clean.setState(t('solar.btn.clean'), dust < 0.01 || storm || off ? BUTTON.off : dust > 0.2 ? BUTTON.warn : BUTTON.action);
     });
   },
 
   /** Breaker wall: one icon per circuit above its ON/OFF button, battery and power flow, relay reset. */
   breakers(g, _station, kit) {
     const { t, game, sim } = kit;
-    const panel = kit.addPanel(g, 1.7, 0.5, 0, 0.16, SHARP);
-    const spacing = 0.26;
+    const panelW = 1.7 * BIG;
+    const panel = kit.addPanel(g, panelW, 0.5 * BIG, 0, 0.16 * BIG, SHARP);
+    const spacing = 0.26 * BIG;
     const btns = CIRCUITS.map((id, i) =>
-      kit.addButton(g, { width: 0.16, height: 0.1, label: '', onSelect: () => {
+      kit.addButton(g, { width: 0.16 * BIG, height: 0.1 * BIG, label: '', onSelect: () => {
         game.intent('breaker:toggle', { circuitId: id, on: !sim().power.breakers[id] });
-      } }, (i - 2.5) * spacing, -0.2));
-    const reset = kit.addButton(g, { width: 0.42, height: 0.1, label: t('ui.breakers.reset'), color: BUTTON.danger,
-      onSelect: () => game.intent('relay:resetRequest') }, 0, -0.38);
+      } }, (i - 2.5) * spacing, -0.2 * BIG));
+    const reset = kit.addButton(g, { width: 0.42 * BIG, height: 0.1 * BIG, label: t('ui.breakers.reset'), color: BUTTON.danger,
+      onSelect: () => game.intent('relay:resetRequest') }, 0, -0.38 * BIG);
     addInfo(g, kit, {
-      bx: 0.4, by: -0.38, px: 0, py: 0.12, w: 1.7, h: 0.8,
+      bx: 0.4 * BIG, by: -0.38 * BIG, px: 0, py: 0.12 * BIG, w: 1.7 * BIG, h: 0.8 * BIG,
       title: () => t('energy.info.breakers.title'),
       lines: () => {
         const s = sim();
@@ -209,7 +174,9 @@ export const builders = {
         return [
           { text: t('energy.info.breakers.1', { gen: fmt(p.generationKw, 2), rtg: p.cfg.rtgKw, use: fmt(p.servedLoadKw, 2), kwh: fmt(batt.value, 1), max: batt.max }), size: 0.8 },
           { text: t('energy.info.breakers.2', { limit: p.cfg.busLimitKw, trips: p.cfg.relayBurnTrips }), size: 0.8 },
+          { text: t('energy.info.breakers.battery'), color: COLORS.info, size: 0.8 },
           { text: t('energy.info.breakers.3'), size: 0.8 },
+          { text: t('energy.info.breakers.tradeoff'), color: COLORS.warning, size: 0.8 },
           ...p.order.map((/** @type {string} */ id, /** @type {number} */ i) => ({
             text: t('energy.info.breakers.circuit', {
               n: i + 1,
@@ -240,14 +207,15 @@ export const builders = {
         : batt.status !== 'nominal' ? ['energy.breakers.msg_low', COLORS.warning]
         : states.includes('offline') ? ['energy.breakers.msg_dark', COLORS.warning]
         : ['energy.breakers.msg_ok', COLORS.nominal];
-      const key = JSON.stringify([states, msgKey, Math.round(batt.value), fmt(p.generationKw), fmt(p.servedLoadKw)]);
+      const charge = batteryCharge(batt, t);
+      const key = JSON.stringify([states, msgKey, Math.round(batt.value), charge.text]);
       panel.renderCustom(key, (ctx, W, H) => {
         icon.frame(ctx, W, H, p.relayClosed ? COLORS.border : COLORS.critical);
         icon.text(ctx, t('energy.breakers.title_short'), W * 0.02, H * 0.11, { size: H * 0.1, color: COLORS.title, bold: true });
         icon.battery(ctx, W * 0.36, H * 0.04, W * 0.14, H * 0.14, batt.value / batt.max, statusColor(batt.status));
         icon.text(ctx, `${Math.round(batt.value)} kWh`, W * 0.515, H * 0.11, { size: H * 0.085, color: statusColor(batt.status), bold: true });
-        icon.text(ctx, t('energy.breakers.flow', { gen: fmt(p.generationKw), use: fmt(p.servedLoadKw) }), W * 0.98, H * 0.11, { size: H * 0.075, color: overload ? COLORS.warning : COLORS.dim, align: 'right', maxWidth: W * 0.34 });
-        const colW = (spacing / 1.7) * W;
+        icon.text(ctx, charge.text, W * 0.98, H * 0.11, { size: H * 0.075, color: charge.color, bold: true, align: 'right', maxWidth: W * 0.34 });
+        const colW = (spacing / panelW) * W;
         CIRCUITS.forEach((id, i) => {
           const x = W / 2 + (i - 2.5) * colW;
           const color = STATE_COLORS[/** @type {'on'} */ (states[i])];
@@ -268,10 +236,10 @@ export const builders = {
   /** Air of the base: four dial gauges (O₂, CO₂, pressure, temperature) and the two machines that keep it. */
   ls_gauges(g, _station, kit) {
     const { t, sim } = kit;
-    const panel = kit.addPanel(g, 0.95, 0.72, 0, 0, SHARP);
+    const panel = kit.addPanel(g, 0.95 * BIG, 0.72 * BIG, 0, 0, SHARP);
     const IDS = ['oxygen', 'co2', 'pressure', 'temperature'];
     addInfo(g, kit, {
-      bx: 0, by: -0.43, px: 0, py: 0.1, w: 1.15, h: 0.86,
+      bx: 0, by: -0.43 * BIG, px: 0, py: 0.1 * BIG, w: 1.15 * BIG, h: 0.86 * BIG,
       title: () => t('energy.info.ls.title'),
       lines: () => {
         const s = sim();
@@ -309,7 +277,7 @@ export const builders = {
           const cx = W * (0.14 + i * 0.24);
           icon.dial(ctx, cx, H * 0.37, W * 0.085, r);
           icon.text(ctx, t(`ui.resource.${IDS[i]}`), cx, H * 0.45, { size: H * 0.055, align: 'center', color: COLORS.dim, maxWidth: W * 0.22 });
-          icon.text(ctx, `${r.value.toFixed(IDS[i] === 'temperature' ? 1 : 0)} ${r.unit}`, cx, H * 0.53, { size: H * 0.065, align: 'center', bold: true, color: statusColor(r.status), maxWidth: W * 0.22 });
+          icon.text(ctx, `${fmt(r.value, IDS[i] === 'temperature' ? 1 : 0)} ${r.unit}`, cx, H * 0.53, { size: H * 0.065, align: 'center', bold: true, color: statusColor(r.status), maxWidth: W * 0.22 });
         });
         machines.forEach(([id, st], i) => {
           const x = W * (0.05 + i * 0.48);
@@ -423,7 +391,7 @@ export const builders = {
         const b = sim().balance;
         return [
           { text: t('energy.info.thermo.1', { ext: b.thermal.externalC, ref: b.thermal.referenceC, loss: b.thermal.lossPerHourAtReference }), size: 0.82 },
-          { text: t('energy.info.thermo.2', { kw: b.circuits.heating.drawKw, heat: b.thermal.heaterPerHour, min: b.thermal.setpointMin }), size: 0.82 },
+          { text: t('energy.info.thermo.2', { kw: b.circuits.heating.drawKw, heat: b.thermal.heaterPerHour, min: b.thermal.setpointMin, cold: b.food.cold?.belowC ?? b.thermal.setpointMin }), size: 0.82 },
           { text: t('energy.info.thermo.3', { hyst: b.thermal.hysteresis }), size: 0.82 },
           { text: t('energy.info.general'), color: COLORS.dim, size: 0.65 },
         ];

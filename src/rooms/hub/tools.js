@@ -4,10 +4,15 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { COLORS } from '../../ui/StationKit.js';
+import { font, fitLine } from '../../ui/theme.js';
 import { decideRelease, shouldReturnHome, updateT1 } from './toolRules.js';
 
 const TOOL_MATERIAL = new THREE.MeshLambertMaterial({ vertexColors: true });
 const HOT_TIP_MATERIAL = new THREE.MeshBasicMaterial({ color: '#ff7a2f', toneMapped: false });
+// Invisible grab zone around each tool: much easier to hit with the ray than the thin tool itself.
+const GRAB_ZONE_MATERIAL = new THREE.MeshBasicMaterial({ visible: false });
+const GRAB_ZONE = new THREE.BoxGeometry(0.1, 0.1, 0.26).translate(0, 0, -0.08);
+const noRaycast = () => {};
 const GRAVITY = 9.8; // m/s² (Earth-like feel; kinematic drop only, no physics engine — spec D11)
 const HOOK_XS = [-0.45, -0.15, 0.15, 0.45];
 const HOOK_Y = 0.2;
@@ -93,11 +98,10 @@ export function buildToolWall(g, kit, hubState) {
     ctx.fillStyle = COLORS.title;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
-    ctx.font = `bold ${Math.round(H * 0.075)}px system-ui, sans-serif`;
+    ctx.font = font(H * 0.075, true);
     ctx.fillText(t('hub.toolwall.title'), W / 2, H * 0.03);
     ctx.fillStyle = COLORS.dim;
-    ctx.font = `${Math.round(H * 0.036)}px system-ui, sans-serif`;
-    ctx.fillText(t('hub.toolwall.hint'), W / 2, H * 0.92, W * 0.94);
+    ctx.fillText(fitLine(ctx, t('hub.toolwall.hint'), W * 0.94, H * 0.042), W / 2, H * 0.915);
     tools.forEach((tool, i) => {
       const cx = W / 2 + (HOOK_XS[i] / 1.2) * W;
       ctx.strokeStyle = 'rgba(255,207,102,0.5)'; // outline where the tool hangs
@@ -105,12 +109,11 @@ export function buildToolWall(g, kit, hubState) {
       ctx.strokeRect(cx - W * 0.09, H * 0.17, W * 0.18, H * 0.4);
       ctx.setLineDash([]);
       ctx.fillStyle = COLORS.text;
-      ctx.font = `bold ${Math.round(H * 0.052)}px system-ui, sans-serif`;
-      ctx.fillText(t(tool.nameKey), cx, H * 0.62, W * 0.24);
+      ctx.fillText(fitLine(ctx, t(tool.nameKey), W * 0.24, H * 0.052, true), cx, H * 0.62);
       ctx.fillStyle = COLORS.dim;
-      ctx.font = `${Math.round(H * 0.038)}px system-ui, sans-serif`;
+      ctx.font = font(H * 0.042);
       const repairs = components.filter((c) => c.toolId === tool.id).map((c) => t(c.nameKey));
-      repairs.forEach((name, j) => ctx.fillText(name, cx, H * (0.71 + j * 0.065), W * 0.24));
+      repairs.forEach((name, j) => ctx.fillText(fitLine(ctx, name, W * 0.24, H * 0.042), cx, H * (0.71 + j * 0.065)));
     });
   });
 
@@ -123,11 +126,14 @@ export function buildToolWall(g, kit, hubState) {
     slot.position.set(HOOK_XS[i], HOOK_Y, HOOK_Z);
     slot.rotation.x = -Math.PI / 2; // hang pointing down
     g.add(slot);
-    const mesh = new THREE.Mesh(toolGeometry(tool.id, tool.color, tool.accent), TOOL_MATERIAL);
-    mesh.name = tool.assetId;
+    // `mesh` is the grab zone (what the ray hits and the hand holds); the visible tool is its child.
+    const mesh = new THREE.Mesh(GRAB_ZONE, GRAB_ZONE_MATERIAL);
+    const visual = new THREE.Mesh(toolGeometry(tool.id, tool.color, tool.accent), TOOL_MATERIAL);
+    visual.name = tool.assetId;
+    mesh.add(visual);
     if (tool.id === 'solder_iron') {
       const tip = new THREE.Mesh(new THREE.ConeGeometry(0.005, 0.04, 8).rotateX(-Math.PI / 2).translate(0, 0, -0.145), HOT_TIP_MATERIAL);
-      mesh.add(tip);
+      visual.add(tip);
     }
     slot.add(mesh);
     kit.registerInteractive(mesh);
@@ -157,12 +163,14 @@ export function buildToolWall(g, kit, hubState) {
     item.holster = null;
     item.place = 'hand';
     item.landedAt = null;
+    item.mesh.raycast = noRaycast; // a held tool must not block the ray (desktop camera / the other hand)
     updateT1(hubState.t1, 'grab', { wasOnFloor });
     game.intent('item:grab', { itemId: item.id, hand });
   };
 
   /** @param {typeof items[number]} item @param {THREE.Vector3} pos */
   const onRelease = (item, pos) => {
+    item.mesh.raycast = THREE.Mesh.prototype.raycast; // grabbable again from the wall, belt or floor
     item.slot.getWorldPosition(_pos);
     // Belt button: straight into the chosen holster, wherever the hand is.
     const forced = item.forceHolster;

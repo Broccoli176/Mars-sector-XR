@@ -7,6 +7,7 @@
 import { Vector3 } from 'three';
 import { COLORS } from '../../ui/StationKit.js';
 import { Panel } from '../../ui/Panel.js';
+import { fmt } from '../../utils/strings.js';
 import { addInfo } from '../../ui/InfoSheet.js';
 import { createSpaceWeatherFeed } from './spaceWeatherLive.js';
 import * as icon from './personalIcons.js';
@@ -262,7 +263,7 @@ function drawDosimeter(ctx, W, H, { t, r, minute }) {
   // Big current rate.
   icon.particles(ctx, pad + H * 0.07, H * 0.27, H * 0.06, COLORS.info);
   icon.text(ctx, t('personal.dosimeter.now'), pad + H * 0.17, H * 0.19, { size: H * 0.05, color: COLORS.dim });
-  icon.text(ctx, `${r.rate.toFixed(1)} µGy/h`, pad + H * 0.17, H * 0.29, { size: H * 0.1, color: COLORS.info, bold: true });
+  icon.text(ctx, `${fmt(r.rate)} µGy/h`, pad + H * 0.17, H * 0.29, { size: H * 0.1, color: COLORS.info, bold: true });
 
   // Mars vs ISS bars (same day, real data).
   const bx = W * 0.55;
@@ -307,7 +308,7 @@ function drawDosimeter(ctx, W, H, { t, r, minute }) {
 
 /** @param {number} microGy */
 function formatDose(microGy) {
-  return microGy >= 1000 ? `${(microGy / 1000).toFixed(2)} mGy` : `${microGy.toFixed(1)} µGy`;
+  return microGy >= 1000 ? `${fmt(microGy / 1000, 2)} mGy` : `${fmt(microGy)} µGy`;
 }
 
 /** "2023-01-01" → "01/01/2023" */

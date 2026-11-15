@@ -107,7 +107,7 @@ export class Simulation {
     this.lifeSupport.update(this.power.served, dt);
     this.food.update(this.power.served, dt);
     this.kitchen?.update(this.power.served, dt);
-    this.crew.update(dt, this.radiation?.crewDamage());
+    this.crew.update(dt, this.radiation?.crewDamage(), this.power.served.lighting);
     this.radiation?.update(clock, dt);
     this.electronics?.update(this.time.tick, dt);
     this.rover?.update(dt, this.power.served.repairBay);

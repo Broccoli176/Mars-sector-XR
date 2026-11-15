@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { Panel, COLORS } from './Panel.js';
+import { BUTTON } from './theme.js';
 import { Button } from '../objects/Button.js';
 import { createMachineTexture } from '../world/textures.js';
 
@@ -8,10 +9,8 @@ import { createMachineTexture } from '../world/textures.js';
  * Change it only in a small announced PR — both people depend on it.
  */
 
-export { COLORS };
-
-/** Button colours shared by all rooms. */
-export const BUTTON = { on: '#2e8b57', off: '#4a525a', warn: '#b7791f', danger: '#b83a2e', action: '#2f6fb3', info: '#2b8fa8' };
+/** Panel and button colours shared by all rooms (defined in theme.js). */
+export { COLORS, BUTTON };
 
 /** @param {string} status nominal | warning | critical */
 export const statusColor = (status) => COLORS[/** @type {'nominal'|'warning'|'critical'} */ (status)] ?? COLORS.text;
@@ -37,6 +36,8 @@ export function renderBio(panel, s, t) {
   panel.renderLines(t('ui.bio.title'), [
     { text: t('ui.bio.health', { value: Math.round(h.value) }), color: statusColor(h.status), size: 1.5 },
     { text: t('ui.bio.causes', { list: causes.length ? causes.join(', ') : t('ui.bio.none') }), color: causes.length ? COLORS.critical : COLORS.dim },
+    // Cost of switching the lights off: no recovery in the dark.
+    ...(s.crew.regenBlocked === 'dark' && h.value < h.max ? [{ text: t('ui.bio.dark'), color: COLORS.warning }] : []),
   ], { border: statusColor(h.status) });
 }
 
@@ -114,7 +115,7 @@ export function createStationKit({ game, t, interactive, services = {} }) {
 
     /**
      * @param {THREE.Object3D} parent @param {number} w @param {number} h @param {number} [x] @param {number} [y]
-     * @param {{ pxPerMeter?: number }} [opts] canvas resolution (pictogram panels use ≈ 560)
+     * @param {{ pxPerMeter?: number, minEm?: number }} [opts] canvas resolution (never below the theme default) and smallest text
      */
     addPanel(parent, w, h, x = 0, y = 0, opts = {}) {
       const p = new Panel(w, h, opts);

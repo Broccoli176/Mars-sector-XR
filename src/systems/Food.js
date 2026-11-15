@@ -115,10 +115,21 @@ export class Food {
     this.bus.emit('hydro:fed', { level: this.nutrients, cartridgesLeft: this.cartridges });
   }
 
-  /** Growth speed from the nutrient level: 1 normally, slowFactor when the solution is depleted. */
-  get growthFactor() {
+  /** True while the room is too cold for the crops (thermostat trade-off): they grow slower, never die. */
+  get cold() {
+    const cold = this.cfg.cold;
+    return Boolean(cold) && this.resources.value('temperature') < cold.belowC;
+  }
+
+  /** True while the nutrient solution is depleted. */
+  get hungry() {
     const nut = this.cfg.nutrients;
-    return nut && this.nutrients < nut.lowAt ? nut.slowFactor : 1;
+    return Boolean(nut) && this.nutrients < nut.lowAt;
+  }
+
+  /** Growth speed: 1 normally; × slowFactor with a depleted nutrient solution; × cold.growthFactor in a cold room. */
+  get growthFactor() {
+    return (this.hungry ? this.cfg.nutrients.slowFactor : 1) * (this.cold ? this.cfg.cold.growthFactor : 1);
   }
 
   /** @param {string} [trayId] omitted ⇒ harvest everything ready */

@@ -87,6 +87,11 @@
       "co2PerTrayHour": 6,
       "o2PerTrayHour": 0.02,
       "_source": "Photosynthesis under the grow lights: each healthy tray removes a little CO₂ (ppm/h) and releases a little O₂ (%/h). Order of magnitude only, game-balance values."
+    },
+    "cold": {
+      "belowC": 18,
+      "growthFactor": 0.6,
+      "_source": "Most leafy crops grow best at 18–24 °C and slow down below that. Game-balance values: under belowC growth is multiplied by growthFactor; cold never kills. Makes a low thermostat a real trade-off."
     }
   },
   "water": {

@@ -27,7 +27,6 @@ export class XRControls {
     this.renderer = renderer;
     this.interaction = interaction;
     this.locomotion = locomotion;
-    this.rover2Control = false;
     this.raycaster = new THREE.Raycaster();
     this.raycaster.far = 25;
     /** @type {THREE.Object3D | null} */
@@ -84,7 +83,6 @@ export class XRControls {
         controller.userData.inputSource = null;
       });
       controller.addEventListener('selectstart', () => {
-        if (this.rover2Control) return;
         if (this.grab?.use('xr' + i, true)) return; // held object with onUse (hose…) takes the trigger
         this.#select(controller);
       });
@@ -137,37 +135,10 @@ export class XRControls {
         this.reticle.position.copy(hit.point).setY(0.01);
         reticleShown = true;
       }
-      if (!this.rover2Control) {
-        this.#snapTurn(controller);
-        this.#beltButton(controller, this.controllers.indexOf(controller));
-      }
+      this.#snapTurn(controller);
+      this.#beltButton(controller, this.controllers.indexOf(controller));
     }
     this.reticle.visible = reticleShown;
-  }
-
-  /** @param {boolean} active */
-  setRover2Control(active) {
-    this.rover2Control = active;
-  }
-
-  /** @returns {{ drive: number, turn: number, cleanPressed: boolean, exitPressed: boolean }} */
-  getRover2Input() {
-    const sources = this.controllers.map((controller) => controller.userData.inputSource);
-    const left = sources.find((source) => source?.handedness === 'left');
-    const buttonsPressed = (index) => sources.some((source) => Boolean(source?.gamepad?.buttons[index]?.pressed));
-    const gamepad = left?.gamepad;
-    if (!gamepad) {
-      return { drive: 0, turn: 0, cleanPressed: buttonsPressed(4), exitPressed: buttonsPressed(5) };
-    }
-    const axes = gamepad.axes;
-    const stickX = axes.length >= 4 ? axes[2] : axes[0];
-    const stickY = axes.length >= 4 ? axes[3] : axes[1];
-    return {
-      drive: Math.abs(stickY ?? 0) > 0.15 ? -(stickY ?? 0) : 0,
-      turn: Math.abs(stickX ?? 0) > 0.15 ? stickX ?? 0 : 0,
-      cleanPressed: buttonsPressed(4),
-      exitPressed: buttonsPressed(5),
-    };
   }
 
   /** B/Y pressed (edge): stow or draw on the belt, with a haptic tick. @param {THREE.Object3D} controller @param {number} i */

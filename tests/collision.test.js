@@ -11,7 +11,7 @@ function walk(collider, start, dir, metres, speed = 1.8, fps = 72) {
   return p;
 }
 
-// Hub-and-spokes layout (docs/FLOOR_PLAN.md): hub x −3…3, z −2.5…2.5.
+// Hub-and-spokes layout (docs/FLOOR_PLAN.md): hub x −3…4.5, z −2.5…2.5.
 describe('Collision on the hub layout (keyboard locomotion)', () => {
   const collider = buildCollider(gameData.layout);
 
@@ -44,9 +44,9 @@ describe('Collision on the hub layout (keyboard locomotion)', () => {
   });
 
   it('stops at solid walls, even with a large step', () => {
-    const blocked = walk(collider, [2, 0], [1, 0], 3); // hub east wall at x = 3
-    expect(blocked.x).toBeLessThanOrEqual(3 - 0.1 - PLAYER_RADIUS + 0.01);
-    expect(collider.move(2, 0, 3, 0).x).toBeLessThan(3);
+    const blocked = walk(collider, [3.5, 0], [1, 0], 3); // hub east wall at x = 4.5
+    expect(blocked.x).toBeLessThanOrEqual(4.5 - 0.1 - PLAYER_RADIUS + 0.01);
+    expect(collider.move(3.5, 0, 3, 0).x).toBeLessThan(4.5);
   });
 
   it('blocks added furniture', () => {

@@ -58,7 +58,9 @@
         "cause": "starvation",
         "zeroPerHour": 2
       }
-    ]
+    ],
+    "darkRegenFactor": 0,
+    "_darkRegen": "GAME RULE: with the lighting circuit unserved, health regeneration is multiplied by darkRegenFactor (the crew cannot rest or work in the dark). Makes the lighting breaker a real trade-off."
   },
   "inventory": {
     "filters": 3,
