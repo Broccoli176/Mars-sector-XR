@@ -22,10 +22,11 @@ Datos reales embebidos (sin «en vivo»), ver `docs/SIMULATION_SPEC.md` §6.5:
 - NASA DONKI **en vivo** (`src/rooms/personal/spaceWeatherLive.js`, solo presentación, nunca alimenta la simulación) → «El Sol ahora» de Personal; sin red usa el registro `src/data/real/donki_recent.json` y lo dice.
 - Todos se atribuyen en el panel «Fuentes científicas» del hub. Resumen: `docs/DATA_SOURCES.md`.
 
-Telecom básico implementado (`src/systems/Telecom.js`: señal según alineación, deriva en tormenta, ajuste con botones izquierda/derecha y alineación, motor averiado limita a 40). Hidroponía ampliada a 5 × 6 m con cocina (despensa, procesador de barras y dispensador; `src/systems/Kitchen.js`). Electrónica: banco de la Sala central que repara la fuente del receptor de Telecom (`src/systems/Electronics.js`, ver spec §6.6). Cola de mensajes con retraso de luz y enlace <20 % implementados (`src/systems/Comms.js`). Pendiente: niveles 30/50 % de la cola, apagones de radio y CME, reparaciones del resto de componentes, fugas, herramientas/fundas, banco de entrenamiento (T1–T5), alarmas sonoras, guardado, CI y assets. **Desviaciones del prototipo:**
-- Los controles se pulsan con rayo + gatillo; el agarre directo llegará después.
+Telecom básico implementado (`src/systems/Telecom.js`: señal según alineación, deriva en tormenta, ajuste con botones izquierda/derecha y alineación, motor averiado limita a 40). Hidroponía ampliada a 5 × 6 m con cocina (despensa, procesador de barras y dispensador; `src/systems/Kitchen.js`). Electrónica: banco de la Sala central que repara la fuente del receptor de Telecom (`src/systems/Electronics.js`, ver spec §6.6). Cola de mensajes con retraso de luz y enlace <20 % implementados (`src/systems/Comms.js`). Pendiente: niveles 30/50 % de la cola, apagones de radio y CME (no existe `src/data/spaceWeather.json` y nada emite el impacto `cme`), derrota por cascada, reparaciones del resto de componentes (las herramientas y fundas existen, pero la simulación aún no las consume), fugas, banco de entrenamiento (solo T1; faltan T2–T5), alarmas sonoras, guardado, CI y assets. **Desviaciones del prototipo:**
+- Los controles se pulsan con rayo + gatillo. El agarre (`src/vr/Grab.js`) solo se usa para herramientas y la manguera.
+- El modo primera persona del rover (`src/world/RoverWorld.js`, intent `rover:fpv`) mueve el rover y gasta su batería directamente, sin pasar por `rover:command` ni comprobar la señal, con números propios distintos de `balance/rover.json`. Es una violación conocida del boundary de §3; pendiente de llevarlo a `Rover.js`.
 - Hay un modo escritorio de desarrollo (no es modo de juego).
-- Strings y balance siguen en un solo archivo cada uno.
+- Tipografía y colores de todo el texto diegético salen de `src/ui/theme.js` (ver §4.2, «Texto de paneles»).
 
 Decisiones/objetivos iniciales (a confirmar al arrancar):
 
@@ -65,13 +66,13 @@ Decisiones/objetivos iniciales (a confirmar al arrancar):
 | Regla | Definición (objetivo) |
 | :-- | :-- |
 | Victoria | Llegar vivo al final del día 7 (con resumen/post-run según diseño) |
-| Derrota | Salud del jugador a 0 (asfixia, hipotermia, deshidratación o inanición), pérdida total de energía, o cascada irrecuperable |
+| Derrota | Salud del jugador a 0 (asfixia, hipotermia, deshidratación, inanición o radiación) o pérdida total de energía. La cascada irrecuperable está **planificada, no implementada** |
 | Salud | Barra/recurso de salud mostrado en UI diegética (sin HUD head-locked) |
 | Idioma UI | Español (tabla de strings externa); código/docs en inglés |
 | Tiempo | Simulación acelerada basada en ticks (no acoplar reglas a delta de render). El día empieza a las **06:00**; la partida termina el día 8 06:00 (7 días exactos, ≈42 min a 1×) |
 | Fases | `boot → training → playing → over \| won`. **Pausa = velocidad 0**, no es fase. **Pausa automática** al quitarse el visor |
 | Tutorial | Banco de entrenamiento en la Sala central · Herramientas (`room_hub`) (fase `training`, tiempo parado, saltable) + incidentes guiados del día 1 |
-| Clima espacial | Snapshot estático de NASA DONKI (`src/data/spaceWeather.json`): una CME y dos apagones de radio |
+| Clima espacial | Implementado: tormenta solar `sep` del día 6 (registro real de RAD). **Pendiente:** snapshot estático de NASA DONKI (`src/data/spaceWeather.json`, aún no existe) con una CME y dos apagones de radio |
 | Locomoción | Teleport por defecto; movimiento suave opcional **con viñeta** |
 | Interacción | Agarre directo para controles físicos; ray solo para controles diegéticos pequeños si aplica |
 | Input | Mandos primero; sin hand tracking en MVP salvo decisión explícita |
@@ -192,18 +193,12 @@ Los nombres de eventos son API pública una vez implementados: renombrarlos requ
 
 | Evento | Payload (propuesto) | Emisor previsto | Notas |
 | :-- | :-- | :-- | :-- |
-| `weather:changed` | `{ state: 'clear' \| 'dustStorm', solarFactor }` | runner de incidentes | tormenta (spec §6.2) |
-| `spaceWeather:alert` | `{ kind: 'cme' \| 'flare', speedKms?, etaHours? }` | runner de incidentes | datos DONKI; entrega sujeta a señal (spec §6.3) |
+| `spaceWeather:alert` | `{ kind: 'cme' \| 'flare', speedKms?, etaHours? }` | runner de incidentes | **propuesto** para CME/fulguraciones (spec §6.3). Hoy solo se emite `{ kind: 'sep', etaHours }` (ver «Tormenta solar») |
 | `spaceWeather:impact` | `{ kind }` | runner de incidentes | llegada de CME / inicio de apagón de radio |
-| `comms:linkLost` / `comms:linkRestored` | `{}` | telecom | señal < 20 % ⇒ no se transmiten datos; mensajes en cola (spec §3.8) |
-| `thermostat:set` | `{ setpointC }` | interacción (intent) | dial 16–22 °C (spec §3.3) |
-| `food:ready` / `food:spoiled` | `{}` / `{ reason: 'unharvested' \| 'noLight' \| 'noWater' }` | hidroponía | spec §3.6 |
 | `time:autoPause` | `{}` | presentación (intent) | **implementado v0.1**: la app lo emite al ocultarse la página o la sesión XR |
 | `time:autoPaused` | `{ previousSpeed }` | gestor de tiempo | **implementado v0.1**: visor quitado / foco perdido (spec §1.1) |
 | `filter:rejected` | `{ reason: 'noSpare' }` | soporte vital | **implementado v0.1**: cambio de filtro sin repuestos |
 | `save:request` | `{ slot: 'manual' }` | interacción (intent) | guardado manual en el terminal de log (spec §7) |
-| `power:overloadWarning` | `{ demandKw, limitKw }` | red eléctrica | demanda sobre el límite antes del disparo (spec §2.4) |
-| `crew:damage` | `{ cause, ratePerHour }` | `Crew` | causa activa para el biomonitor (spec §4) |
 | `alarm:raised` / `alarm:cleared` | `{ alarmId, level: 'amber' \| 'red', sourceId }` | sistemas / UI feedback | catálogo en spec §9.3 |
 
 Los tanques de O₂ de emergencia usan `valve:turn` (`valve_o2_tank_1/2`). Pendiente (OI-16): unificar `system:failed`/`system:repaired` (ids de sistema) con `component:damaged` (ids de componente, spec §6.1).
@@ -211,6 +206,10 @@ Los tanques de O₂ de emergencia usan `valve:turn` (`valve_o2_tank_1/2`). Pendi
 **Implementados en v0.1** (payloads tal cual en `src/systems/`):
 - **Recursos:** `resource:changed`, `resource:critical`.
 - **Energía:** `power:lost`/`restored`, `power:overloadWarning`, `breaker:toggle`, `relay:resetRequest`, `relay:tripped { guided, burned }`, `relay:reset`, `component:damaged` y `system:failed` (solo `relay_main`).
+  - Relé quemado (2026-11-15): `relay:resetRequest` lo sustituye gastando `power.relayRepairSpares` (1) de `spares` y emite `system:repaired { systemId: 'power', partId: 'relay_main' }` + `relay:reset`; sin repuestos emite `relay:rejected { reason: 'noSpare' }`.
+  - `time:dayEnded` está en el contrato pero **no se emite** todavía.
+- **Costes de cada decisión (2026-11-15, spec §10.8, `tests/tradeoffs.test.js`):** sin el circuito `lighting` la salud no se regenera (`Crew.regenBlocked === 'dark'`, `health.darkRegenFactor`); por debajo de `food.cold.belowC` (18 °C) los cultivos crecen × 0,6 (`Food.cold`); limpiar paneles cuesta 1,5 kWh y recupera el 60 %; fuera del refugio la tormenta solar hace 12 de daño/h; el aviso `sep` llega 3 h antes solo si hay enlace.
+- **Texto de paneles (compartido, `src/ui/theme.js`):** fuente, colores (`COLORS`, `BUTTON` con contraste ≥ 4,5:1), resolución mínima de lienzo (640 px/m, tope 2048 px) y tamaño mínimo de texto (22 mm). `Panel.renderLines` nunca baja del mínimo: el título se parte en 2 líneas y lo que no cabe termina en «…» (`panel.truncated`, visible con `?debug` en `mesh.userData.panel`). Ayudas: `wrapLines`, `ellipsize`, `fitLine`, y `paragraph` en `pictograms.js`. Los números con decimales que pasan por `t()` salen con coma (`src/utils/strings.js`, `fmt`). Botones: mayúscula inicial, sin emoji.
 - **Tiempo:** `time:tick`, `time:dayStarted`, `time:setSpeed`, `time:speedChanged`.
 - **Partida:** `game:start`, `game:phaseChanged`, `game:over`, `game:won`.
 - **Soporte vital:** `thermostat:set`, `valve:turn` (tanques O₂), `filter:swap`/`swapped`, `crew:damage`.
@@ -232,21 +231,21 @@ Los tanques de O₂ de emergencia usan `valve:turn` (`valve_o2_tank_1/2`). Pendi
   - `Telecom` limita la señal a `signalCap` mientras la fuente falla.
   - Banco (`src/rooms/hub/electronics.js`): minijuego guiado de 3 pasos, solo rayo + gatillo. 1) ESCANEAR: la pieza rota parpadea en rojo. 2) Tocarla: se desuelda y sale (`heat` + `remove`). 3) Tocar la tarjeta de repuesto con la misma forma que el hueco verde: entra soldada (`insert { reversed: false }` + `heat`). Solo se ofrecen los repuestos correctos (`bench.cards`). Sin multímetro ni soldador en la mano. Pasos puros en `electronicsRules.js` (`benchStep`, `isBroken`).
 - **Rover tipo Perseverance (`src/systems/Rover.js`, consola en la Sala de control):**
-  - Intent: `rover:command { cmd: 'forward' | 'back' | 'left' | 'right' | 'stop' | 'sample' }` (avanza 10 m, atrás 5 m, gira 30°, muestra a ≤ 8 m de un sitio). Necesita enlace: señal ≥ 20 %.
+  - Intent: `rover:command { cmd: 'forward' | 'back' | 'left' | 'right' | 'stop' | 'sample' }` (avanza 10 m, atrás 5 m, gira 30°, muestra a ≤ 8 m de un sitio). Necesita enlace: señal ≥ 20 %. Intent de presentación `rover:fpv {}` (modo primera persona; ver «Desviaciones del prototipo»).
   - Eventos: `rover:rejected { cmd, reason: 'noLink' | 'battery' | 'stuck' | 'noSite' | 'busy' }`, `rover:stopped { reason: 'obstacle' | 'sand' | 'battery' | 'edge' }`, `rover:sampled { siteId, kind: 'core' | 'salvage' }`, `rover:delivered { cores, spares }`.
   - Se recarga en la base por el circuito `repairBay` («Taller · Rover»). Los restos del aterrizaje que trae dan +1 `spares` cada uno.
-  - El panel adyacente `rover_vitals` es solo una maqueta desconectada: batería, generador, señal e integridad muestran «sin datos» y no leen la simulación.
+  - El panel adyacente `rover_vitals` lee la simulación (solo lectura): enlace y señal, batería del rover, distancia a la base y muestras. Generador, velocidad y tubos son datos reales de Perseverance (`src/data/real/perseverance.json`).
 - **Usar lo que sostienes (compartido, `src/vr/Grab.js`):** `userData.grab.onUse(active, handId)`. Con un objeto así en la mano, el gatillo (XR) o la tecla F (escritorio) lo usan en vez del rayo. Lo usa la manguera de Hidroponía. En escritorio, R gira lo que sostienes.
 - **Incidentes y avisos:** `incident:warning`/`triggered`, `weather:changed`, `comms:message`, `hint`.
 - **Enlace con la Tierra (`src/systems/Comms.js`):**
   - Intent `comms:send { channel, key, params? }` (lo emiten IncidentRunner y el parte diario).
   - Eventos `comms:message { channel, key, params, day, hour, minute, sentDay, sentHour, sentMinute, delayMin }` (llega tras el retraso de luz real), `comms:linkLost { reason: 'signal' | 'conjunction' }`, `comms:linkRestored {}`.
-- **Polvo en paneles (`PowerGrid`):** intent `solar:clean { by?: 'shield' | 'rover2' }`; eventos `solar:dustChanged { dustFactor }`, `solar:cleaned { by: 'shield' | 'rover2' | 'devil', gained, kwh }`, `solar:rejected { reason: 'noDust' | 'storm' | 'relay' | 'battery' | 'tracker' }`. Evento de guion `dustDevil`.
+- **Polvo en paneles (`PowerGrid`):** intent `solar:clean {}` (escudo electrodinámico; botón «LIMPIAR» de la consola solar, que en la ventana lanza una onda azul que recorre los paneles columna a columna, `SolarPanelShieldWave`, `balance.cleanFx`); eventos `solar:dustChanged { dustFactor }`, `solar:cleaned { by: 'shield' | 'devil', gained, kwh }`, `solar:rejected { reason: 'noDust' | 'storm' | 'relay' | 'battery' | 'tracker' }`. Evento de guion `dustDevil`.
 - **Seguidor solar (`src/systems/SolarTracker.js`, consola bajo la ventana de Energía):**
   - Intents: `solar:turn { dir: -1 | 1 }` (manual, paso 18°, límite ±60° sobre eje vertical), `solar:auto { on }` (sigue al Sol; motor 0,05 kW de día) y `solar:stow { on }` (PROTEGER: de canto, sin producción, ×0,25 de polvo en tormenta).
   - Evento: `solar:tracker { mode: 'manual' | 'auto' | 'stow', angleDeg, targetDeg }`.
-  - La producción solar = pico × coseno(azimut Sol − azimut panel) × polvo × tormenta (spec §2.6). `SolarField` gira los 6 paneles en una fila sobre su eje vertical con `sim.solarTracker.angleDeg`.
-- **Rover 2 limpiador (`SolarField`, consola `energy_rover2`):** intents `rover2:control {}` (alternar vista de seguimiento en tercera persona) y `rover2:clean {}` (limpiar solo dentro del alcance de los paneles). Escritorio: WASD, E limpia, Q/Esc sale; XR: joystick izquierdo, X/A limpia, Y/B sale. Limpia mediante `solar:clean { by: 'rover2' }` y respeta las mismas restricciones/coste de PowerGrid.
+  - La producción solar = pico × coseno(azimut Sol − azimut panel) × polvo × tormenta (spec §2.6). `SolarField` muestra 12 paneles (2 filas de 6; solo visual, la producción es la misma) y los gira sobre su eje vertical con `sim.solarTracker.angleDeg`.
+- **Batería (pared de breakers):** la cabecera dice si la batería se está cargando o descargando (tasa neta de `resources.power`) y cuánto falta para llenarse o vaciarse (`batteryCharge` en `src/rooms/energy/stations.js`). El Rover 2 limpiador se eliminó.
 - **Tormenta solar (`Radiation`):** `spaceWeather:alert { kind: 'sep', etaHours }` y `spaceWeather:impact { kind: 'sep', durationHours }` (IncidentRunner, evento `sep`); intent `crew:shelter { inside }` (presentación, según la posición de la cabeza en Personal); `crew:damage { cause: 'radiation' }` fuera del refugio en lo peor de la tormenta.
 - **Telecom:** `antenna:align`, `antenna:turnLeft`, `antenna:turnRight` (intents); escucha `component:damaged`/`system:repaired` para `antenna_motor`.
 - **Herramientas (presentación, fase 1):**
@@ -254,6 +253,8 @@ Los tanques de O₂ de emergencia usan `valve:turn` (`valve_o2_tank_1/2`). Pendi
   - `item:release { itemId }` (cae al suelo)
   - `item:socket { itemId, slot: 'SKT_Holster_L' | 'SKT_Holster_R' | 'toolwall' }`
   - Los emite `src/rooms/hub/tools.js`; la simulación aún no los consume (fase 2: reparaciones).
+  - Cada herramienta es una zona de agarre invisible (caja de 0,10 × 0,10 × 0,26 m) con la malla visible como hija, para acertar fácil con el rayo. En la mano la zona no hace raycast.
+- **Taquilla de repuestos (`src/rooms/hub/spares.js`, solo presentación, sin intents):** armario naranja junto al panel de herramientas. Tocar una puerta abre las dos (animación en `balance/hub.json` → `sparesLocker`). Dentro se ven en 3D `resources.spares` e `inventory` (filtros, sellador, tanques de O₂), con la lista de para qué sirve cada uno y un aviso de que diodos y condensadores están en el banco de electrónica. La Sala central mide 7,5 × 5 m (x −3…4,5).
 
 El resto sigue **propuesto**.
 
@@ -332,7 +333,7 @@ Presupuesto deliberadamente de clase Quest 2 para dejar margen en Quest 3 (y pro
 | Métrica | Presupuesto |
 | :-- | :-- |
 | Frame rate | 72 Hz objetivo (90 Hz solo si se mide estable), nunca por debajo de 60 Hz |
-| Draw calls | < 100–150 por frame; guía por sala ≈ 25 (6 salas + pasillos); máximo medido 59 |
+| Draw calls | < 100–150 por frame; guía por sala ≈ 25 (6 salas contando la central + pasillos); máximo medido 59 |
 | Triángulos | 500k–1M visibles |
 | Memoria de texturas | ~300–500 MB GPU-resident objetivo (medir) |
 | Texturas | 1K props, 2K superficies grandes; formato comprimido en runtime |
@@ -421,7 +422,7 @@ Requisitos recomendados:
 
 - [ ] Sesión VR funcional en Quest 3 por ruta de prueba documentada
 - [ ] Banco de entrenamiento (T1–T5) funcional y saltable
-- [ ] Entorno base jugable (6 salas en estrella + pasillos) con locomoción cómoda
+- [ ] Entorno base jugable (6 salas contando la central, en estrella + pasillos) con locomoción cómoda
 - [ ] Reruteo de energía con consecuencias visibles/audibles
 - [ ] Soporte vital con degradación y estados de fallo legibles
 - [ ] Al menos un trade-off forzado entre sistemas

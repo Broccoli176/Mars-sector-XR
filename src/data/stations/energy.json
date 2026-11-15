@@ -3,14 +3,14 @@
     "id": "breakers",
     "room": "room_energy",
     "wall": "north",
-    "along": 10.6,
+    "along": 10.4,
     "y": 1.6
   },
   {
     "id": "ls_gauges",
     "room": "room_energy",
     "wall": "north",
-    "along": 13.4,
+    "along": 13.6,
     "y": 1.45
   },
   {
@@ -40,12 +40,5 @@
     "wall": "east",
     "along": 7,
     "y": 0.95
-  },
-  {
-    "id": "energy_rover2",
-    "room": "room_energy",
-    "wall": "south",
-    "along": 13.9,
-    "y": 1.4
   }
 ]

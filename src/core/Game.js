@@ -61,7 +61,7 @@ export class Game {
       const sent = e.sentHour !== undefined ? ` ${t('ui.log.comms_sent', { time: formatClock(e.sentHour, e.sentMinute ?? 0), min: e.delayMin })}` : '';
       push(`${t(e.key, e.params)}${sent}`, 'comms');
     });
-    bus.on('comms:linkLost', (e) => push(t(`ui.log.link_lost.${e.reason}`), 'warning'));
+    bus.on('comms:linkLost', (e) => push(t(`ui.log.link_lost.${e.reason}`, { min: sim.telecom.cfg.linkThreshold }), 'warning'));
     bus.on('comms:linkRestored', () => push(t('ui.log.link_restored')));
     bus.on('solar:cleaned', (e) => push(t(`ui.log.solar_cleaned.${e.by}`, { pct: Math.round(e.gained * 100) })));
     bus.on('solar:rejected', (e) => push(t(`ui.log.solar_rejected.${e.reason}`), 'warning'));
@@ -74,6 +74,10 @@ export class Game {
       push(t('ui.log.overload', { demand: e.demandKw.toFixed(1), limit: e.limitKw.toFixed(1) }), 'warning'));
     bus.on('relay:tripped', (e) => push(t(e.burned ? 'ui.log.relay_burned' : 'ui.log.relay_tripped'), 'critical'));
     bus.on('relay:reset', () => push(t('ui.log.relay_reset')));
+    bus.on('relay:rejected', () => push(t('ui.log.relay_no_spare'), 'critical'));
+    bus.on('system:repaired', (e) => {
+      if (e.partId === 'relay_main') push(t('ui.log.relay_replaced'), 'warning');
+    });
     bus.on('food:ready', () => push(t('ui.log.food_ready'), 'warning'));
     bus.on('food:harvested', (e) => push(t('ui.log.food_harvested', { kcal: e.kcal })));
     bus.on('food:spoiled', (e) => push(t(`ui.log.food_spoiled.${e.reason}`), 'critical'));

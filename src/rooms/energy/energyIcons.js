@@ -1,7 +1,8 @@
 // OWNER: teammate (Telecom · Control · Energy) — see docs/COLLABORATION.md
 // Energía y oxígeno pictograms: circuit icons, battery, dial gauge, thermometer, O₂ tank, CO₂ filter,
-// solar-field top view and the cleaning rover. Generic shapes live in src/ui/pictograms.js (re-exported).
+// solar-field top view and dust specks. Generic shapes live in src/ui/pictograms.js (re-exported).
 import { COLORS } from '../../ui/Panel.js';
+import { font } from '../../ui/theme.js';
 import { roundRect } from '../../ui/pictograms.js';
 
 export * from '../../ui/pictograms.js';
@@ -186,7 +187,7 @@ export function tank(ctx, cx, cy, h, full, label = 'O₂') {
   ctx.fillStyle = full ? '#ffffff' : '#8b98a5';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.font = `bold ${Math.round(h * 0.2)}px system-ui, sans-serif`;
+  ctx.font = font(h * 0.2, true);
   ctx.fillText(label, cx, cy + h * 0.06);
   ctx.textAlign = 'left';
 }
@@ -251,29 +252,6 @@ export function fieldTopView(ctx, cx, cy, r, { panelDeg, sunDeg, stowed }) {
   }
   ctx.fillStyle = '#9aa7b3';
   ctx.fillRect(cx - r, cy, r * 2, r * 0.05);
-}
-
-/** Small six-wheeled cleaning rover with a brush. @param {CanvasRenderingContext2D} ctx */
-export function rover(ctx, cx, cy, w, active = false) {
-  ctx.fillStyle = active ? '#e0b030' : '#c9d1d9';
-  roundRect(ctx, cx - w / 2, cy - w * 0.22, w, w * 0.3, w * 0.05);
-  ctx.fill();
-  ctx.fillStyle = '#2f6fb3';
-  ctx.fillRect(cx - w * 0.3, cy - w * 0.38, w * 0.45, w * 0.14);
-  ctx.fillStyle = '#20272e';
-  for (const k of [-0.36, 0, 0.36]) {
-    ctx.beginPath();
-    ctx.arc(cx + k * w, cy + w * 0.12, w * 0.1, 0, Math.PI * 2);
-    ctx.fill();
-  }
-  pen(ctx, '#7cc4ff', Math.max(2, w * 0.03));
-  for (let i = 0; i < 4; i++) {
-    ctx.beginPath();
-    ctx.moveTo(cx + w * 0.52, cy - w * 0.15 + i * w * 0.07);
-    ctx.lineTo(cx + w * 0.62, cy - w * 0.18 + i * w * 0.07);
-    ctx.stroke();
-  }
-  ctx.lineCap = 'butt';
 }
 
 /** Dust specks over a bar area, more for higher `amount` (0..1). @param {CanvasRenderingContext2D} ctx */

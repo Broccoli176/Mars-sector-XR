@@ -11,8 +11,22 @@ export function createTranslator(table) {
   return function t(key, params) {
     const template = table[key] ?? key;
     if (!params) return template;
-    return template.replace(/\{(\w+)\}/g, (_, name) => (name in params ? String(params[name]) : `{${name}}`));
+    return template.replace(/\{(\w+)\}/g, (_, name) => (name in params ? localizeNumber(params[name]) : `{${name}}`));
   };
+}
+
+/**
+ * Spanish number format: decimal comma. @param {number} value @param {number} [digits]
+ */
+export const fmt = (value, digits = 1) => Number(value).toFixed(digits).replace('.', ',');
+
+/**
+ * Parameters that are plain decimals («2.5», 0.28) are shown with a decimal comma, so every panel agrees.
+ * @param {string | number} value
+ */
+function localizeNumber(value) {
+  const text = String(value);
+  return /^[-+]?\d+\.\d+$/.test(text) ? text.replace('.', ',') : text;
 }
 
 /** @param {number} hour @param {number} minute */

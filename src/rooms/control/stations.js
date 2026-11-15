@@ -1,7 +1,7 @@
 // OWNER: teammate (Telecom · Control · Energy) — see docs/COLLABORATION.md
 // Sala de control: main PC, time controls, bio panel, rover console and disconnected vitals panel.
 import { COLORS, BUTTON, statusColor, startButtonState, renderBio } from '../../ui/StationKit.js';
-import { formatClock } from '../../utils/strings.js';
+import { formatClock, fmt } from '../../utils/strings.js';
 import { buildRoverConsole } from './rover.js';
 
 const SPEEDS = [0, 1, 2, 4];
@@ -46,7 +46,7 @@ export const builders = {
         t('ui.power.net', { value: battery.ratePerHour.toFixed(2) }) + '   ' + t('ui.power.generation', { value: p.generationKw.toFixed(1) }),
         { text: t('ui.power.demand', { value: p.totalDemandKw.toFixed(1), limit: p.cfg.busLimitKw.toFixed(1) }), color: p.totalDemandKw > p.cfg.busLimitKw ? COLORS.warning : COLORS.text },
         { text: t(relay), color: p.relayClosed ? COLORS.nominal : COLORS.critical },
-        ...(p.stormActive ? [{ text: t('ui.power.storm'), color: COLORS.warning }] : []),
+        ...(p.stormActive ? [{ text: t('ui.power.storm', { pct: Math.round(p.cfg.stormSolarFactor * 100) }), color: COLORS.warning }] : []),
         { text: `— ${t('ui.pc.log')} —`, color: COLORS.dim, size: 0.8 },
         ...game.log.slice(0, 4).map((e) => ({ text: e.text, color: LOG_COLORS[/** @type {keyof typeof LOG_COLORS} */ (e.kind)] ?? COLORS.text, size: 0.8 })),
       ], { border: p.relayClosed ? COLORS.border : COLORS.critical });
@@ -88,11 +88,11 @@ export const builders = {
       const s = sim();
       const r = s.rover;
       const sig = s.resources.get('signal');
-      const link = sig.value >= (s.telecom?.cfg.linkThreshold ?? 20);
+      const link = sig.value >= s.telecom.cfg.linkThreshold;
       const cores = r ? (r.cargo?.cores ?? 0) : 0;
       const delivered = r ? (r.delivered?.cores ?? 0) : 0;
       const batPct = r ? Math.round(r.batteryPct) : 100;
-      const batWh = r ? Math.round(r.batteryWh) : 860;
+      const batWh = r ? Math.round(r.batteryWh) : s.balance.rover?.batteryWh ?? 0;
       const dist = r ? Math.round(r.distanceToBase()) : 0;
       const odo = r ? Math.round(r.odometerM) : 0;
       const mmrtgW = real?.mmrtgWattsAtLaunch ?? 110;
@@ -129,7 +129,7 @@ function summaryLines(s, t) {
   const used = s.balance.inventory.filters - s.inventory.filters;
   const lines = ['oxygen', 'temperature', 'water', 'food'].map((id) => {
     const r = s.resources.get(id);
-    return { text: `${t(`ui.resource.${id}`)}: ${r.value.toFixed(id === 'temperature' ? 1 : 0)} ${r.unit}`, color: statusColor(r.status), size: 0.85 };
+    return { text: `${t(`ui.resource.${id}`)}: ${fmt(r.value, id === 'temperature' ? 1 : 0)} ${r.unit}`, color: statusColor(r.status), size: 0.85 };
   });
   lines.push({ text: t('summary.filters_used', { used, left: s.inventory.filters }), color: COLORS.dim, size: 0.85 });
   return lines;

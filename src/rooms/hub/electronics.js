@@ -8,6 +8,7 @@ import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { COLORS, BUTTON } from '../../ui/StationKit.js';
 import { Panel } from '../../ui/Panel.js';
+import { font } from '../../ui/theme.js';
 import { addInfo } from '../../ui/InfoSheet.js';
 import { frame, text, badge, tile, roundRect } from '../../ui/pictograms.js';
 import { benchStep, isBroken, scopeTrace } from './electronicsRules.js';
@@ -460,7 +461,7 @@ function drawSilkscreen(ctx, W, H, t, { red, ghost, pulse, ring, scanX }) {
   ctx.strokeStyle = '#f2f2f2';
   ctx.fillStyle = '#f2f2f2';
   ctx.lineWidth = s * 0.0012;
-  ctx.font = `bold ${Math.round(s * 0.011)}px sans-serif`;
+  ctx.font = font(s * 0.011, true);
   ctx.textAlign = 'center';
   for (const [id, [x, y]] of Object.entries(SLOT_POS)) {
     if (id === 'C1') {
@@ -549,5 +550,5 @@ function drawScope(
   text(ctx, t('hub.elec.scope.title'), W * 0.02, H * 0.07, { size: H * 0.065, color: COLORS.title, bold: true });
   const good = out.quality === 'ok';
   text(ctx, t(good ? 'hub.elec.scope.good' : 'hub.elec.scope.bad'), W * 0.98, H * 0.07, { size: H * 0.065, bold: true, align: 'right', color: good ? COLORS.nominal : COLORS.critical });
-  text(ctx, t('hub.elec.scope.legend'), W / 2, H * 0.94, { size: H * 0.045, align: 'center', color: COLORS.dim, maxWidth: W * 0.96 });
+  text(ctx, t('hub.elec.scope.legend'), W / 2, H * 0.94, { size: H * 0.055, align: 'center', color: COLORS.text, maxWidth: W * 0.96 });
 }

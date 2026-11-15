@@ -1,12 +1,10 @@
 {
   "ui.telecom.title": "TELECOMUNICACIONES",
-  "ui.telecom.pending": "Enlace orbital con la Tierra",
   "ui.telecom.power": "Alimentación: {state}",
   "ui.telecom.signal": "Señal: {val}% ({status})",
   "ui.telecom.alignment": "Alineación antena: {pct}%",
-  "ui.telecom.align": "ALINEAR ANTENA",
-  "ui.telecom.left": "◀ IZQ",
-  "ui.telecom.right": "DER ▶",
+  "ui.telecom.left": "◀ Izq",
+  "ui.telecom.right": "Der ▶",
   "ui.telecom.azimuth": "Giro (acimut): {deg}° (0° norte, 90° este)",
   "ui.telecom.motor": "Motor antena: {state}",
   "ui.telecom.server_title": "DISTRIBUIDOR DE RED",
@@ -26,7 +24,7 @@
   "ui.telecom.rover_delay": "Rover: menos de 1 s (lo manejas desde la base, no desde la Tierra)",
   "ui.telecom.orbit_source": "Distancia real Tierra–Marte de hoy (órbitas de la NASA/JPL)",
   "telecom.info.title": "COMUNICACIONES Y ÓRBITAS · DATOS NASA/JPL",
-  "telecom.info.delay": "La distancia entre la Tierra y Marte varía entre 55 y 400 millones de km según su posición orbital. Las ondas de radio viajan a la velocidad de la luz (300.000 km/s), tardando entre 3 y 22 minutos en llegar.",
+  "telecom.info.delay": "Marte está a entre 55 y 400 millones de km de la Tierra. Las ondas de radio viajan a la velocidad de la luz y aun así tardan entre 3 y 22 minutos en llegar.",
   "telecom.info.conjunction": "Conjunción solar: ocurre cada ≈26 meses cuando el Sol se interpone exactamente entre Marte y la Tierra, bloqueando toda comunicación radial durante unas dos semanas.",
   "telecom.info.orbits": "Cálculo en tiempo real a partir de los elementos orbitales de Standish (NASA/JPL).",
   "telecom.info.antenna": "Antena parabólica: concentra la señal hacia el satélite de retransmisión. Si el acimut (ángulo de giro) se desvía, la tasa de datos y la cobertura caen."

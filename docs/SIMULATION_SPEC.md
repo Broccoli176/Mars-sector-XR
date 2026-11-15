@@ -31,7 +31,7 @@
 | D16 | Day boundary | ✅ An in-game day **starts at 06:00** | §1 |
 | D17 | Headset removal | ✅ **Auto-pause** when the headset is removed or the session loses focus | §1 |
 | D18 | Crop spoilage | ✅ An unharvested crop, or one without light/water too long, **spoils** | §3.6 |
-| D19 | Space weather | ✅ Static snapshot of NASA DONKI (`src/data/spaceWeather.json`) drives a CME and two radio blackouts. No live API in MVP | §6.3 |
+| D19 | Space weather | ⏳ **Pending.** Planned: a static NASA DONKI snapshot (`src/data/spaceWeather.json`, not created yet) drives a CME and two radio blackouts. Today only the `sep` event exists (§6.5); nothing emits a `cme` impact, so the CME fault of the electronics bench (§6.6) cannot happen | §6.3 |
 | D20 | MVP mechanic scope | Adjustable thermostat **in**. Grow lights = `hydro` breaker only. Rationing, door seals and unscripted failures **out** (post-MVP) | §3.3 |
 | D21 | Comms | **Text only** (screen + printer) with radio SFX. No voice in MVP | §9 |
 | D22 | Save in hackathon | Save/load is a **stretch goal** for the 2-day hackathon | §7 |
@@ -118,7 +118,7 @@ Generation: clear day ≈ **31.2 kWh** (12.0 RTG + ≈ 19.5 solar with the track
 **Headless check (prototype v0.1, `npm run sim`, 2026-11-14):**
 - The everything-on day costs ≈ −13.6 kWh, matching this table.
 - **Idle** player: `powerLoss` at day 1, 15:00.
-- **Greedy** player (everything on, resets relay, harvests): `powerLoss` at day 3, 23:54.
+- **Greedy** player (everything on, resets relay, harvests): `powerLoss` at day 2, 02:57 (`npm run sim`, 2026-11-15).
 - **Competent** policy (sheds telecom/lighting, thermostat 16 °C in storm, sows/waters/harvests the 4 trays): survives with 100 health. The battery hits 0 on day 5–6, but the trays already sown carry the food.
 - Balance is tight. Candidate levers if playtests agree: battery start, or making hydro cheaper.
 
@@ -138,14 +138,12 @@ Generation: clear day ≈ **31.2 kWh** (12.0 RTG + ≈ 19.5 solar with the track
 | Calm settling | −0.28 % of output per sol (`calmLossPerSol` 0.0028) | **Real**: Mars Pathfinder Materials Adherence Experiment (Landis & Jenkins 2000), `src/data/real/solar_dust.json` |
 | Dust storm deposit | −0.8 %/h while the storm lasts (36 h storm ⇒ ≈ −25 %) | Game balance |
 | Floor | `dustFactor` ≥ 0.4 | Game balance |
-| Solar cleaning | intent `solar:clean { by?: 'shield' | 'rover2' }`: −0.3 kWh battery, recovers 90 % of the lost output. Rover 2 can request it only within 1.8 m of a panel; it uses the same storm, relay, battery, and already-clean checks as the shield | Technology real (NASA KSC); numbers are game balance |
+| Solar cleaning | intent `solar:clean {}` (electrodynamic dust shield, «LIMPIAR» button on the solar desk): −1.5 kWh battery, recovers 60 % of the lost output (2026-11-15: was 0.3 kWh / 90 %, which made cleaning free and «PROTEGER» pointless; now dust avoided by stowing in a storm is worth more than a later clean). Rejected when already clean, during a storm, with the relay open or without battery | Technology real (NASA KSC); numbers are game balance |
 | Dust devil | scripted `dustDevil` event (day 6 13:00): recovers 60 % of the lost output | Real phenomenon (Spirit/Opportunity); amount is game balance |
 
-Events: `solar:dustChanged { dustFactor }` (when the dust % changes by 1), `solar:cleaned { by: 'shield' | 'rover2' | 'devil', gained, kwh }`, `solar:rejected { reason }`. Honest note: at the real calm rate a 7-day run loses only ≈ 2 %; the storm is what makes dust matter.
+Events: `solar:dustChanged { dustFactor }` (when the dust % changes by 1), `solar:cleaned { by: 'shield' | 'devil', gained, kwh }`, `solar:rejected { reason }`. Honest note: at the real calm rate a 7-day run loses only ≈ 2 %; the storm is what makes dust matter.
 
-### Rover 2 (implemented)
-
-The `energy_rover2` console toggles a third-person follow view. Drive with WASD (desktop) or the left controller stick (XR); press E / X-or-A to clean within 1.8 m of a panel, and Q/Esc / Y-or-B to exit. Rover 2 is restricted to the solar work area. Cleaning emits `solar:clean { by: 'rover2' }`, so it shares the PowerGrid's dust, storm, relay, and battery rules.
+Presentation: on `solar:cleaned { by: 'shield' }` the solar window plays a blue shield wave that sweeps the panel columns one after another (12 panels in 2 rows of 6; visual only, the peak stays `solarKw`) (`SolarPanelShieldWave`, +1 draw call), and the shown dust fades out (`balance.cleanFx` in `energy.json`, real seconds). The former Rover 2 cleaning rover was removed (too confusing for players).
 
 ### 2.6 Sun tracker (implemented, `src/systems/SolarTracker.js`, `balance.tracker` in `energy.json`)
 
@@ -211,6 +209,8 @@ Status `offline` applies to resources only for `signal` (telecom unpowered or ra
 
 The thermostat is a **modest lever** (≈ 1 kWh/day) that mainly matters during the storm. Lowering it also reduces the buffer before hypothermia if heating is lost.
 
+**Trade-off (implemented 2026-11-15, `balance.food.cold`):** while the room is below **18 °C** the crops grow at **× 0.6** (`Food.cold`, `Food.growthFactor`). Cold never kills a plant. The tray panel says «Hace frío: crece lento» and the step card «Hace frío: sube el termostato».
+
 ### 3.4 Pressure (`pressure`)
 | Item | Value |
 | :-- | :-- |
@@ -260,7 +260,7 @@ Without hydro, rations run out on day 5, 06:00 and starvation kills around day 7
 `npm run sim` (competent policy also feeds nutrients when low, cooks with `kitchen:auto` while battery > 5 kWh and eats raw what is about to spoil): survives, food ends ≈ 4 900 kcal. The wider moisture band makes hydroponics noticeably easier than before (≈ 2 400 kcal). Greedy eats every harvest raw (same result as before).
 
 ### 3.7 Spares (`spares`)
-Start **3**. Up to **5** failures can require a spare (4 scripted + `relay_main` if it burns from 3 trips or the CME). At least two must be worked around or left unfixed. That is intentional.
+Start **3**. Up to **5** failures can require a spare (4 scripted + `relay_main` if it burns from 3 trips or the CME). **Implemented 2026-11-15:** a burned `relay_main` is replaced from the breaker wall («Rearmar relé») for `power.relayRepairSpares` = 1 spare (`system:repaired { systemId: 'power', partId: 'relay_main' }`); without spares it is refused (`relay:rejected { reason: 'noSpare' }`). This is the first real use of `spares`, and what the rover's salvage is for. At least two must be worked around or left unfixed. That is intentional.
 
 ### 3.8 Signal (`signal`) and antenna
 | Item | Value |
@@ -315,6 +315,7 @@ Events: `comms:message { channel, key, params, day, hour, minute, sentDay, sentH
 | Item | Value |
 | :-- | :-- |
 | Regeneration | +2 /h while **none of `oxygen`, `co2`, `pressure`, `temperature`, `water`, `food` is `critical`** and food > 0 and water > 0. `signal`, `power` and `spares` do not block it |
+| Darkness (implemented 2026-11-15) | GAME RULE: while the `lighting` circuit is unserved (breaker off or offline) regeneration is × `health.darkRegenFactor` = **0**. `Crew.regenBlocked` is `'dark'` and the biomonitor shows «Sin luz no recuperas salud». This is the cost of shedding lighting |
 
 **Damage per in-game hour** (stacks):
 
@@ -346,7 +347,7 @@ Each tick, `Crew` emits `crew:damage { cause, ratePerHour }` when the set of act
 | Win | Reach tick 10 080 (day 8, 06:00) without a game-over | `survived` |
 | Lose | `health` reaches 0 (§4) | `suffocation` / `hypothermia` / `dehydration` / `starvation` (dominant cause) |
 | Lose | Total power loss (§2.4) | `powerLoss` |
-| Lose | **Unrecoverable cascade**: ≥ 2 critical-chain components broken **and** spares = 0 **and** ≥ 2 resources `critical`, held for 2 h | `cascade` |
+| Lose (**planned, not implemented**: `GameState` only ends on health, `powerLoss` or `survived`) | **Unrecoverable cascade**: ≥ 2 critical-chain components broken **and** spares = 0 **and** ≥ 2 resources `critical`, held for 2 h | `cascade` |
 
 Critical-chain components: `pump_thermal`, `electrolyzer_cell`, `scrubber_fan`, `relay_main`.
 
@@ -403,7 +404,7 @@ In-game times. Randomization: timing ± 2 h (clamped to stay within 06:00–23:5
 | 6 | 12:00 | CME reminder ("impacto en 24 h") | delivered now / 50 | |
 | 6 | 13:00 | **Radio blackout** (solar flare, 2 h) | — | |
 | 6 | 18:00 | Second leak (`hull_seal_telecom`) | 6 / 50 | |
-| 6 | 10:00 | **Implemented:** solar particle event `sep` (real May 2024 profile, §6.5) | 1 h alert via the delayed link | Shelter; why warnings from Earth matter |
+| 6 | 10:00 | **Implemented:** solar particle event `sep` (real May 2024 profile, §6.5) | 3 h alert via the delayed link (lost if Telecom is off or the link is down) | Shelter; why warnings from Earth matter |
 | 6 | 13:00 | **Implemented:** `dustDevil` cleans the panels (§2.5) | — | Dust and power |
 | 7 | 12:00 | **CME arrival** (§6.3) | see day 4 alert | Telecom early warning pays off |
 
@@ -502,14 +503,14 @@ Ver **`AGENTS.md` §4.2** para el contrato de eventos y payloads (baseline + pro
 | Item | Value |
 | :-- | :-- |
 | Ceiling height | 2.6 m |
-| Layout | **Hub and spokes** (v2, 2026-11-14). Sala central · Herramientas (hub, 6 × 5 m) in the middle. North hall → Telecom (5 × 4) and Sala de control (6 × 6, spawn, main PC/time controls, bio panel, rover console). West door of the hub → Personal (5 × 4, no corridor; crew quarters + radiation shelter). South hall → Hidroponía · Agricultura (5 × 6, with kitchen) and Energía y oxígeno (8 × 7, rounded solar window) |
+| Layout | **Hub and spokes** (v2, 2026-11-14). Sala central · Herramientas (hub, 7.5 × 5 m) in the middle. North hall → Telecom (5 × 4) and Sala de control (6 × 6, spawn, main PC/time controls, bio panel, rover console). West door of the hub → Personal (5 × 4, no corridor; crew quarters + radiation shelter). South hall → Hidroponía · Agricultura (5 × 6, with kitchen) and Energía y oxígeno (8 × 7, rounded solar window) |
 | Corridors | 1.8 m wide, straight (L-shaped where the sketch was diagonal); emissive fixtures + conduits, no point lights |
 | Layout | Coordinates, doors, panel walls and teleport anchors: **`docs/FLOOR_PLAN.md`** (authoritative) |
 | Doorways | 0.8 × 2.0 m clear opening |
 | Teleport | only onto `COL_Floor_*` meshes; 1–2 named teleport anchors per room plus free floor targeting |
 | Reference space | `local-floor`; standing default, seated toggle adds +0.4 m eye-height offset |
 | Turning | snap 30° default; smooth turn optional, with vignette |
-| Start / restart | Player spawns in the Sala de control in front of the main PC (9, −5.5), facing east; the time lever is beside it. "Iniciar turno" exists on the main PC and on the training board in the Sala central. After game over, the same PC shows the summary and restart control |
+| Start / restart | Player spawns in the Sala de control in front of the main PC at (6.8, −6.4), facing north (`layout.json` → `spawn`); the time lever is beside it. "Iniciar turno" exists on the main PC and on the training board in the Sala central. After game over, the same PC shows the summary and restart control |
 | Window | Telecom panoramic window with a 3D exterior (dunes, rocks, dish antenna following `alignment`, sun/stars, dust). No extra dynamic lights: baked vertex shading tinted by time of day/storm. Plus periscope feed on main PC |
 | Device | **Meta Quest 3**, Quest Browser (D15) |
 | XR settings | 72 Hz default (90 Hz only if measured stable); `setFoveation(1.0)` to start (measure text legibility); `framebufferScaleFactor` 1.0 |
@@ -597,7 +598,8 @@ Con esta spec/datos, los siguientes escenarios deben poder expresarse sin invent
 2. **Scripted competent play wins:** un guion de inputs (`tests/fixtures/competent.json`, por crear) con reset de relé, cambio de filtro, sellado de fugas, cosechas a tiempo, recorte de carga en tormenta y ante la CME llega vivo al tick 10 080.
 3. **Greedy overload during storm loses:** mantener todo encendido durante la tormenta vacía la batería y provoca derrota (`powerLoss` o `hypothermia`) antes del final del día 6.
 4. **No hydro loses:** sin cosechas, derrota por `starvation` el día 7.
-5. **Health recovery rules:** la salud se regenera al resolverse condiciones críticas y no se regenera con comida o agua en 0.
+5. **Health recovery rules:** la salud se regenera al resolverse condiciones críticas y no se regenera con comida o agua en 0, ni con el circuito de iluminación sin servicio (**implementado**, `tests/tradeoffs.test.js`).
+8. **Every decision costs something (implementado, `tests/tradeoffs.test.js`):** apagar iluminación detiene la regeneración; frío < 18 °C frena los cultivos; limpiar paneles gasta 1,5 kWh y recupera el 60 %; cambiar un relé quemado gasta 1 repuesto; no refugiarse en la tormenta solar hace 12 de daño/h.
 6. **CME rule:** demanda > 2.0 kW en día 7 12:00 quema `relay_main`; ≤ 2.0 kW no.
 7. **Save/load determinism:** guardar en día 3 → cargar → continuar produce el mismo resultado que una ejecución ininterrumpida con la misma seed e inputs (cuando exista SaveSystem).
 

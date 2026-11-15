@@ -18,7 +18,6 @@ import { freshnessLines, freshnessLevel } from './kitchenRules.js';
 import * as icon from './hydroIcons.js';
 import { addInfo } from '../../ui/InfoSheet.js';
 
-const KCAL_PER_DAY = 2500;
 const TRAY_XS = [-1.2, -0.4, 0.4, 1.2];
 const TRAY_W = 0.7;
 const TRAY_D = 0.42;
@@ -249,7 +248,7 @@ export const builders = {
         const crop = crops[tray.cropId];
         const name = t(`real.crop.${crop.id}`);
         const growth = tray.ready ? 1 : Math.min(1, tray.growthHours / crop.growthHours);
-        const hungry = f.growthFactor < 1;
+        const hungry = f.hungry;
         /** @type {[string, string]} */
         const [msgKey, msgColor] = tray.ready ? ['hydro.msg.ready', COLORS.warning]
           : !powered ? ['hydro.msg.dark', COLORS.critical]
@@ -257,6 +256,7 @@ export const builders = {
           : state === 'flooded' ? ['hydro.msg.flooded', COLORS.critical]
           : hydroState.watering === v.trayId ? ['hydro.msg.watering', COLORS.info]
           : hungry ? ['hydro.msg.hungry', COLORS.warning]
+          : f.cold ? ['hydro.msg.cold', COLORS.info]
           : ['hydro.msg.ok', COLORS.nominal];
         const border = tray.ready ? COLORS.warning : msgColor === COLORS.critical ? COLORS.critical : COLORS.border;
         const key = [crop.id, Math.round(growth * 50), Math.round(tray.moisture * 50), msgKey, f.lightsOn].join('|');
@@ -609,8 +609,9 @@ export const builders = {
     kit.onRefresh(() => {
       const s = sim();
       const now = currentStep(s.food, s.kitchen, cfg);
-      const hungry = s.food.growthFactor < 1;
-      panel.renderCustom(`${now}|${hungry}`, (ctx, w, h) => {
+      const hungry = s.food.hungry;
+      const cold = s.food.cold;
+      panel.renderCustom(`${now}|${hungry}|${cold}`, (ctx, w, h) => {
         icon.frame(ctx, w, h, COLORS.info);
         icon.text(ctx, t('hydro.steps.title'), w / 2, h * 0.09, { size: h * 0.085, color: COLORS.title, bold: true, align: 'center', maxWidth: w * 0.9 });
         const pad = w * 0.04;
@@ -625,7 +626,7 @@ export const builders = {
           draw(ctx, x + tw * 0.3, y + th * 0.6, th * 0.24);
           icon.text(ctx, t(`hydro.steps.${id}`), x + tw * 0.52, y + th * 0.5, { size: th * 0.24, color: active ? COLORS.text : COLORS.dim, bold: active, maxWidth: tw * 0.45 });
         });
-        const msg = hungry && now === 'wait' ? 'feed' : now;
+        const msg = now !== 'wait' ? now : hungry ? 'feed' : cold ? 'cold' : now;
         icon.text(ctx, t(`hydro.steps.now.${msg}`), w / 2, h * 0.91, {
           size: h * 0.075, color: msg === 'wait' ? COLORS.nominal : COLORS.warning, bold: true, align: 'center', maxWidth: w * 0.92,
         });
@@ -669,7 +670,7 @@ export const builders = {
       const f = sim().resources.get('food');
       panel.renderLines(t('ui.food.title'), [
         { text: `${Math.round(f.value)} kcal   ${t(`ui.status.${f.status}`)}`, color: statusColor(f.status), size: 1.2 },
-        t('ui.food.days', { days: (f.value / KCAL_PER_DAY).toFixed(1) }),
+        t('ui.food.days', { days: (f.value / (sim().balance.food.consumptionPerHour * 24)).toFixed(1) }),
       ]);
     });
   },

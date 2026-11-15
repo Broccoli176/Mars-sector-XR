@@ -1,68 +1,62 @@
 import { describe, it, expect } from 'vitest';
 import * as THREE from 'three';
 import { gameData } from '../src/data/index.js';
-import { buildSolarField, fieldLook } from '../src/world/SolarField.js';
+import { buildSolarField, fieldLook, shieldWave } from '../src/world/SolarField.js';
 import { newSim, runTicks } from './helpers/sim.js';
 
 const dust = gameData.balance.dust;
 
 describe('Dust on the solar panels (spec §2.5)', () => {
-  it('renders six panels, Rover 2, and the Tesla coil without the parked rover', () => {
+  it('renders 12 panels (2 rows) and the shield wave, without rover, pad or Tesla coil', () => {
     const field = buildSolarField(new THREE.Scene(), () => ({ balance: gameData.balance }), {
       center: [0, 1.5, 0],
       width: 2,
       height: 1,
       outward: [1, 0],
-    }, { camera: new THREE.PerspectiveCamera(), dolly: new THREE.Group() });
+    });
     const nodes = [];
     field.root.traverse((node) => nodes.push(node));
     const panels = nodes.find((node) => node.name === 'SolarPanels');
-    expect(panels.count).toBe(6);
-    expect(nodes.map((node) => node.name)).not.toContain('Rover1_ChargingPad');
-    expect(nodes.map((node) => node.name)).toContain('Rover2_Cleaning');
-    expect(nodes.map((node) => node.name)).toContain('TeslaCoil_FieldProp');
+    expect(panels.count).toBe(12);
+    const names = nodes.map((node) => node.name);
+    expect(names).not.toContain('Rover1_ChargingPad');
+    expect(names).not.toContain('Rover2_Cleaning');
+    expect(names).not.toContain('TeslaCoil_FieldProp');
+    expect(names).toContain('SolarPanelShieldWave');
   });
 
-  it('follows Rover 2 in third person and only cleans panels after it is close enough', () => {
+  it('the shield wave sweeps the panels one after another, then stops', () => {
+    const fx = gameData.balance.cleanFx;
+    expect(shieldWave(0, 0, fx).active).toBe(true);
+    expect(shieldWave(0, 1, fx).active).toBe(false);
+    expect(shieldWave(fx.stepS + 0.01, 1, fx).active).toBe(true);
+    const sweep = fx.durationS - fx.stepS * 5;
+    const mid = shieldWave(sweep / 2, 0, fx);
+    expect(mid.x).toBeCloseTo(0, 5);
+    expect(mid.opacity).toBeCloseTo(1, 5);
+    for (let i = 0; i < 6; i++) expect(shieldWave(fx.durationS + 0.01, i, fx).active).toBe(false);
+  });
+
+  it('LIMPIAR (shield) plays the wave in the window and ends after its duration', () => {
     const sim = newSim({ events: [] });
     sim.bus.emit('game:start');
     sim.power.dustFactor = 0.7;
-    const camera = new THREE.PerspectiveCamera();
-    camera.position.y = 1.6;
-    const dolly = new THREE.Group();
-    dolly.add(camera);
     const field = buildSolarField(new THREE.Scene(), () => sim, {
       center: [0, 1.5, 0],
       width: 2,
       height: 1,
       outward: [1, 0],
-    }, { camera, dolly });
-    /** @type {any[]} */
-    const cleaned = [];
-    sim.bus.on('solar:cleaned', (e) => cleaned.push(e));
+    });
     field.update(0);
-
-    sim.bus.emit('rover2:control');
-    expect(field.isControllingRover2).toBe(true);
-    field.update(0);
-    const rover2 = field.root.getObjectByName('Rover2_Cleaning');
-    const roverPosition = rover2.getWorldPosition(new THREE.Vector3());
-    const roverForward = rover2.getWorldDirection(new THREE.Vector3()).setY(0).normalize();
-    const cameraPosition = camera.getWorldPosition(new THREE.Vector3());
-    const cameraDirection = camera.getWorldDirection(new THREE.Vector3()).setY(0).normalize();
-    const roverFromCamera = roverPosition.sub(cameraPosition).setY(0).normalize();
-    expect(cameraDirection.dot(roverForward)).toBeGreaterThan(0.99);
-    expect(roverFromCamera.dot(roverForward)).toBeGreaterThan(0.99);
-
-    sim.bus.emit('rover2:clean');
-    expect(sim.power.dustFactor).toBe(0.7);
-
-    const cameraStart = dolly.position.clone();
-    field.update(1, { drive: 1 });
-    expect(dolly.position.distanceTo(cameraStart)).toBeGreaterThan(0);
-    sim.bus.emit('rover2:clean');
+    expect(field.isCleaning).toBe(false);
+    sim.bus.emit('solar:clean', {});
     expect(sim.power.dustFactor).toBeGreaterThan(0.7);
-    expect(cleaned[0].by).toBe('rover2');
+    expect(field.isCleaning).toBe(true);
+    field.update(0.5);
+    expect(field.root.getObjectByName('SolarPanelShieldWave').visible).toBe(true);
+    field.update(gameData.balance.cleanFx.durationS);
+    expect(field.isCleaning).toBe(false);
+    expect(field.root.getObjectByName('SolarPanelShieldWave').visible).toBe(false);
   });
 
   it('settles at the real Mars Pathfinder rate when calm (0.28 % per sol)', () => {

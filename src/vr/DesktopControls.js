@@ -26,7 +26,6 @@ export class DesktopControls {
     this.interaction = interaction;
     this.locomotion = locomotion;
     this.pitch = 0;
-    this.rover2Control = false;
     this.raycaster = new THREE.Raycaster();
     this.pointer = new THREE.Vector2();
     /** @type {null | { x: number, y: number, moved: boolean }} */
@@ -89,7 +88,6 @@ export class DesktopControls {
 
   /** @param {PointerEvent} e @param {HTMLElement} dom */
   #click(e, dom) {
-    if (this.rover2Control) return;
     const rect = dom.getBoundingClientRect();
     this.pointer.set(((e.clientX - rect.left) / rect.width) * 2 - 1, -((e.clientY - rect.top) / rect.height) * 2 + 1);
     this.raycaster.setFromCamera(this.pointer, this.camera);
@@ -100,10 +98,5 @@ export class DesktopControls {
   update() {
     if (this.renderer.xr.isPresenting) return;
     this.camera.rotation.set(this.pitch, 0, 0);
-  }
-
-  /** @param {boolean} active */
-  setRover2Control(active) {
-    this.rover2Control = active;
   }
 }

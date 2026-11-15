@@ -15,7 +15,7 @@ export class IncidentRunner {
   constructor(events, timeCfg, ctx) {
     this.bus = ctx.bus;
     this.power = ctx.power;
-    this.ticksPerHour = 60;
+    this.ticksPerHour = timeCfg.minutesPerDay / 24;
     /** @type {{ tick: number, event: any, kind: 'trigger' | 'warning' }[]} */
     this.schedule = [];
     for (const event of events) {
@@ -77,7 +77,7 @@ export class IncidentRunner {
         this.power.stormActive = true;
         this.stormEndTick = tick + event.durationHours * this.ticksPerHour;
         this.bus.emit('weather:changed', { state: 'dustStorm', solarFactor: this.power.cfg.stormSolarFactor });
-        this.#comms('comms.storm.start', {}, clock);
+        this.#comms('comms.storm.start', { pct: Math.round(this.power.cfg.stormSolarFactor * 100) }, clock);
         break;
       default:
         break;

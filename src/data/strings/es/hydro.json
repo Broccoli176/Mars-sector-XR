@@ -89,14 +89,14 @@
   "hydro.steps.now.feed": "Añade nutrientes al depósito",
   "hydro.info.general": "Divulgación general: valores típicos, no medidos en esta base. El tiempo del juego está acelerado.",
   "hydro.info.racks.title": "CULTIVO SIN SUELO · HIDROPONÍA",
-  "hydro.info.racks.1": "Las raíces no están en tierra: crecen en cubos de lana de roca (un sustrato inerte) bañados por agua con nutrientes que recircula. La técnica de lámina fina se llama NFT (Nutrient Film Technique).",
+  "hydro.info.racks.1": "Las raíces no están en tierra: crecen en cubos de lana de roca bañados por una lámina fina de agua con nutrientes que recircula. La técnica se llama NFT.",
   "hydro.info.racks.2": "Zona buena de agua en el juego: {dry}–{flood} %. Con poca agua la planta se marchita; con demasiada, las raíces se quedan sin oxígeno y se pudren.",
   "hydro.info.racks.3": "Luces: los LED rojos (≈660 nm) y azules (≈450 nm) son los colores que mejor absorbe la clorofila; por eso la luz se ve rosa. Aquí se encienden de {start}:00 a {end}:00.",
   "hydro.info.racks.4": "Fotosíntesis: 6 CO₂ + 6 H₂O + luz → C₆H₁₂O₆ + 6 O₂. Cada canal sano con luz retira ≈{co2} ppm de CO₂ por hora y aporta O₂ a la base.",
   "hydro.info.racks.5": "En la Estación Espacial, el experimento Veggie de la NASA cultivó lechuga romana roja que la tripulación comió en 2015.",
   "hydro.info.tank.title": "SOLUCIÓN NUTRITIVA",
-  "hydro.info.tank.1": "Sin suelo, la planta toma todos sus minerales del agua. Macronutrientes: nitrógeno (N), fósforo (P), potasio (K), calcio, magnesio y azufre. Micronutrientes: hierro, manganeso, zinc, boro, cobre y molibdeno.",
-  "hydro.info.tank.2": "Se vigilan dos medidas: el pH (lo habitual es 5,5–6,5, para que los minerales sigan disponibles) y la conductividad eléctrica, que indica cuántas sales hay disueltas (≈1–3 mS/cm según el cultivo).",
+  "hydro.info.tank.1": "Sin suelo, la planta toma sus minerales del agua: sobre todo nitrógeno (N), fósforo (P) y potasio (K), y un poco de calcio, magnesio, hierro y otros.",
+  "hydro.info.tank.2": "Se vigilan dos medidas: el pH (5,5–6,5, para que los minerales sigan disponibles) y la conductividad eléctrica, que dice cuántas sales hay disueltas (≈ 1–3 mS/cm).",
   "hydro.info.tank.3": "En el juego: nivel {level} %. Por debajo del {low} % las plantas crecen a la mitad de velocidad, pero no mueren. Cada cartucho sube el nivel {step} puntos. Quedan {count}.",
   "hydro.info.tank.4": "El agua recircula: lo que la planta transpira se condensa y vuelve al tanque ({condensate} % en el juego).",
   "hydro.info.bio.title": "BIORREACTOR DE ESPIRULINA",
@@ -109,5 +109,7 @@
   "hydro.info.kitchen.recipe": "{name}: {inputs} · ×{mult} · {hours} h · {kw} kW",
   "hydro.info.kitchen.2": "Ingredientes: proteína (soja, quinua, espirulina), hidratos (zanahoria, boniato) y fresco (lechuga, tomate). El botón elige la receta que más kcal da.",
   "hydro.info.kitchen.3": "El multiplicador es una simplificación del juego: procesar no crea energía; representa que se aprovecha y se conserva mejor.",
-  "hydro.info.guide.title": "CULTIVOS EN EL ESPACIO · DATOS REALES"
+  "hydro.info.guide.title": "CULTIVOS EN EL ESPACIO · DATOS REALES",
+  "hydro.msg.cold": "Hace frío: crece lento",
+  "hydro.steps.now.cold": "Hace frío: sube el termostato"
 }
