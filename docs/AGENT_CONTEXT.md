@@ -200,7 +200,7 @@ Early first-pass numbers (kept for context only; units/threshold semantics diffe
 | Hydro / farming (Hidroponía · Agricultura) | Racks, water tank, ration locker, recycler valve | Harvest before it spoils, unstick recycler, read water/food |
 | Telecomunicaciones | Console under the panoramic window (the only direct view outside), steerable antenna, communications distribution panel | Improve antenna alignment, inspect uplink/signal status, read comms and space-weather alerts |
 | Hub / tools (Sala central · Herramientas) | Training bench with mission board; tool wall, spares locker | Tutorial missions, pick tools, repair components, consume spares |
-| Personal | Bunk with water-tank radiation shelter, locker, dosimeter, space-weather and astronaut-health panels | Shelter during solar storms; review personal and real-data information |
+| Personal | Sleep capsule that doubles as the water-wall radiation shelter, locker, dosimeter, space-weather and astronaut-health panels | Shelter during solar storms; review personal and real-data information |
 
 Panel placement per wall: `docs/FLOOR_PLAN.md` §4. Alarm catalog, tools/holsters and accessibility: `docs/SIMULATION_SPEC.md` §9.
 | Corridors | Conduits, emergency lights, patched panels | Navigation, leak discovery, alarm localization |

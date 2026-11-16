@@ -8,7 +8,7 @@
  *   RAD measured on 20 May 2024 (src/data/real/radlab_sep.json), minute by minute from its onset.
  * - Shelter: NASA-STD-3001 asks to protect the crew from SPEs (250 mSv per event limit) by alerting them
  *   to seek shelter; on a planetary surface the guideline is ~10 g/cm² of water-equivalent shielding around
- *   the astronaut (OCHMO-TB-020). The game's shelter is the bunk in Personal, walled with water tanks.
+ *   the astronaut (OCHMO-TB-020). The game's shelter is the sleep capsule in Personal, whose shell is a water wall.
  *   Presentation reports where the player is with the intent `crew:shelter { inside }`.
  * - Consequence (GAME RULE, not a medical model): while the real storm rate is above `shelterAboveUGyPerHour`
  *   and the player is outside the shelter, health drops by `unshelteredDamagePerHour` (cause 'radiation').

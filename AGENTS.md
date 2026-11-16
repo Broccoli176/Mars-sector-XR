@@ -247,7 +247,7 @@ Los tanques de O₂ de emergencia usan `valve:turn` (`valve_o2_tank_1/2`). Pendi
   - Evento: `solar:tracker { mode: 'manual' | 'auto' | 'stow', angleDeg, targetDeg }`.
   - La producción solar = pico × coseno(azimut Sol − azimut panel) × polvo × tormenta (spec §2.6). `SolarField` muestra 12 paneles (2 filas de 6; solo visual, la producción es la misma) y los gira sobre su eje vertical con `sim.solarTracker.angleDeg`.
 - **Batería (pared de breakers):** la cabecera dice si la batería se está cargando o descargando (tasa neta de `resources.power`) y cuánto falta para llenarse o vaciarse (`batteryCharge` en `src/rooms/energy/stations.js`). El Rover 2 limpiador se eliminó.
-- **Tormenta solar (`Radiation`):** `spaceWeather:alert { kind: 'sep', etaHours }` y `spaceWeather:impact { kind: 'sep', durationHours }` (IncidentRunner, evento `sep`); intent `crew:shelter { inside }` (presentación: solo cuenta la cabeza dentro del rincón-refugio de Personal, con la litera y depósitos de agua en paredes y techo; tamaño en `balance/personal.json` → `shelter`, regla pura `insideAlcove` en `src/rooms/personal/shelterRules.js`; el suelo del rincón parpadea en rojo en la tormenta si estás fuera y se pone verde dentro); `crew:damage { cause: 'radiation' }` fuera del refugio en lo peor de la tormenta.
+- **Tormenta solar (`Radiation`):** `spaceWeather:alert { kind: 'sep', etaHours }` y `spaceWeather:impact { kind: 'sep', durationHours }` (IncidentRunner, evento `sep`); intent `crew:shelter { inside }` (presentación: solo cuenta la cabeza dentro de la cápsula para dormir de Personal, con la cama dentro y paredes de agua de `wallM` (12 cm ≈ 12 g/cm²; dos mirillas azules en el marco), una sola malla con colores de vértice; tamaño en `balance/personal.json` → `shelter`, regla pura `insideCapsule` en `src/rooms/personal/shelterRules.js`; el suelo de la cápsula parpadea en rojo en la tormenta si estás fuera y se pone verde dentro); `crew:damage { cause: 'radiation' }` fuera del refugio en lo peor de la tormenta.
 - **Telecom:** `antenna:align`, `antenna:turnLeft`, `antenna:turnRight` (intents); escucha `component:damaged`/`system:repaired` para `antenna_motor`.
 - **Reparaciones con herramientas (`src/systems/Repairs.js`, 2026-11-15):**
   - Averías guionizadas en `events.json`: tipo `failure { componentId }` ⇒ `component:damaged { componentId, reason: 'scripted' }`; tipo `leak { leakId }` ⇒ `leak:started { leakId }`. Calendario: D3 `scrubber_fan` (destornillador), D5 fuga `hull_seal_hub` (pistola de sellado), D7 `antenna_motor` (llave inglesa); el soldador sigue con el banco de electrónica (D2).
@@ -429,7 +429,9 @@ Locomoción de desarrollo por teclado (`src/vr/KeyboardLocomotion.js`): WASD + Q
 
 **Regla:** para la posición o dirección de la cabeza en XR, usar la cámara del usuario (hija del rig), nunca recalcular la matriz de `renderer.xr.getCamera()`. Esa cámara no tiene padre y pierde la transformación del rig (ver `Locomotion.headWorld`).
 
-Pendientes: `npm run typecheck` (JSDoc + `@ts-check`), validación de JSON Schemas en tests, CI (GitHub Actions `npm ci` → `npm test` → `npm run build`) y despliegue a GitHub Pages.
+Despliegue a GitHub Pages: `.github/workflows/pages.yml` (en cada push a `main` o a mano: `npm ci` → `npm test` → `npm run build` → publica `dist/`). Requiere una vez Settings → Pages → Source: «GitHub Actions». URL: `https://broccoli176.github.io/Mars-sector-XR/` (HTTPS, válido para WebXR en Quest). `base: './'` en `vite.config.js` y `import.meta.env.BASE_URL` para lo de `public/`: no usar rutas absolutas `/…`.
+
+Pendientes: `npm run typecheck` (JSDoc + `@ts-check`), validación de JSON Schemas en tests y CI en PRs.
 
 Requisitos recomendados:
 - Simulación testeable sin WebGL/render.

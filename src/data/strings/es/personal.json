@@ -67,7 +67,7 @@
   "personal.shelter.short": "El agua te protege",
   "personal.shelter.info_title": "¿POR QUÉ EL AGUA PROTEGE?",
   "personal.shelter.info_1": "El agua tiene mucho hidrógeno. Los núcleos ligeros frenan las partículas del Sol sin crear tanta radiación secundaria como los metales pesados.",
-  "personal.shelter.info_2": "Por eso los refugios de tormenta rodean a la tripulación de agua, comida y equipos. En el juego solo protege el rincón de la litera rodeado de depósitos de agua: entra en él.",
+  "personal.shelter.info_2": "Por eso los refugios de tormenta rodean a la tripulación de agua, comida y equipos. En el juego solo protege la cápsula para dormir: sus paredes llevan {cm} cm de agua. Entra en ella.",
   "personal.shelter.info_3": "Además, la base está bajo el regolito (el manto natural de tierra y roca de Marte), que actúa como un escudo contra los rayos cósmicos.",
   "personal.shelter.info_note": "Divulgación general: explicación cualitativa, no medida en esta base.",
   "personal.shelter.state.idle": "Para tormentas solares",

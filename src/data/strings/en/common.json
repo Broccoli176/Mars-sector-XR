@@ -82,7 +82,7 @@
   "cause.radiation": "radiation",
   "summary.cause.radiation": "Cause: radiation from a solar storm, outside the shelter.",
   "comms.sep.forecast": "Alert! Huge solar flare. The particles will reach Mars in about {minutes} min. Go to the shelter in the crew quarters.",
-  "hint.sep.impact": "Solar particle storm in progress. Get into the water shelter in the crew quarters (the bunk alcove) until it drops.",
+  "hint.sep.impact": "Solar particle storm in progress. Get into the water shelter in the crew quarters (the sleep capsule) until it drops.",
   "hint.dust.devil": "A dust devil passes by the solar field.",
   "ui.log.solar_tracker.auto": "Sun tracker on AUTO: the panels follow the Sun.",
   "ui.log.solar_tracker.stow": "Panels stowed edge-on: less dust, but no power.",

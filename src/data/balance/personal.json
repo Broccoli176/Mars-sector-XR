@@ -6,10 +6,12 @@
     "stormMaxHours": 48
   },
   "shelter": {
-    "_about": "Storm shelter alcove in Personal: only a head inside the alcove counts as sheltered (crew:shelter). Water-wall shelters are a real design (ISS crew quarters, Orion). Sizes in metres.",
-    "widthM": 2.8,
+    "_about": "Storm shelter = the sleep capsule in Personal: only a head inside the capsule counts as sheltered (crew:shelter). Its shell is a water wall wallM thick (1 cm of water ≈ 1 g/cm²; NASA OCHMO-TB-020 asks ~10 g/cm² on a planetary surface). Water-wall shelters are a real design idea (ISS crew quarters, Orion). Sizes in metres; cornerM is the radius of the capsule's top corners.",
+    "widthM": 2.6,
     "depthM": 1.45,
-    "heightM": 2.05,
+    "heightM": 2.15,
+    "wallM": 0.12,
+    "cornerM": 0.65,
     "bed": {
       "lengthM": 1.95,
       "widthM": 0.8
