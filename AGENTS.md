@@ -429,7 +429,9 @@ Locomoción de desarrollo por teclado (`src/vr/KeyboardLocomotion.js`): WASD + Q
 
 **Regla:** para la posición o dirección de la cabeza en XR, usar la cámara del usuario (hija del rig), nunca recalcular la matriz de `renderer.xr.getCamera()`. Esa cámara no tiene padre y pierde la transformación del rig (ver `Locomotion.headWorld`).
 
-Pendientes: `npm run typecheck` (JSDoc + `@ts-check`), validación de JSON Schemas en tests, CI (GitHub Actions `npm ci` → `npm test` → `npm run build`) y despliegue a GitHub Pages.
+Despliegue a GitHub Pages: `.github/workflows/pages.yml` (en cada push a `main` o a mano: `npm ci` → `npm test` → `npm run build` → publica `dist/`). Requiere una vez Settings → Pages → Source: «GitHub Actions». URL: `https://broccoli176.github.io/Mars-sector-XR/` (HTTPS, válido para WebXR en Quest). `base: './'` en `vite.config.js` y `import.meta.env.BASE_URL` para lo de `public/`: no usar rutas absolutas `/…`.
+
+Pendientes: `npm run typecheck` (JSDoc + `@ts-check`), validación de JSON Schemas en tests y CI en PRs.
 
 Requisitos recomendados:
 - Simulación testeable sin WebGL/render.
