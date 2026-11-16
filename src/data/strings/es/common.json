@@ -82,7 +82,7 @@
   "cause.radiation": "radiación",
   "summary.cause.radiation": "Causa: radiación de una tormenta solar sin refugio.",
   "comms.sep.forecast": "¡Alerta! Llamarada solar enorme. Las partículas llegarán a Marte en unos {minutes} min. Ve al refugio de Personal.",
-  "hint.sep.impact": "Tormenta de partículas solares en curso. Entra en el refugio de agua de Personal (el rincón de la litera) hasta que baje.",
+  "hint.sep.impact": "Tormenta de partículas solares en curso. Entra en el refugio de agua de Personal (la cápsula para dormir) hasta que baje.",
   "hint.dust.devil": "Un remolino de polvo pasa junto al campo solar.",
   "ui.log.solar_tracker.auto": "Seguidor solar en AUTO: los paneles siguen al Sol.",
   "ui.log.solar_tracker.stow": "Paneles protegidos de canto: menos polvo, pero no producen.",

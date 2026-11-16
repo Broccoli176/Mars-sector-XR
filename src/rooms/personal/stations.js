@@ -5,17 +5,17 @@
 // rigorous text with numbers and sources (src/ui/InfoSheet.js).
 // Placement: src/data/stations/personal.json · Texts: src/data/strings/es/personal.json
 import {
-  Vector3, Object3D, Mesh, InstancedMesh, BoxGeometry, CylinderGeometry, PlaneGeometry,
-  MeshLambertMaterial, MeshBasicMaterial,
+  Vector2, Vector3, Object3D, Mesh, BoxGeometry, PlaneGeometry, ExtrudeGeometry, Shape,
+  MeshLambertMaterial, MeshBasicMaterial, Color, BufferAttribute,
 } from 'three';
-import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import { mergeGeometries, toCreasedNormals } from 'three/addons/utils/BufferGeometryUtils.js';
 import { COLORS } from '../../ui/StationKit.js';
 import { Panel } from '../../ui/Panel.js';
 import { fmt } from '../../utils/strings.js';
 import { addInfo } from '../../ui/InfoSheet.js';
 import { createSpaceWeatherFeed } from './spaceWeatherLive.js';
 import * as icon from './personalIcons.js';
-import { insideAlcove, TANK_RADIUS } from './shelterRules.js';
+import { insideCapsule } from './shelterRules.js';
 
 /** @typedef {import('../../ui/InfoSheet.js').Line} Line */
 
@@ -61,7 +61,7 @@ export const builders = {
         panel.renderLines(t('personal.dosimeter.title'), [{ text: t('personal.dosimeter.no_data'), color: COLORS.warning }]);
         return;
       }
-      const inside = r.sheltered; // reported by the shelter alcove (personal_bunk)
+      const inside = r.sheltered; // reported by the sleep capsule (personal_bunk)
       if (r.stormActive) {
         const danger = r.shelterNeeded;
         const level = Math.min(1, r.rate / Math.max(1, r.stormPeak, r.rate));
@@ -87,9 +87,10 @@ export const builders = {
   },
 
   /**
-   * Storm shelter: an alcove in the corner of Personal walled with water tanks (back, both sides and roof),
-   * with the crew bunk inside, like the water-wall sleeping quarters proposed for Orion and used on the ISS.
-   * Only the alcove protects (balance/personal.json → shelter): the player's head must be inside it.
+   * Storm shelter: a simple sleep capsule in the corner of Personal with the crew bed inside. Its shell is a
+   * water wall (balance/personal.json → shelter.wallM), like the water-wall sleeping quarters proposed for Orion
+   * and the shielded ISS crew quarters; two blue sight glasses on the front frame show the water inside.
+   * Only the capsule protects: the player's head must be inside it (insideCapsule).
    * It reports `crew:shelter { inside }`; the simulation decides the dose (Radiation).
    */
   personal_bunk(g, station, kit) {
@@ -98,74 +99,74 @@ export const builders = {
     const W = cfg.widthM;
     const D = cfg.depthM;
     const H = cfg.heightM;
-    const R = TANK_RADIUS;
+    const T = cfg.wallM;
+    const R = cfg.cornerM;
+    const L = cfg.bed.lengthM;
+    const WB = cfg.bed.widthM;
     const base = -station.y; // station-local floor
     // Station-local: x across the wall, +z into the room, the back wall at z = 0.
 
-    // ---- Bunk (plain materials: it must read as a bed, not as a machine) ----
-    const mat = (/** @type {string} */ color) => new MeshLambertMaterial({ color });
-    const bedX = W / 2 - 2 * R - cfg.bed.lengthM / 2 - 0.02; // against the far side tanks
-    const bedZ = 2 * R + cfg.bed.widthM / 2;
-    const frame = new Mesh(new BoxGeometry(cfg.bed.lengthM, 0.34, cfg.bed.widthM), mat('#4a5058'));
-    frame.position.set(bedX, base + 0.17, bedZ);
-    const bedTop = new Mesh(mergeGeometries([
-      new BoxGeometry(cfg.bed.lengthM - 0.06, 0.14, cfg.bed.widthM - 0.06).translate(0, 0.41, 0), // mattress
-      new BoxGeometry(cfg.bed.lengthM * 0.62, 0.05, cfg.bed.widthM - 0.02).translate(-cfg.bed.lengthM * 0.17, 0.5, 0), // blanket
-    ]), mat('#5b7fa6'));
-    bedTop.position.set(bedX, base, bedZ);
-    const pillow = new Mesh(new BoxGeometry(0.42, 0.11, cfg.bed.widthM * 0.7), mat('#ece7dd'));
-    pillow.position.set(bedX + cfg.bed.lengthM / 2 - 0.3, base + 0.54, bedZ);
-    g.add(frame, bedTop, pillow);
-    kit.solids.push(frame); // walk around the bed; you can still lean over it
+    // ---- Capsule: shell, front frame, bed and sight glasses in ONE vertex-coloured mesh ----
+    // Plain materials, no machine texture: it must read as a bed, not as a machine.
+    const FRAME = 0.16; // width of the front frame around the opening
+    const DECK = 0.36; // height of the bed platform built into the capsule
+    const bedX = W / 2 - T - L / 2 - 0.01; // against the far side wall
+    const bedZ = 0.02 + WB / 2;
+    const sightX = W / 2 - FRAME / 2 + 0.01; // centre of the frame's side bands
+    const smooth = (/** @type {import('three').BufferGeometry} */ geo) => toCreasedNormals(geo, Math.PI / 5);
+    /** @type {[import('three').BufferGeometry, string][]} */
+    const parts = [
+      [smooth(archBand({ halfW: W / 2, top: H, r: R }, { halfW: W / 2 - T, top: H - T, r: R - T }, D)), '#dfe3e6'], // shell
+      [smooth(archBand({ halfW: W / 2 + 0.02, top: H + 0.02, r: R + 0.02 }, { halfW: W / 2 - FRAME, top: H - FRAME, r: R - FRAME }, 0.05)).translate(0, 0, D - 0.01), '#c3cad1'], // front frame
+      [new ExtrudeGeometry(new Shape(archPoints(W / 2 - T, H - T, R - T)), { depth: 0.02, bevelEnabled: false }), '#d6cfc3'], // back lining
+      [box(W - 2 * T, 0.02, D, 0, 0.01, D / 2), '#b4bac0'], // floor
+      [box(L, DECK, WB, bedX, DECK / 2, bedZ), '#cdd3d8'], // bed platform
+      [box(L - 0.04, 0.14, WB - 0.04, bedX, DECK + 0.07, bedZ), '#5b7fa6'], // mattress
+      [box(L * 0.6, 0.04, WB - 0.02, bedX - L * 0.18, DECK + 0.16, bedZ), '#46688f'], // blanket
+      [box(0.42, 0.1, WB * 0.7, bedX + L / 2 - 0.27, DECK + 0.19, bedZ), '#ece7dd'], // pillow
+      ...[-1, 1].flatMap((s) => /** @type {[import('three').BufferGeometry, string][]} */ ([
+        [box(0.08, 1.04, 0.008, s * sightX, 0.9, D + 0.044), '#2a3036'], // sight-glass rim
+        [box(0.05, 1.0, 0.012, s * sightX, 0.9, D + 0.048), '#2f78b0'], // the water inside the wall
+      ])),
+    ];
+    const capsule = new Mesh(mergeGeometries(parts.map(([geo, color]) => paint(geo, color))), new MeshLambertMaterial({ vertexColors: true }));
+    capsule.name = 'PROP_SleepCapsule';
+    capsule.position.y = base;
+    // Warm reading light under the roof, just inside the opening.
+    const led = new Mesh(new BoxGeometry(W - 2 * R - 0.1, 0.02, 0.03), new MeshBasicMaterial({ color: '#ffd9a0', toneMapped: false }));
+    led.position.set(0, base + H - T - 0.012, D - 0.14);
+    g.add(capsule, led);
 
-    // ---- Water tanks (one instanced draw call): back wall, both sides and roof ----
-    /** @type {{ x: number, y: number, z: number, axis: 'x' | 'y' | 'z', len: number }[]} */
-    const tanks = [];
-    for (let row = 0; row < 5; row++) tanks.push({ x: 0, y: base + 0.75 + row * 0.27, z: R, axis: 'x', len: W - 4 * R }); // back, above the bed
-    for (let i = 0; i < 5; i++) tanks.push({ x: W / 2 - R, y: base + H / 2, z: R + i * ((D - 2 * R) / 4), axis: 'y', len: H }); // far side
-    for (let i = 0; i < 5; i++) tanks.push({ x: -W / 2 + R, y: base + H / 2, z: R + i * ((D - 2 * R) / 4), axis: 'y', len: H }); // near side
-    for (let i = 0; i < 10; i++) tanks.push({ x: -W / 2 + R + i * ((W - 2 * R) / 9), y: base + H + R, z: D / 2, axis: 'z', len: D }); // roof
-    const tankMesh = new InstancedMesh(new CylinderGeometry(R, R, 1, 14), mat('#2f78b0'), tanks.length);
-    const tmp = new Object3D();
-    tanks.forEach((k, i) => {
-      tmp.position.set(k.x, k.y, k.z);
-      tmp.rotation.set(k.axis === 'z' ? Math.PI / 2 : 0, 0, k.axis === 'x' ? Math.PI / 2 : 0);
-      tmp.scale.set(1, k.len, 1);
-      tmp.updateMatrix();
-      tankMesh.setMatrixAt(i, tmp.matrix);
-    });
-    g.add(tankMesh);
-    // Metal frame: front posts and lintel holding the roof tanks.
-    g.add(new Mesh(mergeGeometries([
-      new BoxGeometry(0.08, H + 0.3, 0.08).translate(-W / 2, base + (H + 0.3) / 2, D),
-      new BoxGeometry(0.08, H + 0.3, 0.08).translate(W / 2, base + (H + 0.3) / 2, D),
-      new BoxGeometry(W + 0.08, 0.1, 0.1).translate(0, base + H + 0.05, D),
-    ]), mat('#3a4048')));
-    // Collision for the near tank wall only (an AABB of the whole alcove would block its inside).
-    const nearWall = new Mesh(new BoxGeometry(2 * R + 0.04, H, D), new MeshBasicMaterial({ visible: false }));
-    nearWall.position.set(-W / 2 + R, base + H / 2, D / 2);
-    g.add(nearWall);
-    kit.solids.push(nearWall);
+    // Collision: both side walls and the bed (an AABB of the whole capsule would block its inside).
+    const hidden = new MeshBasicMaterial({ visible: false });
+    const solid = (/** @type {number} */ w, /** @type {number} */ h, /** @type {number} */ d, /** @type {number} */ x, /** @type {number} */ y, /** @type {number} */ z) => {
+      const m = new Mesh(new BoxGeometry(w, h, d), hidden);
+      m.position.set(x, base + y, z);
+      g.add(m);
+      kit.solids.push(m);
+    };
+    for (const s of [-1, 1]) solid(T + 0.02, H, D + 0.04, s * (W / 2 - T / 2 + 0.01), H / 2, (D + 0.04) / 2);
+    solid(L, DECK + 0.14, WB, bedX, (DECK + 0.14) / 2, bedZ); // walk around the bed; you can still lean over it
 
     // ---- Floor pad: where you are protected (blue; green inside; pulsing red in a storm while you are out) ----
     const padMat = new MeshBasicMaterial({ color: COLORS.info, transparent: true, opacity: 0.22, depthWrite: false, toneMapped: false });
-    const pad = new Mesh(new PlaneGeometry(W - 4 * R, D - 0.1).rotateX(-Math.PI / 2), padMat);
-    pad.position.set(0, base + 0.012, D / 2 + 0.05);
+    const pad = new Mesh(new PlaneGeometry(W - 2 * T - 0.04, D - 0.06).rotateX(-Math.PI / 2), padMat);
+    pad.position.set(0, base + 0.026, D / 2);
     g.add(pad);
 
-    // ---- Sign on the lintel, facing the room, with the «why water?» sheet ----
+    // ---- Sign on top of the capsule, facing the room, with the «why water?» sheet ----
     const sign = new Panel(1.3, 0.3, { pxPerMeter: 640 });
-    sign.mesh.position.set(0, base + H + 0.32, D + 0.07);
+    sign.mesh.position.set(0, base + H + 0.2, D + 0.07);
     g.add(sign.mesh);
     const info = new Object3D();
     info.position.z = D + 0.06;
     g.add(info);
     addInfo(info, kit, {
-      bx: 0.8, by: base + H + 0.32, px: 0, py: base + 1.35, w: 1.3, h: 0.8,
+      bx: 0.8, by: base + H + 0.2, px: 0, py: base + 1.35, w: 1.3, h: 0.8,
       title: () => t('personal.shelter.info_title'),
       lines: () => [
         { text: t('personal.shelter.info_1'), size: 0.85 },
-        { text: t('personal.shelter.info_2'), size: 0.85 },
+        { text: t('personal.shelter.info_2', { cm: Math.round(T * 100) }), size: 0.85 },
         { text: t('personal.shelter.info_3'), size: 0.85 },
         { text: t('personal.shelter.info_note'), color: COLORS.dim, size: 0.7 },
       ],
@@ -178,7 +179,7 @@ export const builders = {
       if (!loco) return false;
       loco.headWorld(head);
       g.worldToLocal(head);
-      return insideAlcove(head.x, head.z, cfg);
+      return insideCapsule(head.x, head.z, cfg);
     };
 
     let pulse = 0;
@@ -398,4 +399,47 @@ function formatDose(microGy) {
 function formatDay(/** @type {string} */ iso) {
   const [y, m, d] = iso.split('-');
   return `${d}/${m}/${y}`;
+}
+
+// ---- Sleep capsule geometry (station-local, floor at y = 0) ----
+
+/**
+ * Arch outline standing on y = 0: up the left side, round both top corners (radius r) and down the right side.
+ * Open at the bottom. @param {number} halfW @param {number} top @param {number} r @param {number} [steps]
+ */
+function archPoints(halfW, top, r, steps = 10) {
+  const pts = [new Vector2(-halfW, 0)];
+  for (const [cx, from] of /** @type {[number, number][]} */ ([[-halfW + r, Math.PI], [halfW - r, Math.PI / 2]])) {
+    for (let i = 0; i <= steps; i++) {
+      const a = from - (i / steps) * (Math.PI / 2);
+      pts.push(new Vector2(cx + r * Math.cos(a), top - r + r * Math.sin(a)));
+    }
+  }
+  pts.push(new Vector2(halfW, 0));
+  return pts;
+}
+
+/**
+ * Arch-shaped band between an outer and an inner arch, both standing on the floor, extruded `depth` along +z.
+ * @param {{ halfW: number, top: number, r: number }} outer @param {{ halfW: number, top: number, r: number }} inner
+ * @param {number} depth
+ */
+function archBand(outer, inner, depth) {
+  const outline = [...archPoints(outer.halfW, outer.top, outer.r), ...archPoints(inner.halfW, inner.top, inner.r).reverse()];
+  return new ExtrudeGeometry(new Shape(outline), { depth, bevelEnabled: false });
+}
+
+/** Non-indexed box centred on (x, y, z), so it merges with the extruded parts. */
+function box(/** @type {number} */ w, /** @type {number} */ h, /** @type {number} */ d, /** @type {number} */ x, /** @type {number} */ y, /** @type {number} */ z) {
+  return new BoxGeometry(w, h, d).translate(x, y, z).toNonIndexed();
+}
+
+/** Flat vertex colour (and no UVs) so every part merges into one vertex-coloured mesh. */
+function paint(/** @type {import('three').BufferGeometry} */ geo, /** @type {string} */ color) {
+  geo.deleteAttribute('uv');
+  const c = new Color(color);
+  const colors = new Float32Array(geo.attributes.position.count * 3);
+  for (let i = 0; i < colors.length; i += 3) colors.set([c.r, c.g, c.b], i);
+  geo.setAttribute('color', new BufferAttribute(colors, 3));
+  return geo;
 }

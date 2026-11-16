@@ -67,7 +67,7 @@
   "personal.shelter.short": "Water protects you",
   "personal.shelter.info_title": "WHY DOES WATER PROTECT YOU?",
   "personal.shelter.info_1": "Water has lots of hydrogen. Light nuclei slow down the Sun's particles without making as much secondary radiation as heavy metals do.",
-  "personal.shelter.info_2": "That is why storm shelters surround the crew with water, food and equipment. In the game only the bunk alcove lined with water tanks protects you: get inside it.",
+  "personal.shelter.info_2": "That is why storm shelters surround the crew with water, food and equipment. In the game only the sleep capsule protects you: its walls hold {cm} cm of water. Get inside it.",
   "personal.shelter.info_3": "The base is also under the regolith (Mars' natural blanket of soil and rock), which acts as a shield against cosmic rays.",
   "personal.shelter.info_note": "General outreach: qualitative explanation, not measured in this base.",
   "personal.shelter.state.idle": "For solar storms",
