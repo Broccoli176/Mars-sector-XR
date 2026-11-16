@@ -72,7 +72,7 @@
     "_source": "consumptionPerHour 104 kcal/h ≈ 2500 kcal/day, within the CSA crew-diet range 1900–3200 kcal/day (src/data/real/csa_food.json). Crop times are time-compressed but keep the real order (CSA days; quinoa from NASA TP-3422). kcal grow with the wait. Moisture: a tray holds trayCapacityL litres at moisture 1; it grows only inside [dryAt, floodAt] (wide band: forgiving for young players). Spirulina (bioreactor) grows only under light (growthHours = lit hours).",
     "hose": {
       "flowLitersPerSecond": 0.25,
-      "rangeMeters": 1.6
+      "rangeMeters": 2.5
     },
     "nutrients": {
       "initial": 0.7,

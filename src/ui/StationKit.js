@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { Panel, COLORS } from './Panel.js';
 import { BUTTON } from './theme.js';
 import { Button } from '../objects/Button.js';
@@ -71,6 +72,20 @@ export function createStationKit({ game, t, interactive, services = {} }) {
     return m;
   };
 
+  // Static furniture (addBox / addCylinder) is merged into ONE vertex-coloured mesh per station (bakeStatic):
+  // the boxes themselves stay as invisible proxies for collision and for blocking the ray.
+  const staticMaterial = new THREE.MeshLambertMaterial({ map: machineTexture, vertexColors: true });
+  /** @type {{ mesh: THREE.Mesh, color: string }[]} */
+  let pendingStatic = [];
+  /** @param {THREE.Mesh} m @param {string} color @param {{ dynamic?: boolean }} [opts] */
+  const furniture = (m, color, { dynamic = false } = {}) => {
+    solids.push(m);
+    if (!dynamic) pendingStatic.push({ mesh: m, color });
+    return m;
+  };
+  let refreshCursor = 0;
+  let refreshDebt = 0;
+
   /** Registers a button created by hand (custom placement). @param {Button} b */
   const registerButton = (b) => {
     buttons.push(b);
@@ -128,27 +143,68 @@ export function createStationKit({ game, t, interactive, services = {} }) {
       return p;
     },
 
-    /** Furniture box (station-local, y relative to station height). Solid by default. */
-    addBox(/** @type {THREE.Object3D} */ parent, w, h, d, x, y, z, color) {
+    /**
+     * Furniture box (station-local, y relative to station height). Solid, and static: boxes added to the station
+     * group are merged into one draw call after the station is built. Pass `{ dynamic: true }` as the last
+     * argument if you move, hide or recolour the returned mesh later.
+     */
+    addBox(/** @type {THREE.Object3D} */ parent, w, h, d, x, y, z, color, /** @type {{ dynamic?: boolean }} */ opts = {}) {
       const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), lambert(color));
       m.position.set(x, y, z);
       parent.add(m);
-      solids.push(m);
-      return m;
+      return furniture(m, color, opts);
     },
 
-    /** Furniture cylinder (station-local). Solid by default. */
-    addCylinder(/** @type {THREE.Object3D} */ parent, r, h, x, y, z, color) {
+    /** Furniture cylinder (station-local). Solid and static, like `addBox`. */
+    addCylinder(/** @type {THREE.Object3D} */ parent, r, h, x, y, z, color, /** @type {{ dynamic?: boolean }} */ opts = {}) {
       const m = new THREE.Mesh(new THREE.CylinderGeometry(r, r, h, 16), lambert(color));
       m.position.set(x, y, z);
       parent.add(m);
-      solids.push(m);
-      return m;
+      return furniture(m, color, opts);
+    },
+
+    /**
+     * @internal used by Stations.js after each station is built: merges the static furniture added directly to
+     * the station group into one mesh (1 draw call). Furniture parented elsewhere keeps its own mesh.
+     * @param {THREE.Object3D} g
+     */
+    _bakeStatic(g) {
+      const mine = pendingStatic.filter((e) => e.mesh.parent === g);
+      pendingStatic = [];
+      if (mine.length === 0) return;
+      const parts = mine.map(({ mesh, color }) => {
+        mesh.updateMatrix();
+        const geo = mesh.geometry.clone().applyMatrix4(mesh.matrix);
+        const c = new THREE.Color(color);
+        const colors = new Float32Array(geo.attributes.position.count * 3);
+        for (let i = 0; i < colors.length; i += 3) colors.set([c.r, c.g, c.b], i);
+        geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+        return geo;
+      });
+      const merged = new THREE.Mesh(mergeGeometries(parts), staticMaterial);
+      merged.name = 'PROP_Static';
+      g.add(merged);
+      for (const { mesh } of mine) mesh.visible = false; // still a collision box and a ray blocker
     },
 
     /** @internal used by Stations.js */
     _refreshAll() {
       for (const r of refreshers) r();
+    },
+    /**
+     * @internal used by Stations.js: every refresher still runs once per `period`, but a few per frame in
+     * turn instead of all in the same frame (that was a CPU spike four times a second).
+     * @param {number} dt real seconds @param {number} period seconds
+     */
+    _refreshSpread(dt, period) {
+      const n = refreshers.length;
+      if (n === 0) return;
+      refreshDebt = Math.min(n, refreshDebt + (dt / period) * n);
+      while (refreshDebt >= 1) {
+        refreshDebt -= 1;
+        refreshers[refreshCursor]();
+        refreshCursor = (refreshCursor + 1) % n;
+      }
     },
     /** @internal used by Stations.js @param {number} dt */
     _animate(dt) {

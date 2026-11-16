@@ -1,4 +1,4 @@
-# Data sources — Marte VR Survival
+# Data sources — Marsianics
 
 > Short explanation of the real datasets for the NASA Space Apps 2026 challenge "Build a Junior Astronaut Mission Trainer".
 > In-game attribution: hub board «Fuentes científicas» + a source line on every panel that shows real data.

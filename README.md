@@ -1,4 +1,4 @@
-# Marte VR Survival
+# Marsianics
 
 > **Prototipo v0.1** — simulación headless + greybox WebXR jugable de la base (sin assets finales).
 
@@ -61,6 +61,7 @@ Parámetros de desarrollo (combinables con `&`):
 - `?iwer`: activa el Quest 3 emulado sin extensión.
 - `?mode=browser`: salta el menú inicial y entra en modo navegador (también lo salta `?view=`).
 - `?debug`: expone `window.__marte` para inspeccionar desde la consola.
+- `?nocull`: dibuja todas las salas (sin culling por visibilidad), para comparar rendimiento.
 
 ### Datos reales (NASA / CSA)
 

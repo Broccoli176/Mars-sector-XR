@@ -118,7 +118,7 @@ export function buildPorthole(scene, getSim, win = { center: [0, 1.6, 0], width:
     { x: -0.2, z: -4.6, s: 0.6, rot: 1.7 },
     { x: 0.6, z: -5.3, s: 1.6, rot: 2.9 },
   ];
-  const rockGeo = new THREE.DodecahedronGeometry(0.3, 1).toNonIndexed();
+  const rockGeo = new THREE.DodecahedronGeometry(0.3, 1); // polyhedra are already non-indexed
   rockGeo.computeVertexNormals();
   bakeShade(rockGeo, MARS.rock, SUN_DIR, 0.35);
   const rockMat = new THREE.MeshBasicMaterial({ vertexColors: true, toneMapped: false });
@@ -137,57 +137,149 @@ export function buildPorthole(scene, getSim, win = { center: [0, 1.6, 0], width:
   // ---------------------------------------------------------------------------
   // 3. Dish antenna (turns with sim.telecom.alignment)
   // ---------------------------------------------------------------------------
+  // Dish antenna on an az–el pedestal, a little to the side of the window's centre beam so it is not hidden.
   const antennaRoot = new THREE.Group();
-  antennaRoot.position.set(0, 0, -2.4);
+  antennaRoot.position.set(0.85, 0, -2.4);
   exterior.add(antennaRoot);
-  const metalMat = new THREE.MeshLambertMaterial({ color: 0x5a636c });
-  const dishMat = new THREE.MeshLambertMaterial({ color: 0xd2d7de });
-  const mastHeight = 1.9;
-
-  /** Strut cylinder rotated like the original lattice. */
-  const strut = (/** @type {number} */ a) => {
-    const g = new THREE.CylinderGeometry(0.02, 0.02, 1.2, 6);
-    const m = new THREE.Matrix4().makeRotationFromEuler(new THREE.Euler(Math.sin(a) * 0.35, 0, Math.cos(a) * 0.35));
-    return g.applyMatrix4(m).translate(Math.cos(a) * 0.35, 0.5, Math.sin(a) * 0.35);
+  // Lit by the base's existing lights (no extra light). Vertex colours carry seams, stripes and paint.
+  const metalMat = new THREE.MeshLambertMaterial({ vertexColors: true });
+  const dishMat = new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide });
+  const mastHeight = 1.7;
+  /** Paints a geometry one colour (vertex colours) so several parts share one material and draw call. */
+  const tone = (/** @type {THREE.BufferGeometry} */ geo, /** @type {THREE.ColorRepresentation} */ color) => {
+    const g = geo.index ? geo.toNonIndexed() : geo;
+    const c = new THREE.Color(color);
+    const data = new Float32Array(g.attributes.position.count * 3);
+    for (let i = 0; i < data.length; i += 3) data.set([c.r, c.g, c.b], i);
+    g.setAttribute('color', new THREE.BufferAttribute(data, 3));
+    g.deleteAttribute('uv');
+    return g;
   };
-  const mast = new THREE.Mesh(
+
+  // Static pedestal: concrete pad, tapered column with a hazard band, cable conduit and a junction box.
+  const stripes = [];
+  for (let i = 0; i < 8; i++) {
+    stripes.push(tone(new THREE.CylinderGeometry(0.135, 0.135, 0.06, 16).translate(0, 0.32 + i * 0.06, 0), i % 2 ? '#1b1d20' : '#e0b024'));
+  }
+  const pedestal = new THREE.Mesh(
     mergeGeometries([
-      new THREE.CylinderGeometry(0.06, 0.14, mastHeight, 8).translate(0, mastHeight / 2, 0),
-      ...[0, 1, 2, 3].map((i) => strut((i * Math.PI) / 2)),
+      tone(new THREE.BoxGeometry(0.9, 0.12, 0.9).translate(0, 0.06, 0), '#8f8a84'), // concrete pad
+      tone(new THREE.CylinderGeometry(0.1, 0.13, mastHeight, 16).translate(0, mastHeight / 2, 0), '#d7dbe0'), // column
+      ...stripes,
+      tone(new THREE.CylinderGeometry(0.025, 0.025, mastHeight - 0.2, 6).translate(0.15, (mastHeight - 0.2) / 2 + 0.1, 0.05), '#2a2d31'), // conduit
+      tone(new THREE.BoxGeometry(0.2, 0.26, 0.12).translate(0.2, 0.45, 0.12), '#9aa3ad'), // junction box
+      tone(new THREE.BoxGeometry(0.12, 0.05, 0.01).translate(0.2, 0.5, 0.185), '#e0b024'), // warning label
     ]),
     metalMat,
   );
-  antennaRoot.add(mast);
+  antennaRoot.add(pedestal);
 
-  // Blinking beacon (emissive only — no light source)
+  // Blinking aviation beacon on top of the feed support (emissive only — no light source).
   const beaconMat = new THREE.MeshBasicMaterial({ color: 0xff2222, toneMapped: false });
-  const beacon = new THREE.Mesh(new THREE.SphereGeometry(0.045, 12, 8), beaconMat);
-  beacon.position.set(0, mastHeight + 0.45, 0);
-  antennaRoot.add(beacon);
+  const beacon = new THREE.Mesh(new THREE.SphereGeometry(0.04, 12, 8), beaconMat);
 
+  // Azimuth stage: turntable with a gear ring and the elevation yoke (turns with the antenna).
   const yawPivot = new THREE.Group();
   yawPivot.position.set(0, mastHeight, 0);
   antennaRoot.add(yawPivot);
-  const pitchPivot = new THREE.Group();
-  pitchPivot.position.set(0, 0.12, 0);
-  yawPivot.add(pitchPivot);
-
-  const receiverParts = [
-    new THREE.TorusGeometry(0.65, 0.03, 8, 28).rotateX(Math.PI / 2), // rim
-    new THREE.ConeGeometry(0.04, 0.22, 8).rotateX(Math.PI / 2).translate(0, 0, 0.32), // horn
-  ];
-  for (let i = 0; i < 3; i++) {
-    const angle = (i * Math.PI * 2) / 3;
-    const leg = new THREE.CylinderGeometry(0.012, 0.012, 0.5, 6);
-    leg.applyMatrix4(new THREE.Matrix4().makeRotationFromEuler(new THREE.Euler(0.55, 0, angle + Math.PI / 2)));
-    receiverParts.push(leg.translate((Math.cos(angle) * 0.4) / 2, (Math.sin(angle) * 0.4) / 2, 0.16));
+  const gearTeeth = [];
+  for (let i = 0; i < 24; i++) {
+    const a = (i / 24) * Math.PI * 2;
+    gearTeeth.push(tone(new THREE.BoxGeometry(0.035, 0.05, 0.03).translate(0, 0.03, 0.2).rotateY(a), '#6b737c'));
   }
-  const receiver = new THREE.Mesh(mergeGeometries(receiverParts), metalMat);
-  const dishBowl = new THREE.Mesh(
-    new THREE.SphereGeometry(0.65, 24, 14, 0, Math.PI * 2, 0, Math.PI * 0.42).rotateX(-Math.PI / 2),
-    dishMat,
+  const turntable = new THREE.Mesh(
+    mergeGeometries([
+      tone(new THREE.CylinderGeometry(0.2, 0.2, 0.08, 24).translate(0, 0.03, 0), '#9aa3ad'),
+      ...gearTeeth,
+      tone(new THREE.BoxGeometry(0.06, 0.42, 0.14).translate(-0.24, 0.27, 0), '#cfd4da'), // yoke arm (left)
+      tone(new THREE.BoxGeometry(0.06, 0.42, 0.14).translate(0.24, 0.27, 0), '#cfd4da'), // yoke arm (right)
+      tone(new THREE.BoxGeometry(0.16, 0.14, 0.16).translate(0.33, 0.12, 0), '#3a4048'), // azimuth motor
+    ]),
+    metalMat,
   );
-  pitchPivot.add(receiver, dishBowl);
+  yawPivot.add(turntable);
+
+  // Elevation stage: the dish, its feed and the counterweight tilt together.
+  const pitchPivot = new THREE.Group();
+  pitchPivot.position.set(0, 0.44, 0);
+  yawPivot.add(pitchPivot);
+  const dishGroup = new THREE.Group();
+  dishGroup.rotation.x = -1.1; // looks up at the sky (the relay satellite); pitchPivot adds the aiming
+  pitchPivot.add(dishGroup);
+
+  // Parabolic reflector z = r² / 4f (lathe), opening towards +z, 12 panel petals with thin seams.
+  const R = 0.72;
+  const F = 0.46;
+  const profile = [];
+  for (let i = 0; i <= 10; i++) {
+    const r = (i / 10) * R;
+    profile.push(new THREE.Vector2(r, (r * r) / (4 * F)));
+  }
+  const reflector = new THREE.LatheGeometry(profile, 48).rotateX(Math.PI / 2).toNonIndexed();
+  reflector.computeVertexNormals();
+  {
+    const pos = reflector.attributes.position;
+    const col = new Float32Array(pos.count * 3);
+    for (let i = 0; i < pos.count; i++) {
+      const x = pos.getX(i);
+      const y = pos.getY(i);
+      const angle = Math.atan2(y, x);
+      const seam = Math.abs(((angle / (Math.PI * 2)) * 12) % 1 - 0.5) > 0.47; // near a petal edge
+      const r = Math.hypot(x, y) / R;
+      const shade = (seam ? 0.72 : 0.93) - 0.06 * r;
+      col.set([shade, shade * 1.01, shade * 1.03], i * 3);
+    }
+    reflector.setAttribute('color', new THREE.BufferAttribute(col, 3));
+    reflector.deleteAttribute('uv');
+  }
+  const rimDepth = (R * R) / (4 * F);
+  // Back structure: hub, 8 radial ribs and the rim ring; feed: 4-strut tripod/quadripod, horn and LNB box.
+  /** Bar between two points (cylinder, merged into the hardware mesh). @param {THREE.Vector3} from @param {THREE.Vector3} to @param {number} r */
+  const bar = (from, to, r) => {
+    const g = new THREE.CylinderGeometry(r, r, from.distanceTo(to), 6);
+    g.applyQuaternion(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), to.clone().sub(from).normalize()));
+    return g.translate((from.x + to.x) / 2, (from.y + to.y) / 2, (from.z + to.z) / 2);
+  };
+  // Back ribs: from the hub out to the rim, just behind the reflector surface.
+  const ribs = [];
+  for (let i = 0; i < 8; i++) {
+    const a = (i / 8) * Math.PI * 2;
+    for (let s = 0; s < 3; s++) {
+      const r0 = (s / 3) * R * 0.96;
+      const r1 = ((s + 1) / 3) * R * 0.96;
+      const p0 = new THREE.Vector3(Math.cos(a) * r0, Math.sin(a) * r0, (r0 * r0) / (4 * F) - 0.025);
+      const p1 = new THREE.Vector3(Math.cos(a) * r1, Math.sin(a) * r1, (r1 * r1) / (4 * F) - 0.025);
+      ribs.push(tone(bar(p0, p1, 0.014), '#8a929b'));
+    }
+  }
+  const struts = [];
+  for (let i = 0; i < 4; i++) {
+    const a = (i / 4) * Math.PI * 2 + Math.PI / 4;
+    const from = new THREE.Vector3(Math.cos(a) * R * 0.92, Math.sin(a) * R * 0.92, rimDepth * 0.92);
+    const to = new THREE.Vector3(0, 0, F - 0.04);
+    const len = from.distanceTo(to);
+    const strutGeo = new THREE.CylinderGeometry(0.011, 0.011, len, 6);
+    strutGeo.applyQuaternion(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), to.clone().sub(from).normalize()));
+    strutGeo.translate((from.x + to.x) / 2, (from.y + to.y) / 2, (from.z + to.z) / 2);
+    struts.push(tone(strutGeo, '#b9c0c8'));
+  }
+  const hardware = new THREE.Mesh(
+    mergeGeometries([
+      tone(new THREE.TorusGeometry(R, 0.022, 8, 48).translate(0, 0, 0).rotateZ(0).translate(0, 0, rimDepth), '#7d858e'), // rim
+      tone(new THREE.CylinderGeometry(0.11, 0.13, 0.12, 16).rotateX(Math.PI / 2).translate(0, 0, -0.04), '#6b737c'), // hub
+      ...ribs,
+      ...struts,
+      tone(new THREE.CylinderGeometry(0.035, 0.05, 0.1, 12).rotateX(Math.PI / 2).translate(0, 0, F - 0.02), '#d7dbe0'), // feed horn
+      tone(new THREE.BoxGeometry(0.07, 0.07, 0.09).translate(0, 0, F + 0.07), '#2f343a'), // LNB / receiver
+      tone(new THREE.BoxGeometry(0.5, 0.05, 0.06).translate(0, 0, -0.08), '#9aa3ad'), // elevation axle
+      tone(new THREE.BoxGeometry(0.2, 0.12, 0.18).translate(0, -0.08, -0.26), '#4a5058'), // counterweight
+    ]),
+    metalMat,
+  );
+  const dishBowl = new THREE.Mesh(reflector, dishMat);
+  dishGroup.add(dishBowl, hardware);
+  beacon.position.set(0, 0.06, F + 0.14);
+  dishGroup.add(beacon);
 
   // ---------------------------------------------------------------------------
   // 4. Sky: gradient backdrop (shared Mars look), sun, stars, Phobos
@@ -246,6 +338,7 @@ export function buildPorthole(scene, getSim, win = { center: [0, 1.6, 0], width:
   let totalTime = 0;
 
   return {
+    root,
     /** @param {number} dt real seconds */
     update(dt) {
       totalTime += dt;

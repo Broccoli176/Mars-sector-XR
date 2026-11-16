@@ -1,5 +1,5 @@
 {
-  "name": "Marte VR Survival",
+  "name": "Marsianics",
   "version": "0.1.0",
   "status": "prototype v0.1 (headless sim + greybox WebXR)",
   "summary": "Stationary VR survival/management game set in the first human outpost on Mars. Survive 7 accelerated days by balancing life support, power, food, water, telecom and electronics, with space weather driven by a NASA DONKI snapshot.",
@@ -147,7 +147,7 @@
   },
   "performanceBudget": {
     "fps": "72 target (90 only if measured stable), 60 floor (Quest 3)",
-    "drawCalls": "<150 (measured max 59 on desktop)",
+    "drawCalls": "<150 (measured 2026-11-15 on desktop: average 29, max 71 per view; room visibility culling + baked shell lighting)",
     "triangles": "500000-1000000",
     "textureMemory": "300-500MB GPU-resident target",
     "textureFormat": "KTX2",

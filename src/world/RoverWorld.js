@@ -91,6 +91,13 @@ export function buildRoverWorld(scene, game, camera, dolly, layout) {
   root.name = 'Rover_OpenWorld';
   root.position.copy(ROVER_WORLD_ORIGIN);
   scene.add(root);
+  // Everything you can see out here lives in `content`, hidden while the player is in the base (it is 500 m
+  // away: never visible from there). The two lights stay on `root`: Three.js lights are global and also light
+  // the props of the base, so hiding them would change how the base looks.
+  const content = new THREE.Group();
+  content.name = 'Rover_OpenWorld_Content';
+  content.visible = false;
+  root.add(content);
 
   const cfg = game.data.balance.rover;
 
@@ -122,7 +129,7 @@ export function buildRoverWorld(scene, game, camera, dolly, layout) {
   const terrainMat = new THREE.MeshBasicMaterial({ vertexColors: true, toneMapped: false });
   const terrain = new THREE.Mesh(terrainGeo, terrainMat);
   terrain.position.set(0, 0, 0);
-  root.add(terrain);
+  content.add(terrain);
 
   // Height sampling helper for placing rover and rocks on top of terrain
   const getTerrainHeight = (x, z) => {
@@ -150,23 +157,29 @@ export function buildRoverWorld(scene, game, camera, dolly, layout) {
   horizon.renderOrder = -1;
   horizon.frustumCulled = false;
   horizon.visible = false;
-  root.add(horizon);
+  content.add(horizon);
   const camWorld = new THREE.Vector3();
 
   // Rocks & Boulders scattered per balance config
   const rockGeo = bakeShade(new THREE.DodecahedronGeometry(1.0, 1), MARS.rock, SUN_DIR, 0.35);
   const rockMat = new THREE.MeshBasicMaterial({ vertexColors: true, toneMapped: false });
-  if (cfg.rocks) {
-    for (const r of cfg.rocks) {
-      const rock = new THREE.Mesh(rockGeo, rockMat);
+  if (cfg.rocks?.length) {
+    // One instanced draw call for every rock (they share geometry and material).
+    const rocks = new THREE.InstancedMesh(rockGeo, rockMat, cfg.rocks.length);
+    rocks.name = 'Rover_Rocks';
+    const rock = new THREE.Object3D();
+    cfg.rocks.forEach((/** @type {any} */ r, /** @type {number} */ i) => {
       const rx = r.x;
       const rz = -r.y;
       const ry = getTerrainHeight(rx, rz);
       rock.position.set(rx, ry + r.r * 0.4, rz);
       rock.scale.set(r.r, r.r * 0.75, r.r * 1.1);
       rock.rotation.set(r.x * 0.3, r.y * 0.5, 0.4);
-      root.add(rock);
-    }
+      rock.updateMatrix();
+      rocks.setMatrixAt(i, rock.matrix);
+    });
+    rocks.frustumCulled = false; // spread over the whole terrain
+    content.add(rocks);
   }
 
   // =========================================================================
@@ -212,7 +225,7 @@ export function buildRoverWorld(scene, game, camera, dolly, layout) {
     sampleMesh.name = `sample_${site.id}`;
     sGroup.add(sampleMesh);
 
-    root.add(sGroup);
+    content.add(sGroup);
     sampleNodes.set(site.id, { group: sGroup, site, beaconRing, collected: false });
   });
 
@@ -221,7 +234,7 @@ export function buildRoverWorld(scene, game, camera, dolly, layout) {
   // =========================================================================
   const roverGroup = new THREE.Group();
   roverGroup.name = 'Rover_3D_Vehicle';
-  root.add(roverGroup);
+  content.add(roverGroup);
 
   const whiteMat = new THREE.MeshLambertMaterial({ color: 0xd6d0c4 });
   const deckMat = new THREE.MeshLambertMaterial({ color: 0xa8a296 });
@@ -577,17 +590,26 @@ export function buildRoverWorld(scene, game, camera, dolly, layout) {
     }
   });
 
-  // Render Target for live monitor in Control Room
-  const renderTarget = new THREE.WebGLRenderTarget(512, 384);
+  // Pose of the rover's mast camera (first-person view). The NavCam screen in Control is a 2D canvas, so there
+  // is no second 3D render of this world.
   const roverCamera = new THREE.PerspectiveCamera(65, 512 / 384, 0.1, 500);
+  /** True while the player's camera is out in this world (first-person view). */
+  let inWorld = false;
 
   return {
     root,
+    content,
+    /** Global lights of the exterior (they also reach the base): read by the baked shell lighting. */
+    sunLight,
+    ambLight,
     roverGroup,
     roverCamera,
-    renderTarget,
     get isFPV() {
       return isFPV;
+    },
+    /** True while the player's camera is in the rover world: the base is then out of sight. */
+    get inWorld() {
+      return inWorld;
     },
     enterFPV,
     exitFPV,
@@ -606,8 +628,10 @@ export function buildRoverWorld(scene, game, camera, dolly, layout) {
       // Sky dome only around a camera that is inside the rover world (never around the base).
       camera.getWorldPosition(camWorld);
       root.worldToLocal(camWorld);
-      horizon.visible = Math.hypot(camWorld.x, camWorld.z) < terrainSize * 0.6;
-      if (horizon.visible) horizon.position.copy(camWorld);
+      inWorld = Math.hypot(camWorld.x, camWorld.z) < terrainSize * 0.6;
+      content.visible = inWorld;
+      horizon.visible = inWorld;
+      if (inWorld) horizon.position.copy(camWorld);
       const r = s.rover;
       if (!r) return;
 

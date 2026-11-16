@@ -1,4 +1,4 @@
-# Colaboración — Marte VR Survival (2 personas)
+# Colaboración — Marsianics (2 personas)
 
 > **Léelo antes de tu primer commit.** Define quién es dueño de cada archivo, cómo usar ramas en GitHub y cómo evitar conflictos.
 > Lo hacen cumplir `.github/CODEOWNERS` (GitHub pide revisión al dueño) y `tests/data.test.js`, que falla si dos archivos definen la misma clave.
@@ -34,7 +34,7 @@ Plano y coordenadas de las salas: `docs/FLOOR_PLAN.md`.
 ### Archivos COMPARTIDOS (tocar solo con PR pequeño y aviso previo)
 
 - **Código base:** `src/core/`, `src/vr/` (incluye `Grab.js` y `Holsters.js`: agarre, fundas del cinturón (botón B/Y → `holsters.onBelt`, registrado por las herramientas del hub) y «usar lo que sostienes» con `onUse`, usados por todas las salas), `src/utils/`, `src/objects/`.
-- **Mundo e interfaz:** `src/world/Basement.js`, `src/world/textures.js`, `src/ui/Panel.js`, `src/ui/StationKit.js` (`services` = { scene, grab, holsters, floors, renderer }), `src/ui/Stations.js`.
+- **Mundo e interfaz:** `src/world/Basement.js`, `src/world/Visibility.js` + `visibilityRules.js` (qué salas se dibujan), `src/world/bakedLight.js` (luz horneada del casco), `src/world/textures.js`, `src/ui/Panel.js`, `src/ui/StationKit.js` (`services` = { scene, grab, holsters, floors, renderer }), `src/ui/Stations.js`.
 - **Sistemas centrales:** `src/systems/{Simulation,TimeManager,ResourceManager,Crew,IncidentRunner,GameState}.js`.
 - **Datos comunes:**
   - `src/data/layout.json` (paredes, salas, carteles, punto de aparición)
@@ -127,7 +127,7 @@ Si no está claro qué conservar, pregunta al otro antes de decidir.
 - **No sacar dependencias del bundle para que compile.** Por ejemplo, `external: ['iwer']` en `vite.config.js` rompió `?iwer`. Si un paquete «no se encuentra», ejecuta `npm ci`.
 - **No basar el trabajo en un `main` viejo.** Haz `git pull` antes de crear la rama: un cambio sobre código antiguo puede fusionarse «sin conflicto» y aun así romper el juego.
 - **Respetar la spec:** valores de `docs/SIMULATION_SPEC.md` en `balance/`, y no inventar otros en el código.
-- **Presupuesto Quest:** nada de luces dinámicas nuevas ni post-procesado, y piezas repetidas instanciadas o fusionadas (`AGENTS.md` §7). Mide los draw calls con `?debug` (`window.__marte.renderer.info.render.calls`).
+- **Presupuesto Quest:** nada de luces dinámicas nuevas ni post-procesado, y piezas repetidas instanciadas o fusionadas (`AGENTS.md` §7). Usa `kit.addBox`/`kit.addCylinder` para el mobiliario (se fusiona solo) y mete todo dentro del grupo de tu estación para que se oculte con su sala. Mide los draw calls con `?debug` (`window.__marte.renderer.info.render.calls`).
 
 ## 6) Antes de empezar en paralelo
 

@@ -22,7 +22,7 @@ const STUDIES = [
 /** @param {string} accession */
 async function fetchStudy(accession) {
   const url = `${SEARCH}?term=${encodeURIComponent(accession)}&from=0&size=5&type=cgene`;
-  const res = await fetch(url, { headers: { 'User-Agent': 'marte-vr-survival-data-script' } });
+  const res = await fetch(url, { headers: { 'User-Agent': 'marsianics-data-script' } });
   if (!res.ok) throw new Error(`HTTP ${res.status} for ${url}`);
   const json = await res.json();
   const hit = json.hits.hits.map((/** @type {any} */ h) => h._source).find((/** @type {any} */ s) => s.Accession === accession);

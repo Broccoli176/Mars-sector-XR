@@ -9,9 +9,10 @@ const _fwd = new THREE.Vector3();
 const _right = new THREE.Vector3();
 const _pos = new THREE.Vector3();
 const UP = new THREE.Vector3(0, 1, 0);
-const IDLE = { color: '#ffcf66', opacity: 0.22, scale: 1 };
-const HOLDING = { color: '#ffcf66', opacity: 0.75, scale: 1 };
-const SNAP = { color: '#7fe07f', opacity: 0.95, scale: 1.35 };
+// Colours are parsed once here: this runs every frame and must not create garbage (no hex strings to parse).
+const IDLE = { color: new THREE.Color('#ffcf66'), opacity: 0.22, scale: 1 };
+const HOLDING = { color: new THREE.Color('#ffcf66'), opacity: 0.75, scale: 1 };
+const SNAP = { color: new THREE.Color('#7fe07f'), opacity: 0.95, scale: 1.35 };
 
 /** Shortest signed angle a − b in (−π, π]. @param {number} a @param {number} b */
 export function angleDelta(a, b) {
@@ -101,16 +102,18 @@ export class Holsters {
 
   /** Rings: faint when idle, bright while holding something, green + bigger when a held object is in snap range. */
   #highlight() {
-    const held = this.grab ? [...this.grab.held.values()].filter((o) => o.userData.holsterable) : [];
+    const held = this.grab?.held;
+    let holding = false;
+    if (held) for (const o of held.values()) if (o.userData.holsterable) holding = true;
     for (const slot of this.slots) {
-      let look = held.length && slot.item === null ? HOLDING : IDLE;
-      if (slot.item === null) {
-        for (const o of held) {
-          if (o.getWorldPosition(_pos).distanceTo(slot.socket.position) <= this.cfg.snapRadiusMeters) look = SNAP;
+      let look = holding && slot.item === null ? HOLDING : IDLE;
+      if (held && holding && slot.item === null) {
+        for (const o of held.values()) {
+          if (o.userData.holsterable && o.getWorldPosition(_pos).distanceTo(slot.socket.position) <= this.cfg.snapRadiusMeters) look = SNAP;
         }
       }
       const m = /** @type {THREE.MeshBasicMaterial} */ (slot.ring.material);
-      m.color.set(look.color);
+      m.color.copy(look.color);
       m.opacity = slot.item ? 0.1 : look.opacity;
       slot.ring.scale.setScalar(look.scale);
     }

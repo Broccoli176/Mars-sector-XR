@@ -1,4 +1,4 @@
-# Content Script — Marte VR Survival
+# Content Script — Marsianics
 
 > **Baseline (pre-implementation).** Player-facing text plan: comms script, tutorial texts and string key convention. Final strings live in `src/data/strings/es/*.json` (`common.json` + one file per room owner, see `docs/COLLABORATION.md`). Rules and timings come from `docs/SIMULATION_SPEC.md`; if they change, update this file in the same change.
 

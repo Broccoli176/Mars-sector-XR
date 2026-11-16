@@ -86,9 +86,10 @@
     "stowDustFactor": 0.25
   },
   "cleanFx": {
-    "_about": "Presentation only: electrodynamic-shield wave seen through the solar window after LIMPIAR (real seconds). Panel i starts stepS after panel i-1; the shown dust fades at fadeSoilPerS.",
-    "durationS": 2.4,
-    "stepS": 0.25,
+    "_about": "Presentation only: the cleaning robot seen through the solar window after LIMPIAR (real seconds). It hops from its dock onto each of the 12 panels (dockHopS / hopS), brushes each end to end (perPanelS) and returns. The simulation applies the clean at once; panels show it as the robot passes. fadeSoilPerS: how fast shown dust settles down otherwise.",
+    "perPanelS": 0.7,
+    "hopS": 0.3,
+    "dockHopS": 0.6,
     "fadeSoilPerS": 0.6
   }
 }

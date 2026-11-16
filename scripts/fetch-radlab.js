@@ -33,7 +33,7 @@ function queryUrl(/** @type {string} */ selector) {
 
 /** @param {string} url */
 async function fetchSeries(url) {
-  const res = await fetch(url, { headers: { 'User-Agent': 'marte-vr-survival-data-script' } });
+  const res = await fetch(url, { headers: { 'User-Agent': 'marsianics-data-script' } });
   if (!res.ok) throw new Error(`HTTP ${res.status} for ${url}`);
   const lines = (await res.text()).trim().split(/\r?\n/);
   const header = lines.shift()?.split(',') ?? [];

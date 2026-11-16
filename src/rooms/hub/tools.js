@@ -12,7 +12,7 @@ const HOT_TIP_MATERIAL = new THREE.MeshBasicMaterial({ color: '#ff7a2f', toneMap
 const TIP_COLD = new THREE.Color('#ff7a2f');
 const TIP_HOT = new THREE.Color('#fff4a8');
 /** Reach of a tool from its tip to the part it works on (m). */
-const TOOL_REACH = 0.6;
+const TOOL_REACH = 1.0; // m from the tool tip to the part (generous: you need not touch it)
 /** `repair:work` batches: send the accumulated seconds this often (like the hydro hose). */
 const WORK_FLUSH_SECONDS = 0.25;
 /** Shared pool of effect particles (sparks, solder smoke, sealant foam): 1 draw call for all tools. */
@@ -32,7 +32,8 @@ const DESKTOP_EXTRA_REACH = 0.6;
 const _q = new THREE.Quaternion();
 // Invisible grab zone around each tool: much easier to hit with the ray than the thin tool itself.
 const GRAB_ZONE_MATERIAL = new THREE.MeshBasicMaterial({ visible: false });
-const GRAB_ZONE = new THREE.BoxGeometry(0.1, 0.1, 0.26).translate(0, 0, -0.08);
+// 0.2 × 0.2 × 0.38 m: the tool can be grabbed even if the ray passes beside it (hooks are 0.3 m apart).
+const GRAB_ZONE = new THREE.BoxGeometry(0.2, 0.2, 0.38).translate(0, 0, -0.08);
 const noRaycast = () => {};
 const GRAVITY = 9.8; // m/s² (Earth-like feel; kinematic drop only, no physics engine — spec D11)
 const HOOK_XS = [-0.45, -0.15, 0.15, 0.45];

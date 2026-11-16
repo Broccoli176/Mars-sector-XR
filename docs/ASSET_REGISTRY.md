@@ -1,4 +1,4 @@
-# Asset Registry — Marte VR Survival
+# Asset Registry — Marsianics
 
 > Baseline documental: registrar aquí todo asset que entre en runtime (`public/`, binarios empaquetados, audio/fuentes, etc.) y toda fuente de datos externa. Sin excepciones.
 > Status: `wip` → `review` → `approved` → `deprecated`.
@@ -20,12 +20,12 @@ Generated at runtime by our own code. There are no external files and no third-p
 | Ceiling panel texture | `createCeilingTexture` | 256² canvas | wip | Emissive lift, dimmed in emergency |
 | Machinery skin for props | `createMachineTexture` | 256² canvas | wip | Shared, tinted per prop colour |
 | Telecom window + 3D Mars diorama (dunes, instanced rocks, dish antenna, sun/stars/Phobos, dust points) | `src/world/Porthole.js` (original by teammate B) | ≈ 15 draw calls, no extra lights | wip | Baked vertex shading, tinted by time of day / storm |
-| Merged greybox geometry (walls, floors, ceilings, door frames, conduits, light fixtures) | `src/world/Basement.js` | 1 draw call per group | wip | Built from `layout.json` |
+| Merged greybox geometry (walls, floors, ceilings, door frames, conduits, light fixtures) | `src/world/Basement.js` | 1 draw call per group, unlit (light baked into vertex colours) | wip | Built from `layout.json` |
 | Hand tools `TOOL_Wrench`, `TOOL_Screwdriver`, `TOOL_SolderIron`, `TOOL_SealantGun` | `src/rooms/hub/tools.js` (`toolGeometry`) | 1 merged mesh each (+1 emissive tip on the soldering iron) | wip | Grip at origin, pointing −z; vertex colours |
 | Hip holster rings `SKT_Holster_L/R` | `src/vr/Holsters.js` | 2 transparent rings | wip | Body-attached, not head-locked |
 | Hydro plants (low-poly foliage + pots) | `src/rooms/hydro/stations.js` | 2 instanced draw calls | wip | Grow with the crop |
 
-Measured with `?debug` in desktop Chrome (2026-11-14): 6–59 draw calls per view on the hub layout (budget < 150). Quest 3 measurement pending.
+Measured with `?debug` in desktop Chrome (2026-11-15, after the graphics audit): 29 draw calls per view on average, 71 at worst (budget < 150); see `AGENTS.md` §7. Quest 3 measurement pending.
 
 ## Runtime 3D assets
 

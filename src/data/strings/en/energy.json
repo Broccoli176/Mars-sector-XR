@@ -111,7 +111,7 @@
   "energy.info.solar.title": "SOLAR FIELD · DATA",
   "energy.info.solar.1": "A panel produces more the more squarely the Sun hits it: output is proportional to the cosine of the angle between panel and Sun.",
   "energy.info.solar.2": "Mars gets ≈ 43 % of the sunlight that reaches Earth. On top of that, settling dust covers the panels: Mars Pathfinder measured ≈ 0.28 % less per sol (Martian day).",
-  "energy.info.solar.clean": "«Clean» fires an electric shield that pushes the dust off the panels (real NASA technology). It uses {kwh} kWh and does not work during a storm.",
+  "energy.info.solar.clean": "«Clean» sends out the cleaning robot: it climbs onto each panel and sweeps it with a brush and air, without water, like the robots in desert solar farms. It uses {kwh} kWh and does not work during a storm.",
   "energy.info.breakers.tradeoff": "Switching off saves battery, but it costs you: no light means no health recovery, cold makes crops grow slowly and without Telecom no warnings arrive.",
   "solar.btn.auto": "Auto"
 }

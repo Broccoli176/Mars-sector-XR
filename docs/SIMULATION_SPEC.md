@@ -1,4 +1,4 @@
-# Simulation Spec — Marte VR Survival
+# Simulation Spec — Marsianics
 
 > **Status: SPEC BASELINE / NOT IMPLEMENTED.** Numeric and rule specification for future implementation. Assumes no existing code, data or tests.
 > When implementing, materialize values in data/config files and cover rules with headless tests; keep spec, data and tests in sync.
@@ -138,12 +138,12 @@ Generation: clear day ≈ **31.2 kWh** (12.0 RTG + ≈ 19.5 solar with the track
 | Calm settling | −0.28 % of output per sol (`calmLossPerSol` 0.0028) | **Real**: Mars Pathfinder Materials Adherence Experiment (Landis & Jenkins 2000), `src/data/real/solar_dust.json` |
 | Dust storm deposit | −0.8 %/h while the storm lasts (36 h storm ⇒ ≈ −25 %) | Game balance |
 | Floor | `dustFactor` ≥ 0.4 | Game balance |
-| Solar cleaning | intent `solar:clean {}` (electrodynamic dust shield, «LIMPIAR» button on the solar desk): −1.5 kWh battery, recovers 60 % of the lost output (2026-11-15: was 0.3 kWh / 90 %, which made cleaning free and «PROTEGER» pointless; now dust avoided by stowing in a storm is worth more than a later clean). Rejected when already clean, during a storm, with the relay open or without battery | Technology real (NASA KSC); numbers are game balance |
+| Solar cleaning | intent `solar:clean {}` (cleaning robot, «Limpiar» button on the solar desk): −1.5 kWh battery, recovers 60 % of the lost output (2026-11-15: was 0.3 kWh / 90 %, which made cleaning free and «PROTEGER» pointless; now dust avoided by stowing in a storm is worth more than a later clean). Rejected when already clean, during a storm, with the relay open or without battery | Waterless brush robots are real (desert solar farms); numbers are game balance |
 | Dust devil | scripted `dustDevil` event (day 6 13:00): recovers 60 % of the lost output | Real phenomenon (Spirit/Opportunity); amount is game balance |
 
-Events: `solar:dustChanged { dustFactor }` (when the dust % changes by 1), `solar:cleaned { by: 'shield' | 'devil', gained, kwh }`, `solar:rejected { reason }`. Honest note: at the real calm rate a 7-day run loses only ≈ 2 %; the storm is what makes dust matter.
+Events: `solar:dustChanged { dustFactor }` (when the dust % changes by 1), `solar:cleaned { by: 'robot' | 'devil', gained, kwh }`, `solar:rejected { reason }`. Honest note: at the real calm rate a 7-day run loses only ≈ 2 %; the storm is what makes dust matter.
 
-Presentation: on `solar:cleaned { by: 'shield' }` the solar window plays a blue shield wave that sweeps the panel columns one after another (12 panels in 2 rows of 6; visual only, the peak stays `solarKw`) (`SolarPanelShieldWave`, +1 draw call), and the shown dust fades out (`balance.cleanFx` in `energy.json`, real seconds). The former Rover 2 cleaning rover was removed (too confusing for players).
+Presentation: on `solar:cleaned { by: 'robot' }` the cleaning robot (`SolarCleanerRover`, 3 draw calls, plus its dock `SolarCleanerDock`) leaves its dock in front of the window, hops onto each of the 12 panels in order, brushes it end to end and returns (`cleanerPath`, `cleanerDuration`; `balance.cleanFx`: `perPanelS`, `hopS`, `dockHopS`, real seconds). Each panel shows its own dust coating: panels ahead of the robot keep the old dust and the brushed ones show the new one. Visual only: the simulation applied the clean at once, the peak stays `solarKw`.
 
 ### 2.6 Sun tracker (implemented, `src/systems/SolarTracker.js`, `balance.tracker` in `energy.json`)
 
@@ -235,7 +235,7 @@ Without recycling, total use ≈ 0.30 L/h, ≈ 50 L per run, which loses. With r
 | Consumption | −104 kcal/h (2 500/day), automatic |
 | Trays | **4 soilless channels** (NFT-style, rockwool cubes; `trays` in data), sown by the player (`hydro:sow`) with one of 6 crops. Values in `balance/hydro.json` → `food.crops` (compressed time, real order): lettuce 36 h / 700 kcal · soybean 60 h / 1 500 · quinoa 72 h / 1 900 · tomato 84 h / 1 800 · carrot 96 h / 2 200 · sweet potato 120 h / 3 000 |
 | Moisture | 0–1 per tray (`trayCapacityL` = 2 L at 1). It dries by `crop.drinkPerHour` (0.025–0.04/h) **only while the lights are on**. Half of that water returns as condensate (`hydroCondensateFraction`) |
-| Watering | `hydro:water { trayId, liters }` from the hose (0.25 L/s while the trigger is held and aimed at a tray, range 1.6 m). The liters leave the tank at once; moisture is capped at 1 (the excess spills) |
+| Watering | `hydro:water { trayId, liters }` from the hose (0.25 L/s while the trigger is held and aimed at a tray, range 2.5 m; the spray is a ≈10° cone, so aiming roughly at the tray is enough). The liters leave the tank at once; moisture is capped at 1 (the excess spills) |
 | Growth | Advances only while `hydro` is served **and** moisture is inside **[0.12, 0.95]** (wide band, forgiving for young players), at × `growthFactor` (nutrients, below) |
 | Nutrient solution | Shared level 0–1 (`food.nutrients`: starts 0.7). Each healthy lit channel uses 0.004/h. Below **0.2** growth runs at **×0.5**; it never kills. `hydro:feed {}` spends one of **4 cartridges** (+0.5 each) ⇒ `hydro:fed { level, cartridgesLeft }`; rejected with `hydro:rejected { reason: 'noCartridge' \| 'full' }`. `hydro:nutrientsLow {}` fires once when crossing the threshold |
 | Photosynthesis | Each healthy lit channel: **−6 ppm CO₂/h** and **+0.02 % O₂/h** (`food.photosynthesis`), passive |
@@ -473,7 +473,7 @@ It does not affect survival directly: it lowers the Telecom signal (comms/link o
 ## 7) Save (v1) — stretch goal for the hackathon (D22)
 
 - **When:** autosave on `time:dayStarted` (06:00), plus a manual save (`save:request`) at the log terminal in the central room.
-- **Where:** `localStorage` key `marte-vr-survival:save:<slot>`, slots `auto` and `manual`.
+- **Where:** `localStorage` key `marsianics:save:<slot>`, slots `auto` and `manual`.
 - **Load flow:** in `boot`, the main PC shows "Continuar" if `auto` validates. On `game:over`/`game:won` the `auto` slot is cleared; `manual` is kept.
 - **Validation:** check `version`, required keys and value ranges (§3.0). On failure, keep the stored save untouched and start a new run.
 - **Shape:** as in `AGENTS.md` §4.3.
@@ -556,6 +556,8 @@ Every threshold in §3.0 must be readable on at least one of these panels. Wall-
 > - **Still pending (phase 2):** using a tool on a broken component (`repair:*`, Electronics system).
 - One tool per hand, plus **2 hip holsters**. Holsters are sockets attached to the body, not to the head, so they are not a head-locked HUD.
 - A tool released outside a socket falls to the floor. If it lands outside the navigable floor, it returns to the tool wall after 10 real s.
+
+**Alert banner (implemented 2026-11-15, team-approved exception to «no head-locked HUD»):** a small translucent banner fixed high in the view (`src/ui/AlertBanner.js`) lists, at all times, every active **fault** (red: relay tripped/burned, broken component, hull leak, Telecom power supply) and **pending job** (amber: CO₂ filter nearly used up, thirsty crops, harvest ready, circuits left without power), each with the **room** where it is and what to do, faults first (`activeAlerts` in `src/ui/alertRules.js`). A new fault blinks the border and buzzes both controllers. Resource levels and storms are not shown there (the panels and the log cover them).
 
 **Alarm catalog:**
 

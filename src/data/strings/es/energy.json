@@ -111,7 +111,7 @@
   "energy.info.solar.title": "CAMPO SOLAR · DATOS",
   "energy.info.solar.1": "Un panel produce más cuanto más de frente le da el Sol: la producción es proporcional al coseno del ángulo entre el panel y el Sol.",
   "energy.info.solar.2": "Marte recibe ≈ 43 % de la luz solar que llega a la Tierra. Además, el polvo que se posa tapa los paneles: Mars Pathfinder midió ≈ 0,28 % menos por sol (día marciano).",
-  "energy.info.solar.clean": "«Limpiar» activa un escudo eléctrico que empuja el polvo fuera de los paneles (tecnología real de la NASA). Gasta {kwh} kWh y no sirve durante una tormenta.",
+  "energy.info.solar.clean": "«Limpiar» envía el robot limpiador: sube a cada panel y lo recorre con un cepillo y aire, sin agua, como los robots de los parques solares del desierto. Gasta {kwh} kWh y no sirve durante una tormenta.",
   "energy.info.breakers.tradeoff": "Apagar ahorra batería, pero cuesta: sin luz no recuperas salud, con frío los cultivos crecen lento y sin Telecom no llegan avisos.",
   "solar.btn.auto": "Auto"
 }

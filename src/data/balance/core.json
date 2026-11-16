@@ -70,5 +70,9 @@
   "gameRules": {
     "powerLossHours": 3,
     "guidedTripExtraHours": 3
+  },
+  "alerts": {
+    "_about": "Alert banner (src/ui/AlertBanner.js): faults and pending jobs with their room. filterLowHours: warn when the CO₂ filter has this many hours or fewer left.",
+    "filterLowHours": 6
   }
 }

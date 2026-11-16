@@ -1,4 +1,4 @@
-# AGENTS.md — Marte VR Survival
+# AGENTS.md — Marsianics
 
 > Instrucciones para agentes de código (prototipo v0.1 en marcha). Este archivo define contratos, reglas y objetivos.
 > Léelo completo antes de implementar. Cuando exista código, si algo aquí entra en conflicto con el código, el código gana **y este archivo debe actualizarse** en el mismo cambio.
@@ -38,7 +38,7 @@ Decisiones/objetivos iniciales (a confirmar al arrancar):
 - **Arquitectura objetivo:** simulación headless desacoplada de render; composición clara entre core/systems/vr/world/objects/ui/data/utils.
 - **MVP objetivo:** sobrevivir 7 días acelerados gestionando energía, soporte vital, comida/agua, telecom y electrónica/reparaciones.
 - **Persistencia:** sin implementación; definir `SaveSystem` y migraciones cuando se aborde.
-- **Idioma:** texto de jugador en español; código y documentación en inglés (objetivo).
+- **Idioma:** texto de jugador en español e inglés, elegible en el menú inicial (tablas `src/data/strings/es|en/`, misma clave en ambas, `tests/i18n.test.js`); código y documentación en inglés.
 - **Git/LFS/tooling:** por definir/inicializar en el nuevo proyecto.
 
 **Precedencia documental (cuando haya implementación):** comportamiento/código real > `AGENTS.md` (contratos/presupuestos/boundaries) > `docs/SIMULATION_SPEC.md` + datos de configuración (reglas numéricas) > `docs/AGENT_CONTEXT.md` (intención de diseño). Resolver y documentar conflictos en el mismo cambio.
@@ -49,7 +49,7 @@ Decisiones/objetivos iniciales (a confirmar al arrancar):
 
 | Item | Valor |
 | :-- | :-- |
-| Nombre | Marte VR Survival |
+| Nombre | Marsianics |
 | Género | Simulación/gestión de supervivencia VR estacionaria |
 | Ambientación | Primera colonia humana en Marte; base subterránea que el jugador no abandona |
 | Plataforma | **Meta Quest 3** (objetivo), navegador Quest / WebXR |
@@ -68,7 +68,7 @@ Decisiones/objetivos iniciales (a confirmar al arrancar):
 | Victoria | Llegar vivo al final del día 7 (con resumen/post-run según diseño) |
 | Derrota | Salud del jugador a 0 (asfixia, hipotermia, deshidratación, inanición o radiación) o pérdida total de energía. La cascada irrecuperable está **planificada, no implementada** |
 | Salud | Barra/recurso de salud mostrado en UI diegética (sin HUD head-locked) |
-| Idioma UI | Español (tabla de strings externa); código/docs en inglés |
+| Idioma UI | Español o inglés, a elegir en el menú inicial antes del turno (`?lang=`, se recuerda en el navegador; recarga la página). Tablas `src/data/strings/<lang>/`; números con coma en español y punto en inglés (`fmt`, `setNumberLanguage`). Código/docs en inglés |
 | Tiempo | Simulación acelerada basada en ticks (no acoplar reglas a delta de render). El día empieza a las **06:00**; la partida termina el día 8 06:00 (7 días exactos, ≈42 min a 1×) |
 | Fases | `boot → training → playing → over \| won`. **Pausa = velocidad 0**, no es fase. **Pausa automática** al quitarse el visor |
 | Tutorial | Banco de entrenamiento en la Sala central · Herramientas (`room_hub`) (fase `training`, tiempo parado, saltable) + incidentes guiados del día 1 |
@@ -76,7 +76,7 @@ Decisiones/objetivos iniciales (a confirmar al arrancar):
 | Locomoción | Teleport por defecto; movimiento suave opcional **con viñeta** |
 | Interacción | Agarre directo para controles físicos; ray solo para controles diegéticos pequeños si aplica |
 | Input | Mandos primero; sin hand tracking en MVP salvo decisión explícita |
-| UI | Paneles/indicadores diegéticos. **Sin HUD head-locked** |
+| UI | Paneles/indicadores diegéticos. **Sin HUD head-locked**, con una única excepción decidida por el equipo (2026-11-15): el **cartel de avisos** (`src/ui/AlertBanner.js`), pegado a la cámara arriba de la vista, pequeño y semitransparente, que lista averías (rojo) y tareas pendientes (ámbar) con la sala donde están. Reglas puras en `src/ui/alertRules.js` (`activeAlerts`), sala de cada componente en `balance/hub.json` → `components[].room`, umbral en `balance/core.json` → `alerts`. Una avería nueva hace vibrar los mandos (`XRControls.pulseAll`). Oculto con el menú inicial |
 | Entorno | Base en estrella alrededor de la **Sala central · Herramientas** (hub). Al norte: Telecom y Sala de control (spawn, ordenador principal y controles de tiempo al norte; biomonitor al sur; consola del rover en la pared este y panel vital al norte). Al oeste, pegada a la Sala central y sin pasillo: Personal (habitaciones de tripulación, dosímetro y refugio antirradiación). Al sur: Hidroponía · Agricultura y Energía y oxígeno. Ver `docs/FLOOR_PLAN.md`. Base subterránea con **dos ventanas al exterior**: la panorámica de Telecom (`src/world/Porthole.js`) y la del campo solar en Energía (`src/world/SolarField.js`, muro este, **redondeada**). Todas las vistas exteriores (ventana de Telecom, campo solar, mundo y NavCam/mapa del rover en Control) comparten paleta de suelo y cielo/luz por hora y tormenta: `src/world/marsLook.js`. En `layout.json` cada muro con ventana lleva `view: "telecom" | "solar"`; una ventana `[desde, hasta, alféizar, techo, radio?]` con radio > 0 tiene esquinas redondeadas (`src/world/roundedRect.js`) |
 | Persistencia | Guardado versionado con migraciones (cuando se implemente) |
 
@@ -235,12 +235,13 @@ Los tanques de O₂ de emergencia usan `valve:turn` (`valve_o2_tank_1/2`). Pendi
   - Eventos: `rover:rejected { cmd, reason: 'noLink' | 'battery' | 'stuck' | 'noSite' | 'busy' }`, `rover:stopped { reason: 'obstacle' | 'sand' | 'battery' | 'edge' }`, `rover:sampled { siteId, kind: 'core' | 'salvage' }`, `rover:delivered { cores, spares }`.
   - Se recarga en la base por el circuito `repairBay` («Taller · Rover»). Los restos del aterrizaje que trae dan +1 `spares` cada uno (sirven para cambiar el relé quemado). Los tubos de roca son **ciencia, no supervivencia**: al entregarlos emite `comms:send { key: 'comms.science.cores', params: { cores, total } }` y la Tierra responde con el retraso real; el resumen final cuenta muestras y repuestos.
   - El panel adyacente `rover_vitals` lee la simulación (solo lectura): enlace y señal, batería del rover, distancia a la base y muestras. Generador, velocidad y tubos son datos reales de Perseverance (`src/data/real/perseverance.json`).
+- **Visibilidad y luz horneada (compartido, solo presentación, 2026-11-15):** `src/world/Visibility.js` oculta estaciones, carteles de puerta y vistas exteriores que no se ven (§7); `src/world/Basement.js` devuelve mallas de colisión simples e invisibles (`floors`, `walls`: lo único que prueban los rayos) aparte del casco visible, y hornea su luz. `stations.groups` da el grupo y la sala de cada estación.
 - **Usar lo que sostienes (compartido, `src/vr/Grab.js`):** `userData.grab.onUse(active, handId)`. Con un objeto así en la mano, el gatillo (XR) o la tecla F (escritorio) lo usan en vez del rayo. Lo usa la manguera de Hidroponía. En escritorio, R gira lo que sostienes.
 - **Incidentes y avisos:** `incident:warning`/`triggered`, `weather:changed`, `comms:message`, `hint`.
 - **Enlace con la Tierra (`src/systems/Comms.js`):**
   - Intent `comms:send { channel, key, params? }` (lo emiten IncidentRunner y el parte diario).
   - Eventos `comms:message { channel, key, params, day, hour, minute, sentDay, sentHour, sentMinute, delayMin }` (llega tras el retraso de luz real), `comms:linkLost { reason: 'signal' | 'conjunction' }`, `comms:linkRestored {}`.
-- **Polvo en paneles (`PowerGrid`):** intent `solar:clean {}` (escudo electrodinámico; botón «LIMPIAR» de la consola solar, que en la ventana lanza una onda azul que recorre los paneles columna a columna, `SolarPanelShieldWave`, `balance.cleanFx`); eventos `solar:dustChanged { dustFactor }`, `solar:cleaned { by: 'shield' | 'devil', gained, kwh }`, `solar:rejected { reason: 'noDust' | 'storm' | 'relay' | 'battery' | 'tracker' }`. Evento de guion `dustDevil`.
+- **Polvo en paneles (`PowerGrid`):** intent `solar:clean {}` (botón «Limpiar» de la consola solar: robot limpiador). En la ventana, el robot `SolarCleanerRover` sale de su base `SolarCleanerDock`, salta a cada uno de los 12 paneles, lo cepilla de lado a lado borrando la capa de polvo por panel y vuelve (`cleanerPath`/`cleanerDuration` en `src/world/SolarField.js`, tiempos en `balance.cleanFx`; solo presentación, la simulación aplica la limpieza al instante); eventos `solar:dustChanged { dustFactor }`, `solar:cleaned { by: 'robot' | 'devil', gained, kwh }`, `solar:rejected { reason: 'noDust' | 'storm' | 'relay' | 'battery' | 'tracker' }`. Evento de guion `dustDevil`.
 - **Seguidor solar (`src/systems/SolarTracker.js`, consola bajo la ventana de Energía):**
   - Intents: `solar:turn { dir: -1 | 1 }` (manual, paso 18°, límite ±60° sobre eje vertical), `solar:auto { on }` (botón «Auto» de la consola, 2026-11-15; sigue al Sol; motor 0,05 kW de día ≈ 0,6 kWh por sol, frente a girar a mano gratis pero teniendo que volver cada pocas horas) y `solar:stow { on }` (PROTEGER: de canto, sin producción, ×0,25 de polvo en tormenta).
   - Evento: `solar:tracker { mode: 'manual' | 'auto' | 'stow', angleDeg, targetDeg }`.
@@ -262,7 +263,8 @@ Los tanques de O₂ de emergencia usan `valve:turn` (`valve_o2_tank_1/2`). Pendi
   - Solo las averías que existen en esta versión (`components[].inGame` en `balance/hub.json`) piden herramienta: relé quemado ⇒ destornillador; banco de electrónica (`rx_psu`) ⇒ soldador. Llave inglesa y pistola de sellado se rotulan «Sin uso por ahora» en la pared.
   - Rechazos: `relay:rejected { reason: 'noTool', toolId }` y `electronics:rejected { slotId, reason: 'noTool', toolId }` (antes de `noSpare`/`soldered`). Con 2 fundas y 4 herramientas, el jugador elige qué llevar.
   - Al reiniciar partida, `tools.js` reenvía `item:grab`/`item:socket` de lo que llevas para que la nueva simulación lo sepa.
-  - Cada herramienta es una zona de agarre invisible (caja de 0,10 × 0,10 × 0,26 m) con la malla visible como hija, para acertar fácil con el rayo. En la mano la zona no hace raycast.
+  - Cada herramienta (y la boquilla de la manguera de Hidroponía) es una zona de agarre invisible (herramientas 0,20 × 0,20 × 0,38 m, boquilla 0,22 × 0,22 × 0,34 m) con la malla visible como hija, para acertar fácil con el rayo. En la mano la zona no hace raycast.
+  - Puntería generosa al trabajar: el volumen de puntería de cada avería es 1,8 veces la pieza (`AIM_SCALE` en `RepairPoint.js`), la herramienta alcanza 1 m desde la punta y la manguera riega en un cono de ≈10° hasta 2,5 m (`balance/hydro.json` → `food.hose.rangeMeters`).
 - **Taquilla de repuestos (`src/rooms/hub/spares.js`, solo presentación, sin intents):** armario naranja junto al panel de herramientas. Tocar una puerta abre las dos (animación en `balance/hub.json` → `sparesLocker`). Dentro se ven en 3D `resources.spares` e `inventory` (filtros, sellador, tanques de O₂), con la lista de para qué sirve cada uno y un aviso de que diodos y condensadores están en el banco de electrónica. La Sala central mide 7,5 × 5 m (x −3…4,5).
 
 El resto sigue **propuesto**.
@@ -342,7 +344,7 @@ Presupuesto deliberadamente de clase Quest 2 para dejar margen en Quest 3 (y pro
 | Métrica | Presupuesto |
 | :-- | :-- |
 | Frame rate | 72 Hz objetivo (90 Hz solo si se mide estable), nunca por debajo de 60 Hz |
-| Draw calls | < 100–150 por frame; guía por sala ≈ 25 (6 salas contando la central + pasillos); máximo medido 59 |
+| Draw calls | < 100–150 por frame; guía por sala ≈ 25 (6 salas contando la central + pasillos); máximo medido 71 (ver «Medido») |
 | Triángulos | 500k–1M visibles |
 | Memoria de texturas | ~300–500 MB GPU-resident objetivo (medir) |
 | Texturas | 1K props, 2K superficies grandes; formato comprimido en runtime |
@@ -353,12 +355,30 @@ Presupuesto deliberadamente de clase Quest 2 para dejar margen en Quest 3 (y pro
 
 Medir en hardware real antes de cerrar decisiones de presupuesto.
 
-**Medido en v0.1** (escritorio, `renderer.info`): 6–59 draw calls por vista en la base en estrella (antes 67 en el peor pasillo del plano anterior).
+**Medido tras la auditoría de gráficos (2026-11-15, escritorio 1920 × 1020, `renderer.info`):**
 
-Patrones que lo mantienen bajo:
-- Geometría estática fusionada por material.
-- Botones de 2 draw calls (cuerpo + etiqueta), nunca cajas multimaterial.
-- Plantas instanciadas.
+| | Antes | Después |
+| :-- | :-- | :-- |
+| Draw calls por vista (80 vistas: centro de cada sala × 8 direcciones) | media 112, máx. 243 | media 29, máx. 56 |
+| Draw calls, peor caso (9 264 vistas, incluidas puertas y cabeza inclinada) | 216 sin culling | 71 |
+| CPU de `renderer.render` por vista (las dos versiones medidas por turnos en la misma página) | 1,25 ms (peor vista 3,1) | 0,41 ms (peor vista 0,9): ≈ 3 veces menos |
+| Refresco de paneles (4 Hz), en Energía | ≈ 8–9 ms en un solo frame, 19 ms por segundo | 1,5–4 ms en el peor frame, 9–11 ms por segundo |
+| Triángulos por vista | ≈ 20 k | ≈ 35–40 k (el casco subdividido son ≈ 22 k) |
+| Texturas de lienzo (con mipmaps) | 118 MB | 124 MB |
+
+- En VR cada draw call se emite una vez por ojo (`WebGLRenderer` no tiene multiview): 34–67 por ojo en el emulador de Quest 3.
+- La cifra anterior de este documento («6–59») era de un prototipo con menos estaciones: estaba obsoleta.
+- **Pendiente:** medir en el visor real (el emulador no mide GPU).
+
+Patrones que lo mantienen bajo (cumplirlos al añadir contenido):
+- **Culling por visibilidad** (`src/world/Visibility.js`, reglas puras en `visibilityRules.js`, `tests/visibility.test.js`): en cada render se oculta lo que no se ve desde la cabeza del jugador. Las salas son rectángulos de `layout.json` y cada hueco de puerta es un portal; una sala vista por una puerta solo dibuja las estaciones que caen en la rendija visible. Cada estación pertenece a `station.room`; las dos vistas exteriores, a la sala de su ventana (y solo se dibujan si la ventana está en pantalla). Lo que una sala añade con `scene.add` fuera de su grupo de estación **no** se oculta. `?nocull` lo desactiva para comparar.
+- **Luz del casco horneada** (`src/world/bakedLight.js`, `tests/bakedLight.test.js`): paredes, suelos, techos y marcos usan `MeshBasicMaterial` con la luz en colores de vértice, calculada con las mismas fórmulas que el `MeshLambertMaterial` de Three.js. Cubre las lámparas de sala, la luz hemisférica, el modo emergencia y el sol y ambiente del exterior (`basement.setExteriorLight`). Las luces siguen en la escena solo para los props. No añadir luces dinámicas: cada una se evalúa por píxel en todos los props.
+- **Mobiliario fusionado:** `kit.addBox`/`kit.addCylinder` se fusionan en 1 draw call por estación; las cajas quedan como proxies invisibles de colisión y de rayo. Pasar `{ dynamic: true }` si luego mueves, ocultas o recoloreas la malla devuelta.
+- **Botones de 1 draw call** (`src/objects/Button.js`): una caja cuya cara frontal lleva el lienzo (borde + etiqueta); nunca cajas multimaterial.
+- **Lienzos:** un panel o botón de una sala oculta no se redibuja (`setCulled`); guarda la última petición y la pinta al volver a verse. Los refrescos de 4 Hz se reparten entre frames (`stations.refreshSpread`), sin pico periódico.
+- **Calentamiento al cargar** (`main.js`): un render de todo desde arriba sube shaders, texturas y buffers mientras se ve el menú, para que entrar por primera vez en una sala no pare un frame.
+- Geometría estática fusionada por material; plantas y rocas instanciadas.
+- Nada de `new`, arrays temporales ni colores en texto (`color.set('#…')`) en código que corre cada frame.
 - Tone mapping ACES en el propio shader, sin pase de post-procesado.
 - No exponer el espacio de nombres `THREE` como valor, porque rompe el tree-shaking.
 
@@ -394,6 +414,7 @@ Parámetros de URL solo de desarrollo:
 - «Navegador»: muestra la ayuda y la mira y activa ratón y teclado (`DesktopControls.enabled`, `KeyboardLocomotion.enabled`; desactivados con el menú abierto).
 - Al terminar la sesión XR se vuelve al menú; el botón «Menú» de la ayuda también lo abre. Sustituye al botón «ENTER VR» de Three.js.
 - `?debug`: expone `window.__marte`.
+- `?nocull`: desactiva el culling por visibilidad (dibuja todas las salas), para comparar draw calls.
 
 Agarre: botón de agarre (grip) del mando en XR, tecla **G** en escritorio (`src/vr/Grab.js`). Hay dos fundas en el cinturón (`src/vr/Holsters.js`): **B/Y** (tecla **H** en escritorio) guarda la herramienta en la funda de ese lado y, con la mano vacía, la saca. También se puede soltar junto al anillo: se ilumina verde cuando está a tiro. El cinturón solo gira con el cuerpo (zona muerta de 35°), no con cada mirada.
 
@@ -427,7 +448,7 @@ Requisitos recomendados:
 
 **Don't**
 - No mutar estado interno de otros sistemas desde fuera de su contrato.
-- No introducir HUD head-locked para feedback de gameplay.
+- No introducir más HUD head-locked para feedback de gameplay (la única excepción es el cartel de avisos, ver §2 UI).
 - No acoplar reglas de simulación al framerate.
 - No añadir dependencias o features costosas sin justificar impacto.
 - No mezclar refactors grandes con cambios de comportamiento sin necesidad.

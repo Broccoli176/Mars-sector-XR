@@ -1,4 +1,4 @@
-# Asset Creation Workflow — Marte VR Survival
+# Asset Creation Workflow — Marsianics
 
 > How every 3D model, texture, lightmap, audio clip and diegetic UI asset is produced, optimized, validated and integrated for Meta Quest 3 (with conservative, Quest 2-class budgets).
 >
