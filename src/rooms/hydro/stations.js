@@ -321,9 +321,14 @@ export const builders = {
 
     // Nozzle: grip at the origin, pointing along −z (like the controller and the hub tools).
     const nozzleGeo = new THREE.CylinderGeometry(0.018, 0.022, 0.12, 10).rotateX(Math.PI / 2);
-    const nozzle = new THREE.Mesh(nozzleGeo, kit.lambert('#e0b030'));
+    // `nozzle` is an invisible grab zone (0.22 × 0.22 × 0.34 m) much easier to hit with the ray than the
+    // thin nozzle itself; the visible nozzle is its child (same pattern as the hub tools).
+    const nozzle = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.22, 0.34).translate(0, 0, -0.04), new THREE.MeshBasicMaterial({ visible: false }));
+    const nozzleVisual = new THREE.Mesh(nozzleGeo, kit.lambert('#e0b030'));
     const tip = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.02, 0.07, 10).rotateX(Math.PI / 2).translate(0, 0, -0.09), kit.lambert('#2f6f8f'));
-    nozzle.add(tip);
+    nozzleVisual.add(tip);
+    nozzle.add(nozzleVisual);
+    const zoneRaycast = nozzle.raycast;
     const home = new THREE.Group();
     home.position.set(0.12, -0.24, 0.12);
     home.rotation.x = -Math.PI / 2; // hangs pointing down
@@ -362,9 +367,11 @@ export const builders = {
     nozzle.userData.grab = {
       onGrab: () => {
         held = true;
+        nozzle.raycast = () => {}; // held: must not block the ray (desktop camera / the other hand)
       },
       onRelease: () => {
         held = false;
+        nozzle.raycast = zoneRaycast;
         spraying = false;
         batcher.stop();
         hydroState.watering = null;
@@ -386,6 +393,29 @@ export const builders = {
     const dir = new THREE.Vector3();
     const q = new THREE.Quaternion();
     const tipLocal = new THREE.Vector3(0, 0, -0.13);
+    // The spray is a cone, not a laser: try the centre and 8 rays ≈ 10° around it.
+    const side = new THREE.Vector3();
+    const up = new THREE.Vector3();
+    const probe = new THREE.Vector3();
+    const CONE = Math.tan((10 * Math.PI) / 180);
+    /** @param {THREE.Vector3} from @param {THREE.Vector3} d @returns {string | null} */
+    const sprayTarget = (from, d) => {
+      side.set(0, 1, 0).cross(d);
+      if (side.lengthSq() < 1e-6) side.set(1, 0, 0);
+      side.normalize();
+      up.copy(d).cross(side).normalize();
+      for (let k = -1; k < 8; k++) {
+        probe.copy(d);
+        if (k >= 0) {
+          const a = (k / 8) * Math.PI * 2;
+          probe.addScaledVector(side, Math.cos(a) * CONE).addScaledVector(up, Math.sin(a) * CONE).normalize();
+        }
+        raycaster.set(from, probe);
+        const hit = raycaster.intersectObjects(hydroState.targets, false)[0];
+        if (hit) return hit.object.userData.trayId ?? null;
+      }
+      return null;
+    };
     let emitAcc = 0;
 
     kit.onFrame((dt) => {
@@ -407,9 +437,7 @@ export const builders = {
       dir.set(0, 0, -1).applyQuaternion(q);
       let target = null;
       if (spraying) {
-        raycaster.set(tipWorld, dir);
-        const hit = raycaster.intersectObjects(hydroState.targets, false)[0];
-        target = hit?.object.userData.trayId ?? null;
+        target = sprayTarget(tipWorld, dir);
         batcher.update(target, dt);
       }
       hydroState.watering = target;
@@ -428,8 +456,14 @@ export const builders = {
         } else if (emitAcc >= 1) {
           emitAcc -= 1;
           life[i] = 0.45;
-          sprayPos.set([tipWorld.x, tipWorld.y, tipWorld.z], i * 3);
-          vel[i].copy(dir).multiplyScalar(2.6).add(new THREE.Vector3((Math.random() - 0.5) * 0.4, (Math.random() - 0.5) * 0.4, (Math.random() - 0.5) * 0.4));
+          // No temporary arrays or vectors here: this runs for every droplet while you water.
+          sprayPos[i * 3] = tipWorld.x;
+          sprayPos[i * 3 + 1] = tipWorld.y;
+          sprayPos[i * 3 + 2] = tipWorld.z;
+          vel[i].copy(dir).multiplyScalar(2.6);
+          vel[i].x += (Math.random() - 0.5) * 0.4;
+          vel[i].y += (Math.random() - 0.5) * 0.4;
+          vel[i].z += (Math.random() - 0.5) * 0.4;
         } else {
           sprayPos[i * 3 + 1] = -100; // parked out of sight
         }
@@ -759,7 +793,7 @@ export const builders = {
   hydro_processor(g, station, kit) {
     const { t, game, sim } = kit;
     const floorY = -station.y;
-    const body = kit.addBox(g, 0.9, 1.0, 0.55, 0, floorY + 0.5, 0.3, '#8a8f96');
+    const body = kit.addBox(g, 0.9, 1.0, 0.55, 0, floorY + 0.5, 0.3, '#8a8f96', { dynamic: true }); // vibrates while it runs
     const hopper = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.08, 0.24, 14), kit.lambert('#c9d1d9'));
     hopper.position.set(-0.18, floorY + 1.12, 0.3);
     g.add(hopper);

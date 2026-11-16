@@ -37,6 +37,8 @@ function mergeBuilders(modules) {
  */
 export function buildStations({ layout, rooms, game, t, scene, interactive, services = {} }) {
   const kit = createStationKit({ game, t, interactive, services });
+  /** @type {{ object: THREE.Object3D, roomId: string }[]} station groups with their room (room visibility culling) */
+  const groups = [];
 
   for (const station of layout.stations) {
     const build = stationBuilders[station.id];
@@ -50,15 +52,22 @@ export function buildStations({ layout, rooms, game, t, scene, interactive, serv
     g.position.copy(position);
     g.rotation.y = rotationY;
     build(g, station, kit);
+    kit._bakeStatic(g);
     scene.add(g);
+    groups.push({ object: g, roomId: station.room });
   }
 
   return {
     /** Furniture meshes (world transforms valid after the scene's first matrix update). */
     solids: kit.solids,
-    /** Redraws panels from simulation state. */
+    groups,
+    /** Redraws every panel from simulation state now. */
     refresh() {
       kit._refreshAll();
+    },
+    /** Per frame: each panel is redrawn once per `period`, a few per frame. @param {number} dt @param {number} period */
+    refreshSpread(dt, period) {
+      kit._refreshSpread(dt, period);
     },
     /** @param {number} dt */
     animate(dt) {

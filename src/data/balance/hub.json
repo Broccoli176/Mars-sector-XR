@@ -37,7 +37,8 @@
       "toolId": "wrench",
       "spares": 1,
       "holdSeconds": 10,
-      "needsRepairBay": false
+      "needsRepairBay": false,
+      "room": "room_energy"
     },
     {
       "id": "scrubber_fan",
@@ -47,7 +48,8 @@
       "spares": 1,
       "holdSeconds": 8,
       "needsRepairBay": false,
-      "inGame": true
+      "inGame": true,
+      "room": "room_energy"
     },
     {
       "id": "electrolyzer_cell",
@@ -56,7 +58,8 @@
       "toolId": "solder_iron",
       "spares": 1,
       "holdSeconds": 15,
-      "needsRepairBay": true
+      "needsRepairBay": true,
+      "room": "room_energy"
     },
     {
       "id": "antenna_motor",
@@ -66,7 +69,8 @@
       "spares": 1,
       "holdSeconds": 10,
       "needsRepairBay": false,
-      "inGame": true
+      "inGame": true,
+      "room": "room_telecom"
     },
     {
       "id": "relay_main",
@@ -76,7 +80,8 @@
       "spares": 1,
       "holdSeconds": 8,
       "needsRepairBay": false,
-      "inGame": true
+      "inGame": true,
+      "room": "room_energy"
     },
     {
       "id": "valve_recycler",
@@ -85,7 +90,8 @@
       "toolId": "wrench",
       "spares": 0,
       "holdSeconds": 6,
-      "needsRepairBay": false
+      "needsRepairBay": false,
+      "room": "room_hydro"
     },
     {
       "id": "hull_seal",
@@ -96,7 +102,8 @@
       "holdSeconds": 5,
       "needsRepairBay": false,
       "inGame": true,
-      "charges": 1
+      "charges": 1,
+      "room": "room_hub"
     },
     {
       "id": "rx_psu",
@@ -106,7 +113,8 @@
       "spares": 0,
       "holdSeconds": 1.5,
       "needsRepairBay": false,
-      "inGame": true
+      "inGame": true,
+      "room": "room_hub"
     }
   ],
   "holster": {

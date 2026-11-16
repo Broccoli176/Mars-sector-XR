@@ -1,13 +1,13 @@
 import { describe, it, expect } from 'vitest';
 import * as THREE from 'three';
 import { gameData } from '../src/data/index.js';
-import { buildSolarField, fieldLook, shieldWave } from '../src/world/SolarField.js';
+import { buildSolarField, fieldLook, cleanerPath, cleanerDuration } from '../src/world/SolarField.js';
 import { newSim, runTicks } from './helpers/sim.js';
 
 const dust = gameData.balance.dust;
 
 describe('Dust on the solar panels (spec §2.5)', () => {
-  it('renders 12 panels (2 rows) and the shield wave, without rover, pad or Tesla coil', () => {
+  it('renders 12 panels (2 rows), the cleaning robot and its dock', () => {
     const field = buildSolarField(new THREE.Scene(), () => ({ balance: gameData.balance }), {
       center: [0, 1.5, 0],
       width: 2,
@@ -19,25 +19,34 @@ describe('Dust on the solar panels (spec §2.5)', () => {
     const panels = nodes.find((node) => node.name === 'SolarPanels');
     expect(panels.count).toBe(12);
     const names = nodes.map((node) => node.name);
-    expect(names).not.toContain('Rover1_ChargingPad');
-    expect(names).not.toContain('Rover2_Cleaning');
-    expect(names).not.toContain('TeslaCoil_FieldProp');
-    expect(names).toContain('SolarPanelShieldWave');
+    expect(names).toContain('SolarCleanerRover');
+    expect(names).toContain('SolarCleanerDock');
+    expect(names).not.toContain('SolarPanelShieldWave');
   });
 
-  it('the shield wave sweeps the panels one after another, then stops', () => {
+  it('the robot leaves its dock, brushes every panel in order end to end, then returns', () => {
     const fx = gameData.balance.cleanFx;
-    expect(shieldWave(0, 0, fx).active).toBe(true);
-    expect(shieldWave(0, 1, fx).active).toBe(false);
-    expect(shieldWave(fx.stepS + 0.01, 1, fx).active).toBe(true);
-    const sweep = fx.durationS - fx.stepS * 5;
-    const mid = shieldWave(sweep / 2, 0, fx);
-    expect(mid.x).toBeCloseTo(0, 5);
-    expect(mid.opacity).toBeCloseTo(1, 5);
-    for (let i = 0; i < 6; i++) expect(shieldWave(fx.durationS + 0.01, i, fx).active).toBe(false);
+    const total = cleanerDuration(fx, 12);
+    expect(cleanerPath(0, fx, 12)).toMatchObject({ phase: 'leave', panel: 0, cleaned: 0 });
+    const first = cleanerPath(fx.dockHopS + fx.perPanelS / 2, fx, 12);
+    expect(first).toMatchObject({ phase: 'brush', panel: 0 });
+    expect(first.x).toBeCloseTo(0, 5);
+    expect(cleanerPath(fx.dockHopS + fx.perPanelS + fx.hopS / 2, fx, 12)).toMatchObject({ phase: 'hop', from: 0, panel: 1, cleaned: 1 });
+    // Panels are visited 0 → 11 and the "cleaned" count only grows.
+    const seen = [];
+    let cleaned = 0;
+    for (let t = 0; t <= total; t += 0.05) {
+      const at = cleanerPath(t, fx, 12);
+      if (at.phase === 'brush' && seen[seen.length - 1] !== at.panel) seen.push(at.panel);
+      expect(at.cleaned).toBeGreaterThanOrEqual(cleaned);
+      cleaned = at.cleaned;
+    }
+    expect(seen).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]);
+    expect(cleanerPath(total - fx.dockHopS / 2, fx, 12).phase).toBe('return');
+    expect(cleanerPath(total + 0.01, fx, 12)).toMatchObject({ phase: 'done', cleaned: 12 });
   });
 
-  it('LIMPIAR (shield) plays the wave in the window and ends after its duration', () => {
+  it('LIMPIAR sends the robot out and it parks again when the run ends', () => {
     const sim = newSim({ events: [] });
     sim.bus.emit('game:start');
     sim.power.dustFactor = 0.7;
@@ -48,15 +57,17 @@ describe('Dust on the solar panels (spec §2.5)', () => {
       outward: [1, 0],
     });
     field.update(0);
+    const robot = field.root.getObjectByName('SolarCleanerRover');
+    const parked = robot.position.clone();
     expect(field.isCleaning).toBe(false);
     sim.bus.emit('solar:clean', {});
     expect(sim.power.dustFactor).toBeGreaterThan(0.7);
     expect(field.isCleaning).toBe(true);
-    field.update(0.5);
-    expect(field.root.getObjectByName('SolarPanelShieldWave').visible).toBe(true);
-    field.update(gameData.balance.cleanFx.durationS);
+    field.update(gameData.balance.cleanFx.dockHopS + 0.2);
+    expect(robot.position.distanceTo(parked)).toBeGreaterThan(1);
+    field.update(cleanerDuration(gameData.balance.cleanFx, 12));
     expect(field.isCleaning).toBe(false);
-    expect(field.root.getObjectByName('SolarPanelShieldWave').visible).toBe(false);
+    expect(robot.position.distanceTo(parked)).toBeLessThan(1e-6);
   });
 
   it('settles at the real Mars Pathfinder rate when calm (0.28 % per sol)', () => {
@@ -90,7 +101,7 @@ describe('Dust on the solar panels (spec §2.5)', () => {
     sim.power.dustFactor = 0.7;
     const battery = sim.resources.value('power');
     sim.bus.emit('solar:clean');
-    expect(events[1]).toMatchObject({ by: 'shield', kwh: dust.cleanKwh });
+    expect(events[1]).toMatchObject({ by: 'robot', kwh: dust.cleanKwh });
     expect(sim.power.dustFactor).toBeCloseTo(1 - 0.3 * (1 - dust.cleanRecovery));
     expect(sim.resources.value('power')).toBeCloseTo(battery - dust.cleanKwh);
 

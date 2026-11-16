@@ -117,6 +117,12 @@ export class XRControls {
     if (hit?.kind === 'grabbable' && hit.distance <= GRAB_RANGE) this.grab.grab(hit.object, grip, handId);
   }
 
+  /** Short haptic pulse on both controllers (e.g. a new fault in the alert banner). @param {number} [intensity] @param {number} [ms] */
+  pulseAll(intensity = 0.7, ms = 120) {
+    if (!this.renderer.xr.isPresenting) return;
+    for (const controller of this.controllers) pulse(controller.userData.inputSource, intensity, ms);
+  }
+
   update() {
     if (!this.renderer.xr.isPresenting) {
       this.reticle.visible = false;

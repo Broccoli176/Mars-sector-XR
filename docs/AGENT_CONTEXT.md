@@ -1,4 +1,4 @@
-# Agent Context — Marte VR Survival
+# Agent Context — Marsianics
 
 > Extended design and engineering context for AI agents and open-source contributors.
 > **Baseline documental (pre-implementación).** Este documento describe intención y diseño; no implica que exista código, datos o assets.

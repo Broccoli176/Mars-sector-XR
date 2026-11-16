@@ -5,7 +5,8 @@ export { COLORS };
 
 /**
  * Diegetic panel: a world-space plane with a CanvasTexture.
- * Redraws only when its content key changes (cheap at 4 Hz).
+ * Redraws only when its content key changes (cheap at 4 Hz), and never while its room is hidden
+ * (`setCulled`, driven by src/world/Visibility.js): the last request is kept and drawn when the room shows again.
  */
 export class Panel {
   /**
@@ -36,6 +37,19 @@ export class Panel {
     this.key = '';
     /** True when the last `renderLines` had to cut text with «…» (dev diagnostics). */
     this.truncated = false;
+    /** True while the panel's room is not drawn: canvas work and texture uploads wait. */
+    this.culled = false;
+    /** @type {(() => void) | null} latest draw requested while culled */
+    this.pending = null;
+  }
+
+  /** Room shown/hidden: on show, draws what was requested while hidden. @param {boolean} culled */
+  setCulled(culled) {
+    this.culled = culled;
+    if (culled || !this.pending) return;
+    const draw = this.pending;
+    this.pending = null;
+    draw();
   }
 
   /**
@@ -48,8 +62,16 @@ export class Panel {
    */
   renderLines(title, lines, { border = COLORS.border } = {}) {
     const key = JSON.stringify([title, lines, border]);
-    if (key === this.key) return;
+    if (key === this.key) {
+      this.pending = null;
+      return;
+    }
+    if (this.culled) {
+      this.pending = () => this.renderLines(title, lines, { border });
+      return;
+    }
     this.key = key;
+    this.pending = null;
 
     const { ctx, canvas } = this;
     const W = canvas.width;
@@ -138,8 +160,16 @@ export class Panel {
    * @param {string} key @param {(ctx: CanvasRenderingContext2D, w: number, h: number) => void} draw
    */
   renderCustom(key, draw) {
-    if (key === this.key) return;
+    if (key === this.key) {
+      this.pending = null;
+      return;
+    }
+    if (this.culled) {
+      this.pending = () => this.renderCustom(key, draw);
+      return;
+    }
     this.key = key;
+    this.pending = null;
     draw(this.ctx, this.canvas.width, this.canvas.height);
     this.texture.needsUpdate = true;
   }

@@ -3,6 +3,7 @@
 // The NavCam is drawn in perspective on a canvas (no second 3D render: cheap on Quest). At a site with a
 // real NASA photo (src/data/real/rover_photos.json) it shows that photo instead, credited and dated.
 import * as THREE from 'three';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { COLORS, BUTTON } from '../../ui/StationKit.js';
 import { Panel } from '../../ui/Panel.js';
 import { font, wrapLines, ellipsize } from '../../ui/theme.js';
@@ -47,26 +48,23 @@ export function buildRoverConsole(g, station, kit) {
 
   kit.addBox(g, 2.62, 1.02, 0.12, 0, 0.12, -0.12, '#1b2733');
   kit.addBox(g, 0.22, 0.34, 0.1, 0, -0.53, -0.08, '#263643');
-  const bezelMaterial = new THREE.MeshLambertMaterial({ color: '#101820' });
-  const addBezel = (x, y, width, height) => {
-    const bezel = new THREE.Mesh(new THREE.BoxGeometry(width + 0.05, height + 0.05, 0.06), bezelMaterial);
-    bezel.position.set(x, y, 0.015);
-    g.add(bezel);
-  };
+  // Screen bezels and cyan accent strips: static, so each set is merged into one draw call.
+  /** @type {THREE.BufferGeometry[]} */
+  const bezels = [];
+  const addBezel = (x, y, width, height) => bezels.push(new THREE.BoxGeometry(width + 0.05, height + 0.05, 0.06).translate(x, y, 0.015));
   addBezel(-0.8, 0.12, 0.86, 0.62);
   addBezel(0.1, 0.12, 0.86, 0.62);
   addBezel(0.9, 0.12, 0.66, 0.72);
+  g.add(new THREE.Mesh(mergeGeometries(bezels), new THREE.MeshLambertMaterial({ color: '#101820' })));
 
-  const accentMaterial = new THREE.MeshBasicMaterial({ color: '#26cce6' });
-  const addAccent = (width, height, x, y) => {
-    const accent = new THREE.Mesh(new THREE.BoxGeometry(width, height, 0.012), accentMaterial);
-    accent.position.set(x, y, 0.052);
-    g.add(accent);
-  };
+  /** @type {THREE.BufferGeometry[]} */
+  const accents = [];
+  const addAccent = (width, height, x, y) => accents.push(new THREE.BoxGeometry(width, height, 0.012).translate(x, y, 0.052));
   addAccent(2.44, 0.018, 0, 0.61);
   addAccent(2.44, 0.018, 0, -0.37);
   addAccent(0.018, 0.94, -1.29, 0.12);
   addAccent(0.018, 0.94, 1.29, 0.12);
+  g.add(new THREE.Mesh(mergeGeometries(accents), new THREE.MeshBasicMaterial({ color: '#26cce6' })));
 
   const map = new Panel(0.86, 0.62, { pxPerMeter: 900 });
   map.mesh.position.set(-0.8, 0.12, 0.055);

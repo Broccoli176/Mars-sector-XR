@@ -1,4 +1,4 @@
-# Marte VR Survival
+# Marsianics
 
 > Stationary VR survival/management game: run the first human outpost on Mars for 7 accelerated days while balancing life support, power, food, water, telecom and electronics. **Prototipo v0.1:** simulación headless (`src/systems/`), datos (`src/data/`), tests (`tests/`) y greybox WebXR (`src/core/main.js`).
 

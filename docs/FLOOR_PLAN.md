@@ -1,4 +1,4 @@
-# Floor Plan — Marte VR Survival
+# Floor Plan — Marsianics
 
 > **Baseline (2026-11-14, v2: hub layout).** A hub-and-spokes underground base derived from the owner's sketch. It is the reference for the greybox (`docs/ASSET_CREATION_WORKFLOW.md` Stage 0/1) and for panel placement (`docs/SIMULATION_SPEC.md` §9.2).
 > **Source of truth for coordinates:** `src/data/layout.json`. Walls, floors, collision, teleport and stations are all generated from it. If the layout changes, update that file, this document, the spec §9 and the `AGENT_CONTEXT.md` diagram in the same change.
@@ -90,5 +90,6 @@ Panel centres at 1.2–1.5 m height.
 
 ## 7) Rendering
 
-- Static geometry is merged by material: walls, floors, ceilings, door frames + conduits, and fixtures each take 1 draw call.
-- Measured (desktop, `?debug`, 2026-11-14): 6–59 draw calls per view (budget < 150); 6 point lights + 1 hemisphere light.
+- Static geometry is merged by material: walls, floors, ceilings, door frames + conduits, and fixtures each take 1 draw call. Their lighting is baked into vertex colours (`src/world/bakedLight.js`): the shell is unlit and subdivided (cells of 0.25–0.5 m, ≈ 22 k triangles). Rays (teleport, pointer) are tested against plain invisible collision meshes (`COL_Floor_all`, `COL_Walls`).
+- Room visibility culling (`src/world/Visibility.js`): rooms are the rectangles of `layout.json` and every door gap is a portal; only what can be seen from the player's head through the doors is drawn.
+- Measured (desktop, `?debug`, 2026-11-15): 29 draw calls per view on average, 71 at worst (budget < 150); before the graphics audit it was 112 on average and up to 243. 6 point lights + 1 hemisphere light, now used only by the props.

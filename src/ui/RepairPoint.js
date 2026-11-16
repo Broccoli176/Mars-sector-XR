@@ -18,11 +18,15 @@ const REJECT_SECONDS = 2.5;
  *   targetId: component id (e.g. `scrubber_fan`) or leak id (`hull_seal_*`); position in station-local metres;
  *   labelY: label height relative to the point (default just above it)
  */
+/** How much larger than the part its invisible aim volume is. */
+const AIM_SCALE = 1.8;
+
 export function addRepairPoint(g, kit, { targetId, x, y, z, size = 0.32, labelY = size / 2 + 0.12 }) {
   const { t, sim } = kit;
 
   // Aim volume (invisible): the tool's ray must hit it.
-  const aim = new Mesh(new BoxGeometry(size, size, size * 0.8), AIM_MATERIAL);
+  // The aim volume is bigger than the part: pointing roughly at it is enough.
+  const aim = new Mesh(new BoxGeometry(size * AIM_SCALE, size * AIM_SCALE, size * AIM_SCALE), AIM_MATERIAL);
   aim.position.set(x, y, z);
   aim.userData.repairTarget = targetId;
   g.add(aim);

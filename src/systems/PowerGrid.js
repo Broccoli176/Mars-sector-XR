@@ -85,7 +85,7 @@ export class PowerGrid {
     this.resources.add('power', -d.cleanKwh);
     const gained = (1 - this.dustFactor) * d.cleanRecovery;
     this.#setDust(this.dustFactor + gained);
-    this.bus.emit('solar:cleaned', { by: 'shield', gained, kwh: d.cleanKwh });
+    this.bus.emit('solar:cleaned', { by: 'robot', gained, kwh: d.cleanKwh });
     return 'ok';
   }
 

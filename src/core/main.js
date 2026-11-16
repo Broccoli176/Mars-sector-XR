@@ -14,9 +14,11 @@ import { XRControls } from '../vr/XRControls.js';
 import { DesktopControls } from '../vr/DesktopControls.js';
 import { KeyboardLocomotion } from '../vr/KeyboardLocomotion.js';
 import { buildCollider } from '../vr/Collision.js';
+import { createVisibility } from '../world/Visibility.js';
 import { Grab } from '../vr/Grab.js';
 import { Holsters } from '../vr/Holsters.js';
 import { createStartMenu } from '../ui/StartMenu.js';
+import { createAlertBanner } from '../ui/AlertBanner.js';
 import { startMode, missionBriefing, VR_SESSION_INIT } from '../ui/startMenuRules.js';
 
 // Dev-only: `?iwer` installs Meta's Immersive Web Emulation Runtime (Quest 3) without the browser
@@ -50,7 +52,7 @@ const { layout } = gameData;
 // Renderer: conservative Quest settings (AGENTS.md §7): no shadows, no post-processing.
 // ACES tone mapping runs inside the material shaders (no extra pass); UI panels opt out (toneMapped: false).
 const container = /** @type {HTMLElement} */ (document.getElementById('app'));
-const renderer = new THREE.WebGLRenderer({ antialias: true });
+const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.15;
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -111,12 +113,31 @@ const locomotion = new Locomotion(renderer, dolly, camera);
 const grab = new Grab(scene);
 const holsters = new Holsters(scene, locomotion, gameData.balance.holster);
 const roverWorld = buildRoverWorld(scene, game, camera, dolly, layout);
+// The shell's light is baked; it must include the exterior sun and ambient light, which are global lights.
+basement.setExteriorLight(roverWorld.sunLight, roverWorld.ambLight);
 /** @type {THREE.Object3D[]} */
 const interactive = [];
 const stations = buildStations({
   layout, rooms: basement.rooms, game, t, scene, interactive,
   services: { scene, grab, holsters, floors: basement.floors, renderer, roverWorld, solarField, locomotion },
 });
+
+// Visibility culling: only what can be seen from where you stand is drawn (and its canvases redrawn).
+// The two window views belong to the room that has the window and are hidden while the opening is off screen.
+/** @param {[number, number, number]} c @param {number} w @param {number} h */
+const windowSphere = (c, w, h) => new THREE.Sphere(new THREE.Vector3(...c), Math.hypot(w, h) / 2 + 0.15);
+const visibility = createVisibility({
+  scene,
+  layout,
+  isAway: () => roverWorld.inWorld,
+  entries: [
+    ...stations.groups,
+    ...basement.signs.map((object) => ({ object })),
+    { object: porthole.root, roomId: 'room_telecom', window: windowSphere([(ws0 + ws1) / 2, (wy0 + wy1) / 2, windowWall.from[1]], ws1 - ws0, wy1 - wy0) },
+    { object: solarField.root, roomId: 'room_energy', window: windowSphere([solarWall.from[0], (sy0 + sy1) / 2, (ss0 + ss1) / 2], ss1 - ss0, sy1 - sy0) },
+  ],
+});
+// Dev: `?nocull` draws everything, to compare (applied after the warm-up render below).
 
 // Interaction and locomotion
 // Furniture blocks the teleport ray and the keyboard body (top-down AABBs).
@@ -138,7 +159,7 @@ holsters.grab = grab; // rings light up while holding a tool
 const keyboard = new KeyboardLocomotion(renderer, camera, dolly, locomotion, collider);
 /** Dev handle (`?debug`, `?iwer` or the built-in emulator). Do not expose the THREE namespace: it defeats tree-shaking. */
 function exposeDebug() {
-  /** @type {any} */ (window).__marte = { renderer, camera, dolly, game, grab, holsters, Vector3: THREE.Vector3 };
+  /** @type {any} */ (window).__marte = { renderer, scene, camera, dolly, game, grab, holsters, basement, stations, porthole, solarField, roverWorld, visibility, interaction, Vector3: THREE.Vector3 };
 }
 if (devParams.has('iwer') || devParams.has('debug')) exposeDebug();
 
@@ -264,7 +285,30 @@ function applyLighting() {
 const timer = new THREE.Timer();
 let refreshTimer = 0;
 stations.refresh();
+// Alert banner fixed in the view (team decision: exception to «no head-locked HUD», see AGENTS.md §2):
+// active faults and pending jobs, with the room where they are. A new fault also buzzes both controllers.
+const alertBanner = createAlertBanner(camera, t, { onNewFault: () => xr.pulseAll() });
+const refreshAlerts = () => {
+  alertBanner.setEnabled(!startMenu.isOpen);
+  alertBanner.refresh(game.sim);
+};
 renderBio(wristBio, game.sim, t);
+refreshAlerts();
+
+// Warm-up, while the start menu covers the canvas. Visibility culling would otherwise leave shaders, canvas
+// textures and geometry buffers to be sent to the GPU the first time each room is seen (a stalled frame in the
+// headset). One render of everything from high above does it all now.
+{
+  const warmUp = new THREE.PerspectiveCamera(100, 1, 1, 3000);
+  warmUp.position.set(250, 900, 250); // above the middle between the base and the rover world
+  warmUp.lookAt(250, 0, 250);
+  warmUp.updateMatrixWorld(true);
+  visibility.enabled = false;
+  roverWorld.content.visible = true;
+  renderer.render(scene, warmUp);
+  roverWorld.content.visible = false;
+  visibility.enabled = !devParams.has('nocull');
+}
 
 renderer.setAnimationLoop((timestamp) => {
   timer.update(timestamp);
@@ -279,16 +323,20 @@ renderer.setAnimationLoop((timestamp) => {
   xr.update();
   holsters.update();
   stations.animate(dt);
+  alertBanner.tick(dt);
   porthole.update(dt);
   solarField.update(dt);
   roverWorld.update(dt);
+  // Each panel is redrawn 4 times a second, a few per frame in turn (no periodic spike).
+  stations.refreshSpread(dt, PANEL_REFRESH_SECONDS);
 
   refreshTimer += dt;
   if (refreshTimer >= PANEL_REFRESH_SECONDS) {
     refreshTimer = 0;
-    stations.refresh();
     renderBio(wristBio, game.sim, t);
+    refreshAlerts();
     applyLighting();
+    basement.setExteriorLight(roverWorld.sunLight, roverWorld.ambLight); // day, night and storms change the sun
   }
   renderer.render(scene, camera);
 });

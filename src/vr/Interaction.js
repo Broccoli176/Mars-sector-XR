@@ -17,6 +17,11 @@ export class Interaction {
     this.blockers = blockers;
     this.raycaster = new THREE.Raycaster();
     this.raycaster.far = 25;
+    /** @type {THREE.Object3D[]} every pickable object; rebuilt only when a list grows (XR picks twice a frame) */
+    this.targets = [];
+    this.targetCount = -1;
+    /** @type {THREE.Intersection[]} reused hit list */
+    this.hits = [];
   }
 
   /**
@@ -24,8 +29,13 @@ export class Interaction {
    * @returns {null | { kind: 'interactive' | 'grabbable' | 'floor' | 'blocked', object: THREE.Object3D, point: THREE.Vector3, distance: number }}
    */
   pick(raycaster = this.raycaster) {
-    const hits = raycaster.intersectObjects([...this.interactive, ...this.floors, ...this.blockers], false);
-    const hit = hits[0];
+    const count = this.interactive.length + this.floors.length + this.blockers.length;
+    if (count !== this.targetCount) {
+      this.targets = [...this.interactive, ...this.floors, ...this.blockers];
+      this.targetCount = count;
+    }
+    this.hits.length = 0;
+    const hit = raycaster.intersectObjects(this.targets, false, this.hits)[0];
     if (!hit) return null;
     const { object } = hit;
     const kind = object.userData.grab
